@@ -110,13 +110,36 @@ export function AnnouncementsPage() {
     return () => clearInterval(id)
   }, [mode])
 
+  function cleanupStaleDrafts(live: AnnouncementEntry[]) {
+    const ids = new Set(live.map(a => a.id))
+    const stale = Storage.listDrafts().filter(d => d.type === 'announcement' && ids.has(d.id))
+    for (const d of stale) {
+      const liveEntry = live.find(a => a.id === d.id)
+      if (!liveEntry) continue
+      const changed = (
+        (d.title as string) !== liveEntry.title ||
+        (d.tag !== undefined && d.tag !== liveEntry.tag) ||
+        (d.date !== undefined && d.date !== liveEntry.date) ||
+        (d.active !== undefined && d.active !== liveEntry.active) ||
+        (d.image !== undefined && !!d.image !== !!liveEntry.image) ||
+        (d.summary !== undefined && d.summary !== (liveEntry.summary || ''))
+      )
+      if (!changed) Storage.deleteDraft('announcement', d.id)
+    }
+  }
+
   async function load() {
     setLoading(true)
     try {
       const r = await fetch(getBase('src/announcements/list.json'))
       const d = await r.json()
-      setAnns(Array.isArray(d) ? d : [])
-    } catch { setAnns([]) }
+      const live = Array.isArray(d) ? d : []
+      setAnns(live)
+      cleanupStaleDrafts(live)
+    } catch {
+      setAnns([])
+      addToast('Failed to load announcements', 'error')
+    }
     setLoading(false)
   }
 
@@ -371,32 +394,68 @@ export function AnnouncementsPage() {
                 </div></td></tr>
               ) : (
                 <>
-                  {anns.map(a => (
-                    <tr key={a.id}>
-                      <td><div style={{ fontWeight: 600 }}>{a.title}</div></td>
-                      <td><span className="badge badge-info">{a.tag || 'Update'}</span></td>
-                      <td style={{ color: 'var(--text-secondary)' }}>{a.date || '—'}</td>
-                      <td>{a.image ? <ImageIcon size={16} style={{ color: 'var(--blue)' }} /> : <span style={{ color: 'var(--text-tertiary)' }}>—</span>}</td>
-                      <td>{a.active !== false ? <span className="badge badge-success">Active</span> : <span className="badge" style={{ background: 'var(--border)', color: 'var(--text-tertiary)' }}>Hidden</span>}</td>
-                      <td><button className="btn btn-secondary btn-sm" onClick={() => startEdit(a.id)}><EditIcon size={13} /> Edit</button></td>
-                    </tr>
-                  ))}
-                  {allDrafts.filter(d => !anns.find(a => a.id === d.id)).map(d => (
-                    <tr key={d.id} style={{ background: 'var(--amber-glow)' }}>
-                      <td><div style={{ fontWeight: 600 }}>{d.title}</div><span style={{ fontSize: 11, color: 'var(--amber-dark)' }}>Draft</span></td>
-                      <td>—</td><td style={{ color: 'var(--text-secondary)' }}>{d.date || '—'}</td>
-                      <td>{d.image ? <ImageIcon size={16} style={{ color: 'var(--amber)' }} /> : <span style={{ color: 'var(--text-tertiary)' }}>—</span>}</td>
-                      <td><span className="badge badge-warning">Draft</span></td>
-                      <td>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button className="btn btn-secondary btn-sm" onClick={() => { setPendingDraftId(d.id); setView('draftDiff') }}>Open</button>
-                          <button className="btn btn-danger btn-sm btn-icon" onClick={() => { Storage.deleteDraft('announcement', d.id); addToast('Draft deleted', 'info') }}>
-                            <TrashIcon size={13} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {(() => {
+                    const draftMap = new Map(allDrafts.map(d => [d.id, d]))
+                    const merged = anns.map(a => {
+                      const draft = draftMap.get(a.id)
+                      return { live: a, draft, hasDraft: !!draft }
+                    })
+                    const draftOnly = allDrafts.filter(d => !anns.find(a => a.id === d.id))
+                    const rows: { id: string; title: string; tag: string; date: string; active: boolean; hasDraft: boolean; isDraftOnly: boolean; hasImage: boolean; deleteDraft?: () => void }[] = []
+                    for (const m of merged) {
+                      const d = m.draft
+                      const title = (d?.title as string) || m.live.title
+                      const tag = (d?.tag as string) || m.live.tag || 'Update'
+                      const date = (d?.date as string) || m.live.date || '—'
+                      const active = d ? d.active !== false : m.live.active !== false
+                      const hasImage = !!(d?.image || m.live.image)
+                      const liveTag = m.live.tag || 'Update'
+                      const liveDate = m.live.date || '—'
+                      const changed = d && (
+                        title !== m.live.title ||
+                        tag !== liveTag ||
+                        date !== liveDate ||
+                        active !== (m.live.active !== false) ||
+                        hasImage !== !!m.live.image ||
+                        (d.summary as string) !== (m.live.summary || '')
+                      )
+                      rows.push({
+                        id: m.live.id, title, tag, date, active,
+                        hasDraft: m.hasDraft && !!changed, isDraftOnly: false, hasImage,
+                      })
+                    }
+                    for (const d of draftOnly) {
+                      rows.push({
+                        id: d.id, title: d.title as string, tag: '—', date: (d.date as string) || '—',
+                        active: d.active !== false, hasDraft: true, isDraftOnly: true, hasImage: !!d.image,
+                        deleteDraft: () => { Storage.deleteDraft('announcement', d.id); addToast('Draft deleted', 'info') },
+                      })
+                    }
+                    return rows.map(r => (
+                      <tr key={r.id} style={r.hasDraft ? { background: 'var(--amber-glow)' } : undefined}>
+                        <td>
+                          <div style={{ fontWeight: 600 }}>{r.title}</div>
+                          {r.hasDraft && <span style={{ fontSize: 11, color: 'var(--amber-dark)' }}>Draft</span>}
+                        </td>
+                        <td><span className="badge badge-info">{r.tag}</span></td>
+                        <td style={{ color: 'var(--text-secondary)' }}>{r.date}</td>
+                        <td>{r.hasImage ? <ImageIcon size={16} style={{ color: 'var(--amber)' }} /> : <span style={{ color: 'var(--text-tertiary)' }}>—</span>}</td>
+                        <td>{r.active ? <span className="badge badge-success">Active</span> : <span className="badge" style={{ background: 'var(--border)', color: 'var(--text-tertiary)' }}>Hidden</span>}</td>
+                        <td>
+                          {r.isDraftOnly ? (
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button className="btn btn-secondary btn-sm" onClick={() => { setPendingDraftId(r.id); setView('draftDiff') }}>Open</button>
+                              <button className="btn btn-danger btn-sm btn-icon" onClick={r.deleteDraft}><TrashIcon size={13} /></button>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button className="btn btn-secondary btn-sm" onClick={() => startEdit(r.id)}><EditIcon size={13} /> Edit</button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  })()}
                 </>
               )}
             </tbody>
