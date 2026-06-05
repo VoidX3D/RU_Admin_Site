@@ -7,9 +7,10 @@ import { listAdminBranches, analyzeBranches, deleteBranch, cleanupStaleBranches 
 import type { BranchStatus } from '../utils/github'
 import type { Settings } from '../types'
 import {
-  SettingsIcon, SaveIcon, LockIcon, KeyIcon, FolderIcon, BranchIcon,
-  CheckCircleIcon, DownloadIcon, UploadIcon, AlertTriangleIcon, UserIcon,
-  TrashIcon, GitPullRequestIcon, RefreshIcon, XIcon
+  DownloadIcon, UploadIcon, RefreshIcon, AlertTriangleIcon, CheckCircleIcon,
+  SaveIcon, LockIcon, FolderIcon, BranchIcon,
+  EyeIcon, EyeOffIcon, GitPullRequestIcon, TrashIcon, PlusIcon,
+  UserIcon, XIcon,
 } from './Icons'
 
 export function SettingsPage() {
@@ -163,9 +164,15 @@ export function SettingsPage() {
         </div>
         <div className="form-card-body" style={{ padding: '16px 24px' }}>
           {env.GITHUB_TOKEN ? (
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="badge badge-success">Configured</span>
-              <span style={{ fontSize: 12 }}>Token is set via environment variable</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span className="badge badge-success">Configured</span>
+                <span style={{ fontSize: 12 }}>Token is set via environment variable</span>
+              </div>
+              <div className="info-banner info-banner-warning" style={{ margin: 0 }}>
+                <AlertTriangleIcon size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span><strong>Security note:</strong> VITE_ prefixed variables are embedded in the client bundle. Anyone using the admin panel can extract this token via DevTools. Use a fine-grained PAT with minimal scopes, or set up a backend proxy for production.</span>
+              </div>
             </div>
           ) : (
             <div style={{ fontSize: 13 }}>

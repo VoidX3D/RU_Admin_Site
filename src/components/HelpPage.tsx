@@ -1,30 +1,29 @@
 import { useStore } from '../store'
-import { SHORTCUTS } from '../utils/shortcuts'
 import {
   HelpCircleIcon, TargetIcon, MegaphoneIcon, UsersIcon,
   SettingsIcon, GitPullRequestIcon
 } from './Icons'
 
-const SHORTCUT_DESC: Record<string, string> = {
-  'Ctrl+S': 'Save current draft',
-  'Ctrl+Shift+P': 'Open publish dialog',
-  'Esc': 'Cancel / close',
-  'Ctrl+1': 'Create new mission',
-  'Ctrl+2': 'Create new announcement',
-  'Ctrl+D': 'Go to Dashboard',
-  'Ctrl+M': 'Go to Missions',
-  'Ctrl+A': 'Go to Announcements',
-  'Ctrl+U': 'Go to Members',
-  'Ctrl+Shift+S': 'Go to Settings',
-}
+const SHORTCUTS: { label: string; desc: string }[] = [
+  { label: 'Ctrl+S', desc: 'Save current draft' },
+  { label: 'Ctrl+Shift+P', desc: 'Open publish dialog' },
+  { label: 'Esc', desc: 'Cancel / close' },
+  { label: 'Ctrl+1', desc: 'Create new mission' },
+  { label: 'Ctrl+2', desc: 'Create new announcement' },
+  { label: 'Ctrl+D', desc: 'Go to Dashboard' },
+  { label: 'Ctrl+M', desc: 'Go to Missions' },
+  { label: 'Ctrl+A', desc: 'Go to Announcements' },
+  { label: 'Ctrl+U', desc: 'Go to Members' },
+  { label: 'Ctrl+Shift+S', desc: 'Go to Settings' },
+]
 
 const SECTIONS = [
   {
     icon: <HelpCircleIcon size={18} />,
     title: 'Keyboard Shortcuts',
-    items: Object.values(SHORTCUTS).map(s => ({
+    items: SHORTCUTS.map(s => ({
       keys: s.label,
-      desc: SHORTCUT_DESC[s.label] || '',
+      desc: s.desc,
     })),
   },
   {

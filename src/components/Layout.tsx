@@ -2,9 +2,10 @@ import { ReactNode, useState, useEffect } from 'react'
 import { useStore, type View } from '../store'
 import { Storage } from '../utils/storage'
 import {
-  HomeIcon, TargetIcon, MegaphoneIcon, UsersIcon, SettingsIcon,
-  MenuIcon, LogOutIcon, LeafIcon, GitPullRequestIcon, SunIcon, MoonIcon, XIcon,
-  HelpCircleIcon, ClockIcon, RefreshIcon
+  TargetIcon, MegaphoneIcon, UsersIcon,
+  SettingsIcon, HelpCircleIcon, FileTextIcon,
+  MenuIcon, XIcon, SunIcon, MoonIcon, LogOutIcon, RefreshIcon, GitPullRequestIcon,
+  HomeIcon, ClockIcon,
 } from './Icons'
 
 const NAV: { id: View; icon: ReactNode; label: string }[] = [

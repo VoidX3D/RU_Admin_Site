@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from 'react'
 import { useStore } from '../store'
 import { Storage } from '../utils/storage'
-import { processFiles } from '../utils/image'
+
 import type { AnnouncementEntry, PendingImage } from '../types'
-import { ArrowLeftIcon, PlusIcon, XIcon, ImageIcon, UploadIcon, MegaphoneIcon, RefreshIcon, SaveIcon, TrashIcon, EditIcon, CheckIcon } from './Icons'
+import { ArrowLeftIcon, PlusIcon, ImageIcon, MegaphoneIcon, RefreshIcon, SaveIcon, TrashIcon, EditIcon, CheckIcon } from './Icons'
 import { Field, Textarea, Select, Toggle, ImageUpload } from './form'
 
 type Mode = 'list' | 'form'

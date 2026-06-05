@@ -3,9 +3,12 @@ import { processFiles, renameImage } from '../../utils/image'
 import type { PendingImage } from '../../types'
 import { UploadIcon, XIcon } from '../Icons'
 
+let _imgKey = 0
+function imgKey() { return ++_imgKey }
+
 interface ImageUploadProps {
-  images: PendingImage[]
-  onChange: (images: PendingImage[]) => void
+  images: (PendingImage & { _key?: number })[]
+  onChange: (images: (PendingImage & { _key?: number })[]) => void
   maxCount?: number
   single?: boolean
 }
@@ -17,10 +20,11 @@ export function ImageUpload(props: ImageUploadProps) {
 
   async function handleFiles(files: FileList | File[]) {
     const processed = await processFiles(files, single ? 1 : maxCount)
+    const withKeys = processed.map(img => ({ ...img, _key: imgKey() }))
     if (single) {
-      onChange(processed.slice(0, 1))
+      onChange(withKeys.slice(0, 1))
     } else {
-      onChange([...images, ...processed])
+      onChange([...images, ...withKeys])
     }
   }
 
@@ -65,7 +69,7 @@ export function ImageUpload(props: ImageUploadProps) {
       {images.length > 0 && (
         <div className="gallery">
           {images.map((img, i) => (
-            <div key={i} className="gallery-item">
+            <div key={img._key ?? i} className="gallery-item">
               <img src={img.dataUrl} alt="" />
               <button className="gallery-item-remove" onClick={() => remove(i)}><XIcon size={14} /></button>
               {!single && (

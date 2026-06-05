@@ -13,6 +13,7 @@ import { HistoryPage } from './components/HistoryPage'
 import { DraftDiffPage } from './components/DraftDiffPage'
 import { Toast } from './components/Toast'
 import { PRDialog } from './components/PRDialog'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 export default function App() {
   const view = useStore(s => s.view)
@@ -94,7 +95,7 @@ export default function App() {
   }
 
   return (
-    <>
+    <ErrorBoundary>
       <Toast />
       {view === 'login' ? <Login /> : (
         <Layout>
@@ -109,6 +110,6 @@ export default function App() {
         </Layout>
       )}
       {view !== 'login' && <PRDialog open={prOpen} onClose={() => setPrOpen(false)} />}
-    </>
+    </ErrorBoundary>
   )
 }

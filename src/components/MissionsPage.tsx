@@ -1,9 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { useStore } from '../store'
 import { Storage } from '../utils/storage'
-import { processFiles, renameImage } from '../utils/image'
 import type { MissionEntry, StatRow, PendingImage, Draft } from '../types'
-import { ArrowLeftIcon, PlusIcon, XIcon, ImageIcon, UploadIcon, TargetIcon, RefreshIcon, SaveIcon, TrashIcon, EditIcon, CheckIcon } from './Icons'
+import { ArrowLeftIcon, PlusIcon, ImageIcon, TargetIcon, RefreshIcon, SaveIcon, TrashIcon, EditIcon, CheckIcon } from './Icons'
 import { Field, Textarea, Toggle, ImageUpload, StatsEditor, PartnersEditor } from './form'
 
 type Mode = 'list' | 'form'
