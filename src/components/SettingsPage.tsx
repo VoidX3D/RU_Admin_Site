@@ -65,7 +65,7 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="page-enter" style={{ maxWidth: 720 }}>
+    <div className="page-enter page-container">
       <div className="form-page-header">
         <div>
           <h2 style={{ fontSize: 20, fontWeight: 700 }}>Settings</h2>

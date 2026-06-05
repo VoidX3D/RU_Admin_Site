@@ -79,7 +79,7 @@ export function HelpPage() {
   const theme = useStore(s => s.theme)
 
   return (
-    <div className="page-enter" style={{ maxWidth: 720 }}>
+    <div className="page-enter page-container">
       <div className="form-page-header" style={{ marginBottom: 24 }}>
         <div>
           <h2 style={{ fontSize: 20, fontWeight: 700 }}>Help & Guide</h2>

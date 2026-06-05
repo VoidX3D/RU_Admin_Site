@@ -70,7 +70,7 @@ export function DraftDiffPage() {
   }
 
   return (
-    <div className="page-enter" style={{ maxWidth: 800 }}>
+    <div className="page-enter page-container">
       <div className="form-page-header" style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button className="btn btn-secondary btn-icon" onClick={() => setView('dashboard')}>

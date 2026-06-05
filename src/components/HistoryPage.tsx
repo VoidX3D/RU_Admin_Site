@@ -106,7 +106,7 @@ export function HistoryPage() {
   }
 
   return (
-    <div className="page-enter" style={{ maxWidth: 720 }}>
+    <div className="page-enter page-container">
       <div className="form-page-header" style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div>
