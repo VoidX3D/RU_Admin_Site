@@ -106,13 +106,35 @@ export function MissionsPage() {
     return () => clearInterval(id)
   }, [mode])
 
+  function cleanupStaleDrafts(live: MissionEntry[]) {
+    const ids = new Set(live.map(m => m.id))
+    const stale = Storage.listDrafts().filter(d => d.type === 'mission' && ids.has(d.id))
+    for (const d of stale) {
+      const liveEntry = live.find(m => m.id === d.id)
+      if (!liveEntry) continue
+      const changed = (
+        (d.title as string) !== liveEntry.title ||
+        (d.tag !== undefined && d.tag !== liveEntry.tag) ||
+        (d.date !== undefined && d.date !== liveEntry.date) ||
+        (d.show !== undefined && d.show !== liveEntry.show) ||
+        (d.description !== undefined && d.description !== (liveEntry.description || ''))
+      )
+      if (!changed) Storage.deleteDraft('mission', d.id)
+    }
+  }
+
   async function loadMissions() {
     setLoading(true)
     try {
       const r = await fetch(getBase('src/mission/list.json'))
       const d = await r.json()
-      setMissions(d.missions || [])
-    } catch { setMissions([]) }
+      const live = d.missions || []
+      setMissions(live)
+      cleanupStaleDrafts(live)
+    } catch {
+      setMissions([])
+      addToast('Failed to load missions', 'error')
+    }
     setLoading(false)
   }
 
@@ -341,42 +363,71 @@ export function MissionsPage() {
                   <div className="empty-state-desc">Click "New Mission" to create one.</div>
                 </div></td></tr>
               ) : (
-                <>
-                  {missions.map(m => (
-                    <tr key={m.id}>
-                      <td><div style={{ fontWeight: 600 }}>{m.title}</div></td>
-                      <td><span className="badge badge-info">{m.tag || '—'}</span></td>
-                      <td style={{ color: 'var(--text-secondary)' }}>{m.date || '—'}</td>
-                      <td><ImageIcon size={14} style={{ color: 'var(--text-tertiary)', verticalAlign: 'middle' }} /> {m.imageCount || '?'}</td>
+                (() => {
+                  const draftMap = new Map(allDrafts.map(d => [d.id, d]))
+                  const merged = missions.map(m => {
+                    const draft = draftMap.get(m.id) || draftMap.get(m.slug || '')
+                    return { live: m, draft, hasDraft: !!draft }
+                  })
+                  const draftOnly = allDrafts.filter(d => !missions.find(m => (m.id || m.slug) === d.id))
+                  const rows: { id: string; title: string; tag: string; date: string; imageCount: number; active: boolean; hasDraft: boolean; isDraftOnly: boolean; deleteDraft?: () => void }[] = []
+                  for (const m of merged) {
+                    const d = m.draft
+                    const title = (d?.title as string) || m.live.title
+                    const tag = (d?.tag as string) || m.live.tag || '—'
+                    const date = (d?.date as string) || m.live.date || '—'
+                    const ic = d ? (d.imageCount as number) ?? m.live.imageCount ?? 0 : m.live.imageCount ?? 0
+                    const active = d ? d.show !== false : m.live.show !== false
+                    const liveTag = m.live.tag || '—'
+                    const liveDate = m.live.date || '—'
+                    const changed = d && (
+                      title !== m.live.title ||
+                      tag !== liveTag ||
+                      date !== liveDate ||
+                      active !== (m.live.show !== false) ||
+                      ic !== (m.live.imageCount ?? 0) ||
+                      (d.description as string) !== (m.live.description || '')
+                    )
+                    rows.push({
+                      id: m.live.id, title, tag, date, imageCount: ic, active,
+                      hasDraft: m.hasDraft && !!changed, isDraftOnly: false,
+                    })
+                  }
+                  for (const d of draftOnly) {
+                    rows.push({
+                      id: d.id, title: d.title as string, tag: '—', date: (d.date as string) || '—',
+                      imageCount: (d.imageCount as number) || 0, active: d.show !== false,
+                      hasDraft: true, isDraftOnly: true,
+                      deleteDraft: () => { Storage.deleteDraft('mission', d.id); setDrafts(Storage.listDrafts().filter(dd => dd.type === 'mission')); addToast('Draft deleted', 'info') },
+                    })
+                  }
+                  return rows.map(r => (
+                    <tr key={r.id} style={r.hasDraft ? { background: 'var(--amber-glow)' } : undefined}>
                       <td>
-                        {m.show !== false ? (
-                          <span className="badge badge-success"><span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-dark)', display: 'inline-block', marginRight: 4 }} />Active</span>
+                        <div style={{ fontWeight: 600 }}>{r.title}</div>
+                        {r.hasDraft && <span style={{ fontSize: 11, color: 'var(--amber-dark)' }}>Draft</span>}
+                      </td>
+                      <td><span className="badge badge-info">{r.tag}</span></td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{r.date}</td>
+                      <td><ImageIcon size={14} style={{ color: 'var(--text-tertiary)', verticalAlign: 'middle' }} /> {r.imageCount}</td>
+                      <td>{r.hasDraft ? (
+                        r.active ? <span className="badge badge-success">Active</span> : <span className="badge" style={{ background: 'var(--border)', color: 'var(--text-tertiary)' }}>Hidden</span>
+                      ) : (
+                        r.active ? <span className="badge badge-success"><span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-dark)', display: 'inline-block', marginRight: 4 }} />Active</span> : <span className="badge" style={{ background: 'var(--border)', color: 'var(--text-tertiary)' }}>Hidden</span>
+                      )}</td>
+                      <td>
+                        {r.isDraftOnly ? (
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button className="btn btn-secondary btn-sm" onClick={() => { setPendingDraftId(r.id); setView('draftDiff') }}>Open</button>
+                            <button className="btn btn-danger btn-sm btn-icon" onClick={r.deleteDraft}><TrashIcon size={13} /></button>
+                          </div>
                         ) : (
-                          <span className="badge" style={{ background: 'var(--border)', color: 'var(--text-tertiary)' }}>Hidden</span>
+                          <button className="btn btn-secondary btn-sm" onClick={() => startEdit(r.id)}><EditIcon size={13} /> Edit</button>
                         )}
                       </td>
-                      <td>
-                        <button className="btn btn-secondary btn-sm" onClick={() => startEdit(m.id)}><EditIcon size={13} /> Edit</button>
-                      </td>
                     </tr>
-                  ))}
-                  {allDrafts.filter(d => !missions.find(m => (m.id || m.slug) === d.id)).map(d => (
-                    <tr key={d.id} style={{ background: 'var(--amber-glow)' }}>
-                      <td><div style={{ fontWeight: 600 }}>{d.title}</div><span style={{ fontSize: 11, color: 'var(--amber-dark)' }}>Draft</span></td>
-                      <td>—</td><td style={{ color: 'var(--text-secondary)' }}>{d.date || '—'}</td>
-                      <td>{String(d.imageCount || 0)}</td>
-                      <td><span className="badge badge-warning">Draft</span></td>
-                      <td>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button className="btn btn-secondary btn-sm" onClick={() => { setPendingDraftId(d.id); setView('draftDiff') }}>Open</button>
-                          <button className="btn btn-danger btn-sm btn-icon" onClick={() => { Storage.deleteDraft('mission', d.id); setDrafts(Storage.listDrafts().filter(dd => dd.type === 'mission')); addToast('Draft deleted', 'info') }}>
-                            <TrashIcon size={13} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </>
+                  ))
+                })()
               )}
             </tbody>
           </table>
