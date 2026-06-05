@@ -56,8 +56,20 @@ export function Dashboard() {
     load()
   }, [refreshTrigger])
 
-  const mCount = missions.filter(m => m.show !== false).length || liveStats.missions
-  const aCount = announcements.filter(a => a.active !== false).length || liveStats.announcements
+  const missionDrafts = drafts.filter(d => d.type === 'mission')
+  const announcementDrafts = drafts.filter(d => d.type === 'announcement')
+  const mCount = missions.length > 0
+    ? missions.filter(m => {
+        const d = missionDrafts.find(x => x.id === m.id)
+        return d ? d.show !== false : m.show !== false
+      }).length
+    : liveStats.missions
+  const aCount = announcements.length > 0
+    ? announcements.filter(a => {
+        const d = announcementDrafts.find(x => x.id === a.id)
+        return d ? d.active !== false : a.active !== false
+      }).length
+    : liveStats.announcements
   const memCount = members
     ? (members.stats?.total || members.general.length + members.core.length + members.teachers.length)
     : liveStats.members
