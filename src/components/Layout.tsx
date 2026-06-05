@@ -55,7 +55,7 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="app-layout">
       <aside className={`app-sidebar${mobileOpen ? ' open' : ''}`}>
         <div className="sidebar-logo">
-          <div className="sidebar-logo-icon"><LeafIcon size={20} /></div>
+          <img src="/logo_icon.png" alt="RU Club" style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="sidebar-logo-text">RU Club Motherland</div>
             <div className="sidebar-logo-sub">Admin Panel</div>
@@ -90,9 +90,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
         <div className="sidebar-footer">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div className="sidebar-logo-icon" style={{ width: 32, height: 32, borderRadius: 8 }}>
-              <UsersIcon size={16} />
-            </div>
+            <img src="/logo_icon.png" alt="RU Club" style={{ width: 28, height: 28, borderRadius: 6, flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.2 }}>Administrator</div>
               <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Admin Access</div>
