@@ -230,9 +230,9 @@ export function Login() {
             transition={{ duration: 0.6, delay: 1.5 }}
           >
             <p className="text-[11px] leading-relaxed text-zinc-500">
-              Built by <span className="font-medium text-zinc-400">Sincee Bhattarai</span>
+              Built by <span className="font-medium text-zinc-400">Sincere Bhattarai</span>
               <br />
-              <span className="text-[9px]">Edition for RU Club Site</span>
+              <span className="text-[9px]">VoidX3D &mdash; RU Club Site</span>
             </p>
           </motion.div>
         </motion.div>
@@ -349,7 +349,7 @@ export function Login() {
             variants={itemVariants}
           >
             <p className="text-[10px] leading-relaxed text-zinc-500">
-              RU Club Motherland &middot; Built by <span className="font-medium text-zinc-500">Sincee Bhattarai</span>
+              RU Club Motherland &middot; Built by <span className="font-medium text-zinc-500">Sincere Bhattarai</span> &mdash; VoidX3D
             </p>
           </motion.div>
         </motion.div>

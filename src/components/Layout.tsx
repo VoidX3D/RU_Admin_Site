@@ -153,7 +153,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </button>
         </div>
         <div className="mt-2 border-t dark:border-zinc-800/30 pt-2 text-center text-[9px] dark:text-zinc-700">
-          RU Club Motherland &middot; Sincee Bhattarai
+          RU Club Motherland &middot; Built by Sincere Bhattarai &mdash; VoidX3D
         </div>
       </div>
     </div>
