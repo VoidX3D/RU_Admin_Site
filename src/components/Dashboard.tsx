@@ -4,25 +4,17 @@ import { useStore, getDrafts } from '../store'
 import { Storage } from '../utils/storage'
 import {
   TargetIcon, MegaphoneIcon, UsersIcon, FileTextIcon,
-  PlusIcon, ArrowRightIcon, GitPullRequestIcon, TrashIcon
+  PlusIcon, ArrowRightIcon, GitPullRequestIcon, TrashIcon, FolderIcon, StarIcon, ActivityIcon,
 } from './Icons'
 
-const ease = [0.16, 1, 0.3, 1] as const
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: (i: number) => ({
-    opacity: 1, y: 0,
-    transition: { duration: 0.3, delay: i * 0.08, ease },
-  }),
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
 }
 
-const quickVariants = {
-  hidden: { opacity: 0, x: -10 },
-  visible: (i: number) => ({
-    opacity: 1, x: 0,
-    transition: { duration: 0.25, delay: 0.3 + i * 0.06, ease },
-  }),
+const item = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] } },
 }
 
 export function Dashboard() {
@@ -93,153 +85,137 @@ export function Dashboard() {
     ? (members.stats?.total || members.general.length + members.core.length + members.teachers.length)
     : liveStats.members
 
-  const cards = [
-    { icon: <TargetIcon size={20} />, color: 'var(--blue)', bg: 'var(--blue-light)', value: mCount, label: 'Active Missions' },
-    { icon: <MegaphoneIcon size={20} />, color: 'var(--amber)', bg: 'var(--amber-light)', value: aCount, label: 'Active Announcements' },
-    { icon: <UsersIcon size={20} />, color: 'var(--accent-dark)', bg: 'var(--accent-light)', value: memCount, label: 'Total Members' },
-    { icon: <FileTextIcon size={20} />, color: 'var(--purple)', bg: 'var(--purple-light)', value: drafts.length, label: 'Saved Drafts' },
+  const statCards = [
+    { icon: <TargetIcon size={18} />, value: mCount, label: 'Active Missions', gradient: 'from-emerald-500/10 to-emerald-500/5', iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-400' },
+    { icon: <MegaphoneIcon size={18} />, value: aCount, label: 'Active Announcements', gradient: 'from-amber-500/10 to-amber-500/5', iconBg: 'bg-amber-500/10', iconColor: 'text-amber-400' },
+    { icon: <UsersIcon size={18} />, value: memCount, label: 'Total Members', gradient: 'from-blue-500/10 to-blue-500/5', iconBg: 'bg-blue-500/10', iconColor: 'text-blue-400' },
+    { icon: <FileTextIcon size={18} />, value: drafts.length, label: 'Saved Drafts', gradient: 'from-purple-500/10 to-purple-500/5', iconBg: 'bg-purple-500/10', iconColor: 'text-purple-400' },
   ]
 
-  const quick = [
-    { icon: <TargetIcon size={22} />, title: 'Create Mission', desc: 'Add a new mission with unlimited images', view: 'missions' as const, color: 'var(--blue)', bg: 'var(--blue-light)' },
-    { icon: <MegaphoneIcon size={22} />, title: 'Create Announcement', desc: 'Post a club notice or update', view: 'announcements' as const, color: 'var(--amber)', bg: 'var(--amber-light)' },
-    { icon: <UsersIcon size={22} />, title: 'Edit Members', desc: 'Update teacher, core & general members', view: 'members' as const, color: 'var(--accent-dark)', bg: 'var(--accent-light)' },
+  const quickActions = [
+    { icon: <TargetIcon size={20} />, title: 'Create Mission', desc: 'Add a new mission with images', view: 'missions' as const, gradient: 'from-emerald-500/10 to-transparent', iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-400' },
+    { icon: <MegaphoneIcon size={20} />, title: 'Create Announcement', desc: 'Post a club notice or update', view: 'announcements' as const, gradient: 'from-amber-500/10 to-transparent', iconBg: 'bg-amber-500/10', iconColor: 'text-amber-400' },
+    { icon: <UsersIcon size={20} />, title: 'Edit Members', desc: 'Update teacher, core & general members', view: 'members' as const, gradient: 'from-blue-500/10 to-transparent', iconBg: 'bg-blue-500/10', iconColor: 'text-blue-400' },
   ]
 
   if (loading) {
     return (
-      <div>
-        <div className="field-group field-group-4" style={{ marginBottom: 24 }}>
-          {[1,2,3,4].map(i => <div key={i} className="skeleton skeleton-stat" />)}
-        </div>
-        <div style={{ marginBottom: 24 }}>
-          <div className="skeleton skeleton-text short" style={{ marginBottom: 16 }} />
-          <div className="field-group field-group-3">
-            {[1,2,3].map(i => <div key={i} className="skeleton skeleton-card-sm" />)}
-          </div>
-        </div>
-        <div className="skeleton skeleton-card" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-28 animate-pulse rounded-xl border border-zinc-800 bg-zinc-900/50" />
+        ))}
       </div>
     )
   }
 
   return (
-    <div>
-      <div className="field-group field-group-4" style={{ marginBottom: 24 }}>
-        {cards.map((c, i) => (
+    <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
+      <motion.div variants={item} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {statCards.map((c, i) => (
           <motion.div
             key={i}
-            className="stat-card"
-            custom={i}
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
+            className={`group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-gradient-to-br ${c.gradient} p-4`}
+            whileHover={{ y: -2, borderColor: 'rgba(255,255,255,0.1)' }}
+            transition={{ duration: 0.2 }}
           >
-            <motion.div
-              className="stat-icon"
-              style={{ background: c.bg, color: c.color }}
-              whileHover={{ scale: 1.05, rotate: [0, -5, 5, 0] }}
-              transition={{ duration: 0.3 }}
-            >
+            <div className={`mb-3 inline-flex rounded-lg ${c.iconBg} p-2.5 ${c.iconColor}`}>
               {c.icon}
-            </motion.div>
+            </div>
             <motion.div
-              className="stat-value"
+              className="text-2xl font-bold text-white"
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.1 + i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.3, delay: 0.1 + i * 0.05, ease: [0.16, 1, 0.3, 1] }}
             >
               {c.value}
             </motion.div>
-            <div className="stat-label">{c.label}</div>
+            <div className="mt-0.5 text-xs font-medium text-zinc-500">{c.label}</div>
+            <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-white/[0.02] group-hover:bg-white/[0.04] transition-colors" />
           </motion.div>
         ))}
-      </div>
+      </motion.div>
 
-      <div style={{ marginBottom: 24 }}>
-        <h2 className="flex items-center gap-2 text-sm font-bold" style={{ marginBottom: 12 }}>
-          <PlusIcon size={16} /> Quick Actions
-        </h2>
-        <div className="field-group field-group-3">
-          {quick.map((item, i) => (
-            <motion.div
+      <motion.div variants={item}>
+        <div className="mb-3 flex items-center gap-2">
+          <StarIcon size={14} className="text-zinc-500" />
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Quick Actions</h2>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {quickActions.map((a, i) => (
+            <motion.button
               key={i}
-              className="card"
-              custom={i}
-              variants={quickVariants}
-              initial="hidden"
-              animate="visible"
-              style={{ cursor: 'pointer', padding: 20, display: 'flex', alignItems: 'flex-start', gap: 14 }}
-              onClick={() => setView(item.view)}
-              whileHover={{ borderColor: item.color, boxShadow: 'var(--shadow-md)' }}
+              className="group flex items-start gap-3 rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900/50 to-transparent p-4 text-left transition-colors hover:border-zinc-700/50"
+              onClick={() => setView(a.view)}
+              whileHover={{ y: -1 }}
               whileTap={{ scale: 0.99 }}
             >
-              <motion.div
-                className="flex items-center justify-center shrink-0"
-                style={{ width: 44, height: 44, borderRadius: 10, background: item.bg, color: item.color }}
-                whileHover={{ scale: 1.1 }}
-              >
-                {item.icon}
-              </motion.div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{item.title}</div>
-                <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.4 }}>{item.desc}</div>
+              <div className={`shrink-0 rounded-lg ${a.iconBg} p-2.5 ${a.iconColor}`}>
+                {a.icon}
               </div>
-              <motion.div
-                animate={{ x: [0, 3, 0] }}
-                transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-              >
-                <ArrowRightIcon size={16} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
-              </motion.div>
-            </motion.div>
+              <div className="flex-1">
+                <div className="text-sm font-medium text-zinc-200">{a.title}</div>
+                <div className="mt-0.5 text-xs text-zinc-600">{a.desc}</div>
+              </div>
+              <ArrowRightIcon size={14} className="mt-2 shrink-0 text-zinc-700 transition-colors group-hover:text-zinc-500" />
+            </motion.button>
           ))}
         </div>
-      </div>
+      </motion.div>
 
-      <motion.div
-        className="card"
-        style={{ marginBottom: 24 }}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.5 }}
-      >
-        <div className="card-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <FileTextIcon size={16} style={{ color: 'var(--amber)' }} />
-            <span style={{ fontSize: 15, fontWeight: 600 }}>Saved Drafts</span>
-          </div>
-          <span className="badge badge-warning">{drafts.length} {drafts.length === 1 ? 'draft' : 'drafts'}</span>
+      <motion.div variants={item}>
+        <div className="mb-3 flex items-center gap-2">
+          <FolderIcon size={14} className="text-zinc-500" />
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Saved Drafts</h2>
+          {drafts.length > 0 && (
+            <span className="ml-auto rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+              {drafts.length} {drafts.length === 1 ? 'draft' : 'drafts'}
+            </span>
+          )}
         </div>
-        <div style={{ padding: 8 }}>
+        <div className="overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/30">
           {drafts.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon">📝</div>
-              <div className="empty-state-title">No saved drafts yet</div>
-              <div className="empty-state-desc">Create content and save your progress!</div>
+            <div className="flex flex-col items-center gap-2 py-10">
+              <FileTextIcon size={24} className="text-zinc-700" />
+              <div className="text-sm font-medium text-zinc-500">No saved drafts yet</div>
+              <div className="text-xs text-zinc-700">Create content and save your progress</div>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div className="divide-y divide-zinc-800/50">
               {drafts.map((d, i) => (
                 <motion.div
                   key={d.id}
-                  className="draft-item"
-                  initial={{ opacity: 0, x: -10 }}
+                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-zinc-800/30"
+                  initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5 + i * 0.03 }}
+                  transition={{ delay: 0.3 + i * 0.03 }}
                 >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>{d.title}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-                      <span className={`badge badge-${d.type === 'mission' ? 'info' : d.type === 'announcement' ? 'warning' : 'success'}`}>{d.type}</span>
+                  <div className={`rounded-md p-1.5 ${
+                    d.type === 'mission' ? 'bg-emerald-500/10 text-emerald-400' :
+                    d.type === 'announcement' ? 'bg-amber-500/10 text-amber-400' :
+                    'bg-blue-500/10 text-blue-400'
+                  }`}>
+                    {d.type === 'mission' ? <TargetIcon size={14} /> : d.type === 'announcement' ? <MegaphoneIcon size={14} /> : <UsersIcon size={14} />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium text-zinc-300">{d.title}</div>
+                    <div className="flex items-center gap-2 text-[10px] text-zinc-600">
+                      <span className="capitalize">{d.type}</span>
+                      <span>&middot;</span>
                       <span>{new Date(d.updated).toLocaleDateString()}</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button className="btn btn-secondary btn-sm" onClick={() => { setPendingDraftId(d.id); setView('draftDiff') }}>Open</button>
-                    <button className="btn btn-danger btn-sm btn-icon" onClick={() => { Storage.deleteDraft(d.type, d.id); addToast('Draft deleted', 'info') }}>
-                      <TrashIcon size={14} />
-                    </button>
-                  </div>
+                  <button
+                    className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+                    onClick={() => { setPendingDraftId(d.id); setView('draftDiff') }}
+                  >
+                    Open
+                  </button>
+                  <button
+                    className="rounded-lg p-1.5 text-zinc-700 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                    onClick={() => { Storage.deleteDraft(d.type, d.id); addToast('Draft deleted', 'info') }}
+                  >
+                    <TrashIcon size={13} />
+                  </button>
                 </motion.div>
               ))}
             </div>
@@ -248,38 +224,30 @@ export function Dashboard() {
       </motion.div>
 
       <motion.div
-        className="flex items-center justify-between flex-wrap gap-4 rounded-xl p-6 sm:p-7"
-        style={{
-          background: 'linear-gradient(135deg, #1e293b, #0f172a)',
-        }}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.6 }}
-        whileHover={{ boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}
+        variants={item}
+        className="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-gradient-to-r from-zinc-900/80 via-zinc-900/50 to-zinc-900/80 p-5 sm:p-6"
+        whileHover={{ borderColor: 'rgba(255,255,255,0.08)' }}
       >
-        <div className="flex items-center gap-3.5">
-          <motion.div
-            className="flex items-center justify-center"
-            style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(255,255,255,0.1)' }}
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
-          >
-            <GitPullRequestIcon size={22} style={{ color: '#fff' }} />
-          </motion.div>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>GitHub Pull Request</div>
-            <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>Publish your changes to the live site.</div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/5 via-transparent to-transparent" />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
+              <GitPullRequestIcon size={20} className="text-emerald-400" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-white">GitHub Pull Request</div>
+              <div className="mt-0.5 text-xs text-zinc-500">Publish your changes to the live site</div>
+            </div>
           </div>
+          <button
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-4 text-xs font-semibold text-white transition-colors hover:bg-emerald-400"
+            onClick={() => setPrOpen(true)}
+          >
+            <GitPullRequestIcon size={14} />
+            Send Pull Request
+          </button>
         </div>
-        <motion.button
-          className="btn btn-primary btn-lg"
-          onClick={() => setPrOpen(true)}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <GitPullRequestIcon size={16} /> Send Pull Request
-        </motion.button>
       </motion.div>
-    </div>
+    </motion.div>
   )
 }

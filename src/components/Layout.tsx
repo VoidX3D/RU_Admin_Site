@@ -31,16 +31,8 @@ const PAGE_TITLES: Record<string, string> = {
 }
 
 const sidebarVariants = {
-  open: { x: 0, transition: { type: 'spring' as const, damping: 25, stiffness: 250 } },
-  closed: { x: '-100%', transition: { type: 'spring' as const, damping: 25, stiffness: 250 } },
-}
-
-const navItemVariants = {
-  hidden: { opacity: 0, x: -10 },
-  visible: (i: number) => ({
-    opacity: 1, x: 0,
-    transition: { duration: 0.2, delay: i * 0.03 },
-  }),
+  open: { x: 0, transition: { type: 'spring' as const, damping: 26, stiffness: 260 } },
+  closed: { x: '-100%', transition: { type: 'spring' as const, damping: 26, stiffness: 260 } },
 }
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -66,122 +58,109 @@ export function Layout({ children }: { children: ReactNode }) {
     setView('login')
   }
 
+  function navTo(v: View) {
+    setView(v)
+    setMobileOpen(false)
+  }
+
   const sidebarContent = (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2.5 border-b border-[var(--border)] px-4 py-3.5">
-        <motion.img
-          src="/logo_icon.png"
-          alt="RU Club"
-          className="h-8 w-8 shrink-0 rounded-lg"
-          whileHover={{ scale: 1.05, rotate: [0, -5, 5, 0] }}
-          transition={{ duration: 0.3 }}
-        />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-bold leading-tight tracking-tight">RU Club Motherland</div>
-          <div className="text-[10px] font-medium text-[var(--text-tertiary)]">Admin Panel</div>
+      <div className="flex items-center gap-3 border-b border-zinc-800/50 px-4 py-4">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10">
+          <span className="text-xs font-bold text-emerald-400">RU</span>
         </div>
-        <motion.button
-          className="btn btn-ghost btn-icon sidebar-close"
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-semibold text-white">RU Club Motherland</div>
+          <div className="text-[10px] font-medium text-zinc-500">Admin Panel</div>
+        </div>
+        <button
+          className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 md:hidden"
           onClick={() => setMobileOpen(false)}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
         >
-          <XIcon size={16} />
-        </motion.button>
+          <XIcon size={15} />
+        </button>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-2 py-3">
-        <div className="sidebar-section">Navigation</div>
-        {NAV.map((item, i) => (
-          <motion.button
+        <div className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">Navigation</div>
+        {NAV.map(item => (
+          <button
             key={item.id}
-            custom={i}
-            variants={navItemVariants}
-            initial="hidden"
-            animate="visible"
-            className={`sidebar-item${view === item.id ? ' active' : ''}`}
-            onClick={() => { setView(item.id); setMobileOpen(false) }}
-            whileHover={{ x: 2 }}
-            whileTap={{ scale: 0.98 }}
+            className={`mb-0.5 flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors ${
+              view === item.id
+                ? 'bg-emerald-500/10 text-emerald-400'
+                : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+            }`}
+            onClick={() => navTo(item.id)}
           >
-            <span className="sidebar-item-icon">{item.icon}</span>
+            <span className="flex w-4 shrink-0 items-center justify-center">{item.icon}</span>
             {item.label}
-          </motion.button>
+          </button>
         ))}
 
-        <div className="sidebar-section" style={{ marginTop: 20 }}>Actions</div>
-        <motion.button
-          className="sidebar-item"
+        <div className="mb-1 mt-6 px-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">Actions</div>
+        <button
+          className="mb-0.5 flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/10"
           onClick={() => { setPrOpen(true); setMobileOpen(false) }}
-          style={{ color: 'var(--accent)' }}
-          whileHover={{ x: 2 }}
-          whileTap={{ scale: 0.98 }}
         >
-          <span className="sidebar-item-icon" style={{ color: 'var(--accent)' }}>
+          <span className="flex w-4 shrink-0 items-center justify-center text-emerald-400">
             <GitPullRequestIcon size={18} />
           </span>
           Publish Changes
-        </motion.button>
+        </button>
       </nav>
 
-      <div className="border-t border-[var(--border)] px-3.5 py-3">
-        <div className="flex items-center gap-2">
-          <motion.img
-            src="/logo_icon.png"
-            alt="RU Club"
-            className="h-7 w-7 shrink-0 rounded-md"
-            whileHover={{ scale: 1.05 }}
-          />
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-xs font-semibold leading-tight">Administrator</div>
-            <div className="text-[11px] text-[var(--text-tertiary)]">Admin Access</div>
+      <div className="border-t border-zinc-800/50 px-3 py-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-zinc-800">
+            <span className="text-[10px] font-bold text-zinc-400">A</span>
           </div>
-          <motion.button
-            className="btn btn-ghost btn-icon btn-sm"
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-xs font-medium text-zinc-300">Administrator</div>
+            <div className="text-[10px] text-zinc-600">Admin Access</div>
+          </div>
+          <button
+            className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
             onClick={toggleTheme}
             title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
           >
-            {theme === 'dark' ? <SunIcon size={14} /> : <MoonIcon size={14} />}
-          </motion.button>
-          <motion.button
-            className="btn btn-ghost btn-icon btn-sm"
+            {theme === 'dark' ? <SunIcon size={13} /> : <MoonIcon size={13} />}
+          </button>
+          <button
+            className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-800 hover:text-red-400"
             onClick={logout}
             title="Sign Out"
-            whileHover={{ scale: 1.1, color: 'var(--red)' }}
-            whileTap={{ scale: 0.9 }}
           >
-            <LogOutIcon size={14} />
-          </motion.button>
+            <LogOutIcon size={13} />
+          </button>
         </div>
-        <div className="mt-2 border-t border-[var(--border-light)] pt-2 text-center text-[10px] text-[var(--text-tertiary)]">
-          RU Club Motherland Admin &middot; Sincee Bhattarai
+        <div className="mt-2 border-t border-zinc-800/30 pt-2 text-center text-[9px] text-zinc-700">
+          RU Club Motherland &middot; Sincee Bhattarai
         </div>
       </div>
     </div>
   )
 
   return (
-    <div className="app-layout">
-      {/* Desktop sidebar */}
-      <aside className="hidden md:flex app-sidebar">
-        {sidebarContent}
+    <div className="flex min-h-screen bg-zinc-950">
+      <aside className="hidden md:flex md:w-56 md:flex-col md:border-r md:border-zinc-800/50 md:bg-zinc-900/50 md:backdrop-blur-xl">
+        <div className="flex h-full flex-col">
+          {sidebarContent}
+        </div>
       </aside>
 
-      {/* Mobile sidebar */}
       <AnimatePresence>
         {mobileOpen && (
           <>
             <motion.div
-              className="fixed inset-0 z-[99] bg-black/50 backdrop-blur-sm"
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMobileOpen(false)}
             />
             <motion.aside
-              className="fixed left-0 top-0 z-[100] h-full w-[260px] border-r border-[var(--border)] bg-[var(--surface)] shadow-2xl"
+              className="fixed left-0 top-0 z-50 h-full w-64 border-r border-zinc-800 bg-zinc-900 shadow-2xl"
               variants={sidebarVariants}
               initial="closed"
               animate="open"
@@ -193,48 +172,40 @@ export function Layout({ children }: { children: ReactNode }) {
         )}
       </AnimatePresence>
 
-      <div className="app-main">
-        <header className="app-header">
-          <motion.button
-            className="btn btn-ghost btn-icon md:hidden"
+      <div className="flex min-h-screen flex-1 flex-col">
+        <header className="sticky top-0 z-30 flex h-12 items-center gap-3 border-b border-zinc-800/50 bg-zinc-950/80 px-4 backdrop-blur-xl">
+          <button
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 md:hidden"
             onClick={() => setMobileOpen(true)}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
           >
-            <MenuIcon size={20} />
-          </motion.button>
-          <h1 className="flex-1 text-base font-bold tracking-tight">
+            <MenuIcon size={18} />
+          </button>
+          <h1 className="flex-1 text-sm font-semibold text-white">
             {PAGE_TITLES[view] ?? 'Dashboard'}
           </h1>
-          <div className="flex items-center gap-1.5">
-            <motion.div
-              className="h-[7px] w-[7px] rounded-full bg-[var(--accent)]"
-              animate={{ scale: [1, 1.3, 1] }}
-              transition={{ repeat: Infinity, duration: 2 }}
-            />
-            <span className="text-xs font-medium text-[var(--text-secondary)]">Live</span>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 rounded-md bg-zinc-900 px-2 py-1">
+              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+              <span className="text-[10px] font-medium text-zinc-500">Live</span>
+            </div>
+            <button
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+              onClick={() => { triggerRefresh(); addToast('Refreshing data...', 'info') }}
+              title="Sync data from GitHub"
+            >
+              <RefreshIcon size={14} />
+            </button>
+            <button
+              className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white transition-colors hover:bg-emerald-400"
+              onClick={() => setPrOpen(true)}
+            >
+              <GitPullRequestIcon size={13} />
+              <span className="hidden sm:inline">Publish</span>
+            </button>
           </div>
-          <motion.button
-            className="btn btn-ghost btn-icon btn-sm"
-            onClick={() => { triggerRefresh(); addToast('Refreshing data...', 'info') }}
-            title="Sync data from GitHub"
-            whileHover={{ rotate: 180 }}
-            transition={{ duration: 0.3 }}
-          >
-            <RefreshIcon size={14} />
-          </motion.button>
-          <motion.button
-            className="btn btn-primary btn-sm"
-            onClick={() => setPrOpen(true)}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <GitPullRequestIcon size={14} />
-            Publish
-          </motion.button>
         </header>
 
-        <main className="app-body">
+        <main className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
           {children}
         </main>
       </div>
