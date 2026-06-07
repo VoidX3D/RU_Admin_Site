@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { useStore, getDrafts } from '../store'
 import { Storage } from '../utils/storage'
 import { getEnvConfig } from '../utils/env'
@@ -13,7 +14,7 @@ import type { FileDiff } from '../utils/diff'
 import { savePublishRecord } from '../utils/history'
 import type { PublishFile } from '../utils/history'
 import { DiffView } from './DiffView'
-import { GitPullRequestIcon, CheckCircleIcon, AlertTriangleIcon, XIcon, LoaderIcon } from './Icons'
+import { GitPullRequestIcon, CheckCircleIcon, AlertTriangleIcon, XIcon, LoaderIcon, LockIcon, ExternalLinkIcon } from './Icons'
 
 interface Props { open: boolean; onClose: () => void }
 
@@ -82,16 +83,14 @@ export function PRDialog({ open, onClose }: Props) {
           const url = `https://raw.githubusercontent.com/${settings.repoOwner}/${settings.repoName}/${settings.repoBranch}/${path}`
           const res = await fetch(url)
           return res.ok ? res.text() : null
-        } catch {
-          return null
-        }
+        } catch { return null }
       }
 
       const fileDiffs = await prepareFileDiffs(drafts, fetchCurrent)
       setDiffs(fileDiffs)
       const defaultMsg = `Update ${fileDiffs.map(d => d.path.split('/').pop()).filter(Boolean).join(', ')}`
       setCommitMsg(defaultMsg)
-    } catch (e) {
+    } catch {
       setPubError('Could not load file changes. Check your GitHub token and try again.')
       setStep('verify'); setDiffs([]); setLoadingDiffs(false)
     }
@@ -109,7 +108,6 @@ export function PRDialog({ open, onClose }: Props) {
         ? `## Summary\n\n${commitMsg}\n\n---\n\n*Automated via RU Club Admin Panel*`
         : generatePRBody(drafts, 'standard')
 
-      // Create a unique branch for this publish session
       const branch = await getNextBranchName(envToken, settings.repoOwner, settings.repoName)
       await createBranch(envToken, settings.repoOwner, settings.repoName, settings.repoBranch, branch)
 
@@ -216,81 +214,85 @@ export function PRDialog({ open, onClose }: Props) {
   if (!open) return null
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ animation: 'fadeIn 0.15s ease' }}>
-      <div className="modal wide" style={{ maxWidth: step === 'review' ? 800 : step === 'publishing' ? 420 : 420 }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: 'linear-gradient(135deg, #1e293b, #0f172a)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-lg rounded-xl border border-zinc-800/50 bg-zinc-950 shadow-2xl shadow-black/40"
+        style={{ maxWidth: step === 'review' ? 720 : 440 }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-zinc-800/50 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900">
               {step === 'done'
-                ? <CheckCircleIcon size={18} style={{ color: '#22c55e' }} />
-                : <GitPullRequestIcon size={18} style={{ color: '#22c55e' }} />
+                ? <CheckCircleIcon size={18} className="text-emerald-400" />
+                : <GitPullRequestIcon size={18} className="text-emerald-400" />
               }
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: 15 }}>
+              <h3 className="text-sm font-semibold text-white">
                 {step === 'verify' && 'Send Pull Request'}
                 {step === 'review' && 'Review Changes'}
                 {step === 'publishing' && 'Publishing...'}
                 {step === 'done' && 'Sent!'}
               </h3>
-              <p style={{ fontSize: 11, color: 'var(--text-tertiary)', margin: 0 }}>
+              <p className="text-[11px] text-zinc-600">
                 {step === 'verify' && `${drafts.length} draft${drafts.length !== 1 ? 's' : ''} · ${totalFiles} file${totalFiles !== 1 ? 's' : ''}`}
-                {step === 'review' && loadingDiffs ? 'Loading changes...' : `${diffs.length} file${diffs.length !== 1 ? 's' : ''} changed`}
+                {step === 'review' && (loadingDiffs ? 'Loading changes...' : `${diffs.length} file${diffs.length !== 1 ? 's' : ''} changed`)}
                 {step === 'publishing' && 'This may take a moment'}
                 {step === 'done' && 'Pull request created on GitHub'}
               </p>
             </div>
           </div>
-          <button className="btn btn-ghost btn-icon" onClick={onClose}><XIcon size={18} /></button>
+          <button className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300" onClick={onClose}>
+            <XIcon size={16} />
+          </button>
         </div>
 
-        <div className="modal-body" style={{ animation: 'pageIn 0.2s ease' }}>
+        {/* Body */}
+        <div className="p-4">
           {step === 'verify' && (
             <div>
-              <div className="step-card" style={{ marginBottom: 20 }}>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                  <span style={{ fontSize: 20, lineHeight: 1 }}>🔐</span>
-                  <div>
-                    <div style={{ fontWeight: 600, marginBottom: 2, fontSize: 14 }}>Enter Verification Code</div>
-                    <p style={{ fontSize: 13, margin: 0 }}>Only authorized club members can publish changes to the live site.</p>
-                  </div>
+              <div className="mb-4 flex gap-3 rounded-lg border border-zinc-800/30 bg-zinc-900/20 p-3">
+                <LockIcon size={18} className="mt-0.5 shrink-0 text-zinc-600" />
+                <div>
+                  <div className="text-xs font-semibold text-zinc-400">Verification Code</div>
+                  <p className="mt-0.5 text-[11px] text-zinc-600">Only authorized club members can publish changes to the live site.</p>
                 </div>
               </div>
               {pubError && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--red)', fontSize: 13, marginBottom: 12, padding: '8px 12px', background: 'var(--red-glow)', borderRadius: 8, border: '1px solid rgba(239,68,68,0.15)' }}>
-                  <AlertTriangleIcon size={14} /> {pubError}
+                <div className="mb-3 flex items-center gap-2 rounded-lg border border-red-800/30 bg-red-500/5 px-3 py-2 text-xs text-red-400">
+                  <AlertTriangleIcon size={13} /> {pubError}
                 </div>
               )}
-              <label className="label">Verification Code</label>
+              <label className="mb-1.5 block text-[11px] font-medium text-zinc-500">Verification Code</label>
               <input value={code} onChange={e => { setCode(e.target.value); setCodeErr(''); setPubError('') }}
                 onKeyDown={e => e.key === 'Enter' && handleVerify()}
-                placeholder="Enter code..." autoFocus
-                className="input" style={{
-                  marginBottom: codeErr ? 8 : 20,
-                  borderColor: codeErr ? 'var(--red)' : '',
-                  fontSize: 16, letterSpacing: '0.1em', fontWeight: 600,
-                  textAlign: 'center',
-                }} />
+                placeholder="Enter code..."
+                autoFocus
+                className={`w-full rounded-lg border bg-zinc-900/50 px-3 py-2.5 text-center text-sm font-semibold tracking-widest text-white outline-none placeholder:text-zinc-700 focus:border-emerald-500/50 ${
+                  codeErr ? 'border-red-500/50' : 'border-zinc-800'
+                }`}
+              />
               {codeErr && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--red)', fontSize: 13, marginBottom: 12 }}>
-                  <AlertTriangleIcon size={14} /> {codeErr}
+                <div className="mt-2 flex items-center gap-1.5 text-xs text-red-400">
+                  <AlertTriangleIcon size={12} /> {codeErr}
                 </div>
               )}
-              <button className="btn btn-primary btn-lg" style={{ width: '100%' }} onClick={handleVerify}>
-                <GitPullRequestIcon size={16} /> Review Changes
+              <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-400" onClick={handleVerify}>
+                <GitPullRequestIcon size={15} /> Review Changes
               </button>
             </div>
           )}
 
           {step === 'review' && (
             loadingDiffs ? (
-              <div style={{ textAlign: 'center', padding: '32px 0' }}>
-                <LoaderIcon size={24} style={{ animation: 'spin 0.6s linear infinite', color: 'var(--text-tertiary)' }} />
-                <p style={{ marginTop: 12, color: 'var(--text-secondary)', fontSize: 14 }}>Loading current files from GitHub...</p>
+              <div className="py-8 text-center">
+                <LoaderIcon size={22} className="mx-auto animate-spin text-zinc-600" />
+                <p className="mt-3 text-xs text-zinc-600">Loading current files from GitHub...</p>
               </div>
             ) : (
               <DiffView
@@ -304,47 +306,38 @@ export function PRDialog({ open, onClose }: Props) {
           )}
 
           {step === 'publishing' && (
-            <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <div className="spinner spinner-lg" style={{ margin: '0 auto 20px', borderTopColor: 'var(--accent)' }} />
-              <p style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>Publishing...</p>
-              <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-                Committing changes and creating pull request on GitHub
-              </p>
+            <div className="py-6 text-center">
+              <LoaderIcon size={24} className="mx-auto animate-spin text-emerald-400" />
+              <p className="mt-3 text-sm font-semibold text-white">Publishing...</p>
+              <p className="mt-1 text-xs text-zinc-600">Committing changes and creating pull request on GitHub</p>
             </div>
           )}
 
           {step === 'done' && (
-            <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <div style={{
-                width: 56, height: 56,
-                background: 'linear-gradient(135deg, var(--accent-light), #bbf7d0)',
-                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 auto 16px',
-                animation: 'scaleIn 0.3s ease',
-              }}>
-                <CheckCircleIcon size={28} style={{ color: 'var(--accent-dark)' }} />
+            <div className="py-4 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/15">
+                <CheckCircleIcon size={28} className="text-emerald-400" />
               </div>
-              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
-                Pull Request Sent!
-              </h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 4 }}>
+              <h3 className="text-lg font-bold text-white">Pull Request Sent!</h3>
+              <p className="mt-1 text-xs text-zinc-600">
                 Submitted to {settings.repoOwner}/{settings.repoName}
               </p>
-              <p style={{ color: 'var(--text-tertiary)', fontSize: 12, marginBottom: 24 }}>
+              <p className="mt-0.5 text-[11px] text-zinc-700">
                 {drafts.length} draft{drafts.length !== 1 ? 's' : ''} · {totalFiles} file{totalFiles !== 1 ? 's' : ''}
               </p>
-              <a href={prUrl} target="_blank" rel="noopener noreferrer"
-                className="btn btn-primary btn-lg"
-                style={{ textDecoration: 'none', display: 'inline-flex', boxShadow: '0 4px 14px var(--accent-glow)' }}>
-                <GitPullRequestIcon size={16} /> View Pull Request
-              </a>
-              <button className="btn btn-secondary btn-lg" style={{ display: 'block', width: '100%', marginTop: 10 }} onClick={onClose}>
-                Close
-              </button>
+              <div className="mt-6 flex flex-col gap-2">
+                <a href={prUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-400">
+                  <ExternalLinkIcon size={15} /> View Pull Request
+                </a>
+                <button className="rounded-lg border border-zinc-800 px-4 py-2.5 text-xs font-medium text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300" onClick={onClose}>
+                  Close
+                </button>
+              </div>
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }

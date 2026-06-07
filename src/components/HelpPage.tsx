@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import {
   HelpCircleIcon, TargetIcon, MegaphoneIcon, UsersIcon,
-  SettingsIcon, GitPullRequestIcon, KeyboardIcon
+  SettingsIcon, GitPullRequestIcon
 } from './Icons'
 
 const SHORTCUTS: { label: string; desc: string }[] = [

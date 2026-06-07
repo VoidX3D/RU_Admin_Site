@@ -1,5 +1,6 @@
 import { ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { XIcon } from './Icons'
 
 interface Props { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode; wide?: boolean; xl?: boolean }
 
@@ -19,7 +20,7 @@ export function Modal({ open, onClose, title, children, footer, wide, xl }: Prop
     <AnimatePresence>
       {open && (
         <motion.div
-          className="modal-overlay"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
           variants={overlayVariants}
           initial="hidden"
           animate="visible"
@@ -27,27 +28,31 @@ export function Modal({ open, onClose, title, children, footer, wide, xl }: Prop
           onClick={onClose}
         >
           <motion.div
-            className={`modal${wide ? ' wide' : ''}${xl ? ' xl' : ''}`}
+            className="w-full rounded-xl border border-zinc-800/50 bg-zinc-950 shadow-2xl shadow-black/40"
+            style={{ maxWidth: xl ? 640 : wide ? 560 : 440 }}
             variants={modalVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
             onClick={e => e.stopPropagation()}
           >
-            <div className="modal-header">
-              <h3>{title}</h3>
+            <div className="flex items-center justify-between border-b border-zinc-800/50 px-4 py-3">
+              <h3 className="text-sm font-semibold text-white">{title}</h3>
               <motion.button
                 onClick={onClose}
-                className="btn btn-ghost btn-icon"
-                style={{ fontSize: 20, lineHeight: 1 }}
-                whileHover={{ scale: 1.1, color: 'var(--red)' }}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+                whileHover={{ scale: 1.1, color: '#ef4444' }}
                 whileTap={{ scale: 0.9 }}
               >
-                &times;
+                <XIcon size={16} />
               </motion.button>
             </div>
-            <div className="modal-body">{children}</div>
-            {footer && <div className="modal-footer">{footer}</div>}
+            <div className="p-4">{children}</div>
+            {footer && (
+              <div className="flex items-center justify-end gap-2 border-t border-zinc-800/50 px-4 py-3">
+                {footer}
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}

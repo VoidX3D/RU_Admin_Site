@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { Storage } from '../utils/storage'
 import { prepareFileDiffs } from '../utils/diff'
@@ -70,60 +71,59 @@ export function DraftDiffPage() {
   }
 
   return (
-    <div className="page-enter page-container">
-      <div className="form-page-header" style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button className="btn btn-secondary btn-icon" onClick={() => setView('dashboard')}>
-            <ArrowLeftIcon size={18} />
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      className="mx-auto max-w-2xl"
+    >
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200" onClick={() => setView('dashboard')}>
+            <ArrowLeftIcon size={16} />
           </button>
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 700 }}>
+            <h2 className="text-sm font-semibold text-white">
               {loading ? 'Loading...' : draftTitle || 'Draft Diff'}
             </h2>
-            <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>
+            <p className="text-xs text-zinc-600">
               {loading ? 'Comparing with live site data' : `${diffs.length} file${diffs.length !== 1 ? 's' : ''} changed`}
             </p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button className="btn btn-secondary btn-sm" onClick={handleEdit}>
-            <EditIcon size={14} /> Edit Draft
+        <div className="flex items-center gap-2">
+          <button className="flex h-8 items-center gap-1.5 rounded-lg border border-zinc-800 px-3 text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200" onClick={handleEdit}>
+            <EditIcon size={13} /> Edit Draft
           </button>
-          <button className="btn btn-primary btn-sm" onClick={handlePublish}>
-            <FileTextIcon size={14} /> Publish
+          <button className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white hover:bg-emerald-400" onClick={handlePublish}>
+            <FileTextIcon size={13} /> Publish
           </button>
         </div>
       </div>
 
       {loading ? (
-        <div>
-          <div className="skeleton skeleton-card" style={{ height: 60, marginBottom: 12 }} />
-          <div className="skeleton skeleton-card" style={{ height: 60, marginBottom: 12 }} />
-          <div className="skeleton skeleton-card" style={{ height: 60, marginBottom: 12 }} />
+        <div className="space-y-3">
+          {[1,2,3].map(i => <div key={i} className="h-12 animate-pulse rounded-xl border border-zinc-800 bg-zinc-900/50" />)}
         </div>
       ) : error ? (
-        <div className="info-banner info-banner-error" style={{ marginBottom: 16 }}>
-          <span>⚠</span> {error}
+        <div className="rounded-xl border border-red-800/30 bg-red-500/5 p-4 text-xs text-red-400">
+          <span className="font-medium">Error:</span> {error}
         </div>
       ) : diffs.length === 0 ? (
-        <div className="card">
-          <div className="empty-state">
-            <div className="empty-state-icon">📝</div>
-            <div className="empty-state-title">No changes detected</div>
-            <div className="empty-state-desc">This draft matches the live site data.</div>
-          </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/30 py-12 text-center">
+          <FileTextIcon size={28} className="mx-auto text-zinc-700" />
+          <div className="mt-3 text-sm font-medium text-zinc-500">No changes detected</div>
+          <div className="mt-1 text-xs text-zinc-700">This draft matches the live site data</div>
         </div>
       ) : (
-        <div>
-          <DiffView
-            diffs={diffs}
-            commitMessage=""
-            onCommitMessageChange={() => {}}
-            onPublish={handlePublish}
-            publishing={false}
-          />
-        </div>
+        <DiffView
+          diffs={diffs}
+          commitMessage=""
+          onCommitMessageChange={() => {}}
+          onPublish={handlePublish}
+          publishing={false}
+        />
       )}
-    </div>
+    </motion.div>
   )
 }

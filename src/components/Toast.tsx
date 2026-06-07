@@ -3,10 +3,10 @@ import { useStore } from '../store'
 import { CheckCircleIcon, AlertCircleIcon, InfoIcon, AlertTriangleIcon, XIcon } from './Icons'
 
 const VARIANTS = {
-  success: { icon: CheckCircleIcon, bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.25)', accent: 'var(--accent-dark)' },
-  error: { icon: AlertCircleIcon, bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.25)', accent: '#dc2626' },
-  warning: { icon: AlertTriangleIcon, bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.25)', accent: '#d97706' },
-  info: { icon: InfoIcon, bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.25)', accent: '#2563eb' },
+  success: { icon: CheckCircleIcon, bg: 'bg-emerald-500/10', border: 'border-emerald-500/25', accent: '#16a34a' },
+  error: { icon: AlertCircleIcon, bg: 'bg-red-500/10', border: 'border-red-500/25', accent: '#dc2626' },
+  warning: { icon: AlertTriangleIcon, bg: 'bg-amber-500/10', border: 'border-amber-500/25', accent: '#d97706' },
+  info: { icon: InfoIcon, bg: 'bg-blue-500/10', border: 'border-blue-500/25', accent: '#2563eb' },
 }
 
 const toastVariants = {
@@ -20,7 +20,7 @@ export function Toast() {
   const remove = useStore(s => s.removeToast)
 
   return (
-    <div className="toast-container">
+    <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2" style={{ maxWidth: 360 }}>
       <AnimatePresence>
         {toasts.map(t => {
           const v = VARIANTS[t.type]
@@ -33,29 +33,23 @@ export function Toast() {
               initial="initial"
               animate="animate"
               exit="exit"
-              className="toast"
-              style={{
-                background: v.bg,
-                borderColor: v.border,
-                borderLeft: `3px solid ${v.accent}`,
-              }}
+              className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 shadow-lg shadow-black/30 ${v.bg} ${v.border}`}
+              style={{ borderLeftWidth: 3, borderLeftColor: v.accent }}
               onClick={() => remove(t.id)}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <div className="flex items-center justify-center shrink-0"
-                style={{ width: 28, height: 28, borderRadius: 8, background: v.accent + '18' }}>
-                <Icon size={15} style={{ color: v.accent }} />
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg" style={{ background: v.accent + '18' }}>
+                <Icon size={14} style={{ color: v.accent }} />
               </div>
-              <span className="flex-1 text-sm leading-snug">{t.message}</span>
+              <span className="flex-1 text-xs leading-snug text-zinc-300">{t.message}</span>
               <motion.button
-                className="btn btn-ghost btn-icon btn-sm shrink-0"
-                style={{ opacity: 0.5 }}
-                whileHover={{ opacity: 1, scale: 1.1 }}
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400"
+                whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={e => { e.stopPropagation(); remove(t.id) }}
               >
-                <XIcon size={12} />
+                <XIcon size={11} />
               </motion.button>
             </motion.div>
           )

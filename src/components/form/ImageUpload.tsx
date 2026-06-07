@@ -52,35 +52,37 @@ export function ImageUpload(props: ImageUploadProps) {
     <div>
       {!limitReached && (
         <div
-          className={`dropzone${dragOver ? ' dragover' : ''}`}
+          className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-6 transition-colors ${dragOver ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-zinc-800 hover:border-zinc-700'}`}
           onDragOver={e => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
           onDrop={e => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files) }}
           onClick={() => inputRef.current?.click()}
         >
-          <div className="dropzone-icon"><UploadIcon size={24} /></div>
-          <div className="dropzone-text">{single ? 'Click or drag an image here' : 'Drop images here or click to browse'}</div>
-          <div className="dropzone-hint">PNG, JPG, WebP {maxCount ? `(max ${maxCount})` : ''}</div>
+          <UploadIcon size={24} className="text-zinc-500" />
+          <span className="text-xs text-zinc-400">{single ? 'Click or drag an image here' : 'Drop images here or click to browse'}</span>
+          <span className="text-[10px] text-zinc-600">PNG, JPG, WebP {maxCount ? `(max ${maxCount})` : ''}</span>
           <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple={!single}
             style={{ display: 'none' }} onChange={e => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value = '' }} />
         </div>
       )}
 
       {images.length > 0 && (
-        <div className="gallery">
+        <div className="mt-3 grid grid-cols-3 gap-2">
           {images.map((img, i) => (
-            <div key={img._key ?? i} className="gallery-item">
-              <img src={img.dataUrl} alt="" />
-              <button className="gallery-item-remove" onClick={() => remove(i)}><XIcon size={14} /></button>
+            <div key={img._key ?? i} className="relative aspect-video overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900">
+              <img src={img.dataUrl} alt="" className="h-full w-full object-cover" />
+              <button className="absolute right-1 top-1 z-10 rounded border border-zinc-700 bg-zinc-900/80 p-0.5 text-zinc-400 hover:text-red-400" onClick={() => remove(i)}><XIcon size={14} /></button>
               {!single && (
                 <>
-                  <button className="gallery-item-reorder" onClick={() => moveUp(i)} disabled={i === 0}
-                    style={{ left: 6, right: 'auto', opacity: i === 0 ? 0.2 : undefined, cursor: i === 0 ? 'not-allowed' : 'pointer' }}>⟨</button>
-                  <button className="gallery-item-reorder" onClick={() => moveDown(i)} disabled={i === images.length - 1}
-                    style={{ left: 38, right: 'auto', opacity: i === images.length - 1 ? 0.2 : undefined, cursor: i === images.length - 1 ? 'not-allowed' : 'pointer' }}>⟩</button>
+                  <button onClick={() => moveUp(i)} disabled={i === 0}
+                    className={`absolute bottom-1 left-1 z-10 rounded border border-zinc-700 bg-zinc-900/80 px-1.5 py-0.5 text-[11px] text-zinc-400 hover:text-white ${i === 0 ? 'cursor-not-allowed opacity-20' : ''}`}>⟨</button>
+                  <button onClick={() => moveDown(i)} disabled={i === images.length - 1}
+                    className={`absolute bottom-1 left-7 z-10 rounded border border-zinc-700 bg-zinc-900/80 px-1.5 py-0.5 text-[11px] text-zinc-400 hover:text-white ${i === images.length - 1 ? 'cursor-not-allowed opacity-20' : ''}`}>⟩</button>
                 </>
               )}
-              <div className="gallery-item-overlay">{img.remote ? img.name : renameImage(i)}</div>
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-900/90 to-transparent px-2 pb-1.5 pt-4">
+                <span className="text-[10px] text-zinc-400">{img.remote ? img.name : renameImage(i)}</span>
+              </div>
             </div>
           ))}
         </div>

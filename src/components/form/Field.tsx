@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { AlertCircleIcon } from '../Icons'
 
 interface FieldProps {
   label: string
@@ -22,11 +23,11 @@ export function Field(props: FieldProps) {
   const id = `field-${label.toLowerCase().replace(/\s+/g, '-')}`
 
   return (
-    <div className={`form-row ${className || ''}`}>
-      <label htmlFor={id} className="label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span>{label}</span>
+    <div className={className || ''}>
+      <label htmlFor={id} className="mb-1.5 flex items-center justify-between">
+        <span className="block text-[11px] font-medium text-zinc-500">{label}</span>
         {maxLength && (
-          <span style={{ fontSize: 11, color: value.length > maxLength * 0.9 ? 'var(--red)' : 'var(--text-tertiary)' }}>
+          <span className={`text-[11px] ${value.length > maxLength * 0.9 ? 'text-red-400' : 'text-zinc-600'}`}>
             {value.length}/{maxLength}
           </span>
         )}
@@ -41,13 +42,17 @@ export function Field(props: FieldProps) {
         readOnly={readOnly}
         autoFocus={autoFocus}
         maxLength={maxLength}
-        className={`input${error ? ' error' : ''}${focused ? ' focus' : ''}`}
+        className={`w-full rounded-lg border bg-zinc-900/50 px-3 py-2 text-xs text-white outline-none placeholder:text-zinc-700 focus:border-emerald-500/50 ${error ? 'border-red-400' : 'border-zinc-800'} ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         onKeyDown={e => { if (e.key === 'Enter' && onEnter) onEnter() }}
       />
-      {hint && !error && <div className="form-row-hint">{hint}</div>}
-      {error && <div className="form-row-error">⚠ {error}</div>}
+      {hint && !error && <div className="mt-1 text-[10px] text-zinc-500">{hint}</div>}
+      {error && (
+        <div className="mt-1.5 flex items-center gap-1 text-[10px] text-red-400">
+          <AlertCircleIcon size={12} /> {error}
+        </div>
+      )}
     </div>
   )
 }
