@@ -84,15 +84,15 @@ export function HelpPage() {
  >
  <div className="mb-5">
  <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Help & Guide</h2>
- <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400 dark:text-zinc-400 dark:text-zinc-600">How to use the RU Club Motherland Admin Panel</p>
+ <p className="mt-0.5 text-xs dark:text-zinc-600">How to use the RU Club Motherland Admin Panel</p>
  </div>
 
  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
  {SECTIONS.map((section, i) => (
- <div key={i} className="rounded-xl border border-zinc-200 dark:border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-50/50 dark:bg-zinc-900/30">
- <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-200 dark:border-zinc-800/50 px-4 py-3">
- <span className="text-zinc-400 dark:text-zinc-600 dark:text-zinc-600 dark:text-zinc-400">{section.icon}</span>
- <h3 className="text-xs font-semibold text-zinc-400 dark:text-zinc-700 dark:text-zinc-700 dark:text-zinc-300">{section.title}</h3>
+ <div key={i} className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+ <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+ <span className="dark:text-zinc-400">{section.icon}</span>
+ <h3 className="text-xs font-semibold dark:text-zinc-300">{section.title}</h3>
  </div>
  <div className="p-4">
  <ul className="space-y-2">
@@ -102,16 +102,16 @@ export function HelpPage() {
  <span className="flex shrink-0 flex-wrap gap-1">
  {item.keys.split('+').map((k, ki) => (
  <span key={ki}
- className="inline-block rounded border border-zinc-200 dark:border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-white dark:bg-zinc-900 px-1.5 py-0.5 text-[9px] font-semibold text-zinc-400 dark:text-zinc-600 dark:text-zinc-600 dark:text-zinc-400 shadow-sm shadow-black/20"
+ className="inline-block rounded border dark:border-zinc-800 dark:bg-zinc-900 px-1.5 py-0.5 text-[9px] font-semibold dark:text-zinc-400 shadow-sm shadow-black/20"
  >
  {k}
  </span>
  ))}
  </span>
  ) : (
- <span className="mt-1 shrink-0 text-zinc-600 dark:text-zinc-400 dark:text-zinc-400 dark:text-zinc-600">&#8226;</span>
+ <span className="mt-1 shrink-0 dark:text-zinc-600">&#8226;</span>
  )}
- <span className="text-zinc-500 dark:text-zinc-500">{item.desc}</span>
+ <span className="dark:text-zinc-500">{item.desc}</span>
  </li>
  ))}
  </ul>
@@ -120,9 +120,9 @@ export function HelpPage() {
  ))}
  </div>
 
- <div className="mt-6 rounded-xl border border-zinc-200 dark:border-zinc-200 dark:border-zinc-800/50 bg-gradient-to-br from-emerald-500/5 to-transparent px-4 py-6 text-center">
- <p className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400 dark:text-zinc-400 dark:text-zinc-600">
- RU Club Motherland Admin Panel &middot; Built by <strong className="font-semibold text-zinc-400 dark:text-zinc-600 dark:text-zinc-600 dark:text-zinc-400">Sincee Bhattarai</strong>
+ <div className="mt-6 rounded-xl border dark:border-zinc-800/50 bg-gradient-to-br from-emerald-500/5 to-transparent px-4 py-6 text-center">
+ <p className="text-xs leading-relaxed dark:text-zinc-600">
+ RU Club Motherland Admin Panel &middot; Built by <strong className="font-semibold dark:text-zinc-400">Sincee Bhattarai</strong>
  <br />
  <span className="text-[10px]">Edition for RU Club Site &middot; Content management system</span>
  </p>

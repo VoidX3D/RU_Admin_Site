@@ -26,10 +26,7 @@ export function importBackup(json: string): { ok: boolean; message: string } {
     }
     for (const draft of data.drafts) {
       if (draft.id && draft.type) {
-        const stored = Storage.getDraft(draft.type, draft.id)
-        if (stored) {
-          Object.assign(stored, draft)
-        }
+        Storage.saveDraft(draft.type, draft.id, draft)
       }
     }
     if (data.settings) {

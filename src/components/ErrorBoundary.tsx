@@ -12,14 +12,14 @@ export class ErrorBoundary extends Component<Props, State> {
  render() {
  if (this.state.error) {
  return (
- <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-zinc-50 dark:bg-white dark:bg-zinc-950 p-10 text-center">
- <AlertTriangleIcon size={40} className="text-red-600 dark:text-red-400" />
+ <div className="flex min-h-screen flex-col items-center justify-center gap-4 dark:bg-zinc-950 p-10 text-center">
+ <AlertTriangleIcon size={40} className="dark:text-red-400" />
  <h1 className="text-xl font-bold text-zinc-900 dark:text-white">Something went wrong</h1>
- <p className="max-w-md text-sm leading-relaxed text-zinc-500 dark:text-zinc-500">
+ <p className="max-w-md text-sm leading-relaxed dark:text-zinc-400">
  {this.state.error.message}
  </p>
  <button
- className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-zinc-900 dark:text-white hover:bg-emerald-500 dark:hover:bg-emerald-400"
+ className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-zinc-900 dark:text-white dark:hover:bg-emerald-400"
  onClick={() => { this.setState({ error: null }); window.location.reload() }}
  >
  Reload Page

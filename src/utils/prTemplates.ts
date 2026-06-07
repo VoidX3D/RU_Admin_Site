@@ -26,7 +26,7 @@ function fmt(d: number) {
 
 function draftTable(drafts: Draft[]): string {
   const rows = drafts.map(d =>
-    `| ${d.type === 'mission' ? '🎯' : d.type === 'announcement' ? '📢' : '👥'} ${escapeMd(d.title)} | \`${d.id}\` | ${d.imageCount ? d.imageCount + ' img' : '—'} | ${fmt(d.updated)} |`
+    `| ${d.type} ${escapeMd(d.title)} | \`${d.id}\` | ${d.imageCount ? d.imageCount + ' img' : '--'} | ${fmt(d.updated)} |`
   ).join('\n')
   return [
     '| Type | ID | Assets | Last Update |',
@@ -54,33 +54,33 @@ function generateStandard(drafts: Draft[]): string {
   const totalImgs = drafts.reduce((s, d) => s + (d.imageCount || 0), 0)
   const parts: string[] = []
 
-  parts.push('# 📋 Admin Content Update\n')
+  parts.push('# Admin Content Update\n')
   parts.push(`**Generated:** ${fmt(Date.now())}  `)
   parts.push(`**Branch:** \`main\` (via admin panel)  `)
-  parts.push(`**Changes:** ${drafts.length} draft${drafts.length !== 1 ? 's' : ''} · ${totalImgs} image${totalImgs !== 1 ? 's' : ''}\n`)
+  parts.push(`**Changes:** ${drafts.length} draft${drafts.length !== 1 ? 's' : ''} -- ${totalImgs} image${totalImgs !== 1 ? 's' : ''}\n`)
 
   parts.push('---\n')
 
-  parts.push('## 📊 Summary\n')
+  parts.push('## Summary\n')
   const summary = [
-    `- 🎯 **Missions:** ${c.mission} update${c.mission !== 1 ? 's' : ''}`,
-    `- 📢 **Announcements:** ${c.announcement} update${c.announcement !== 1 ? 's' : ''}`,
-    `- 👥 **Members:** ${c.members > 0 ? 'Updated' : 'No changes'}`,
+    `- **Missions:** ${c.mission} update${c.mission !== 1 ? 's' : ''}`,
+    `- **Announcements:** ${c.announcement} update${c.announcement !== 1 ? 's' : ''}`,
+    `- **Members:** ${c.members > 0 ? 'Updated' : 'No changes'}`,
   ]
   if (totalImgs > 0) {
-    summary.push(`- 🖼️ **Total images uploaded:** ${totalImgs}`)
+    summary.push(`- **Total images uploaded:** ${totalImgs}`)
   }
   parts.push(summary.join('\n'))
   parts.push('')
 
   if (drafts.length > 0) {
-    parts.push('## 📦 Files Changed\n')
+    parts.push('## Files Changed\n')
     parts.push(draftTable(drafts))
     parts.push('')
   }
 
   parts.push('---')
-  parts.push('_🤖 This PR was created automatically via the RU Admin Panel._')
+  parts.push('_This PR was created automatically via the RU Admin Panel._')
 
   return parts.join('\n')
 }
@@ -88,9 +88,9 @@ function generateStandard(drafts: Draft[]): string {
 function generateDetailed(drafts: Draft[]): string {
   const parts: string[] = []
 
-  parts.push('# 📦 Content Update — Detailed Breakdown\n')
+  parts.push('# Content Update -- Detailed Breakdown\n')
 
-  parts.push('## 🔍 Overview\n')
+  parts.push('## Overview\n')
   parts.push('| Metric | Value |')
   parts.push('|---|---|')
   parts.push(`| **Date** | ${fmt(Date.now())} |`)
@@ -103,7 +103,7 @@ function generateDetailed(drafts: Draft[]): string {
   const members = drafts.filter(d => d.type === 'members')
 
   if (missions.length > 0) {
-    parts.push('## 🎯 Mission Updates\n')
+    parts.push('## Mission Updates\n')
     parts.push('| Title | ID | Images | Last Modified |')
     parts.push('|---|---|---|---|')
     for (const d of missions) {
@@ -113,17 +113,17 @@ function generateDetailed(drafts: Draft[]): string {
   }
 
   if (announcements.length > 0) {
-    parts.push('## 📢 Announcement Updates\n')
+    parts.push('## Announcement Updates\n')
     parts.push('| Title | ID | Image | Last Modified |')
     parts.push('|---|---|---|---|')
     for (const d of announcements) {
-      parts.push(`| **${escapeMd(d.title)}** | \`${d.id}\` | ${d.imageCount ? '✅' : '—'} | ${fmt(d.updated)} |`)
+      parts.push(`| **${escapeMd(d.title)}** | \`${d.id}\` | ${d.imageCount ? 'Yes' : '--'} | ${fmt(d.updated)} |`)
     }
     parts.push('')
   }
 
   if (members.length > 0) {
-    parts.push('## 👥 Members Data\n')
+    parts.push('## Members Data\n')
     parts.push('The members roster has been updated.\n')
   }
 
@@ -145,7 +145,7 @@ function generateDetailed(drafts: Draft[]): string {
   }
 
   if (allFiles.length > 0) {
-    parts.push('## 📁 Affected Files\n')
+    parts.push('## Affected Files\n')
     parts.push(allFiles.join('\n'))
     parts.push('')
   }
@@ -162,7 +162,7 @@ function generateQuick(drafts: Draft[]): string {
   ).join('\n')
 
   return [
-    '## 🚀 Quick Update',
+    '## Quick Update',
     '',
     bullets,
     '',

@@ -114,7 +114,7 @@ export function Dashboard() {
  return (
  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
  {[...Array(4)].map((_, i) => (
- <div key={i} className="h-28 animate-pulse rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50" />
+ <div key={i} className="h-28 animate-pulse rounded-xl border dark:border-zinc-800 dark:bg-zinc-900/50" />
  ))}
  </div>
  )
@@ -126,7 +126,7 @@ export function Dashboard() {
  {statCards.map((c, i) => (
  <motion.div
  key={i}
- className={`group relative overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800/50 bg-gradient-to-br ${c.gradient} p-4`}
+ className={`group relative overflow-hidden rounded-xl border dark:border-zinc-800/50 bg-gradient-to-br ${c.gradient} p-4`}
  whileHover={{ y: -2, borderColor: 'rgba(255,255,255,0.1)' }}
  transition={{ duration: 0.2 }}
  >
@@ -156,7 +156,7 @@ export function Dashboard() {
  {quickActions.map((a, i) => (
  <motion.button
  key={i}
- className="group flex items-start gap-3 rounded-xl border border-zinc-200 dark:border-zinc-800/50 bg-gradient-to-br from-zinc-50/50 dark:from-zinc-900/50 to-transparent p-4 text-left transition-colors hover:border-zinc-300/50 dark:border-zinc-700/50"
+ className="group flex items-start gap-3 rounded-xl border dark:border-zinc-700/50 bg-gradient-to-br dark:from-zinc-900/50 to-transparent p-4 text-left transition-colors hover:border-zinc-300/50"
  onClick={() => setView(a.view)}
  whileHover={{ y: -1 }}
  whileTap={{ scale: 0.99 }}
@@ -165,10 +165,10 @@ export function Dashboard() {
  {a.icon}
  </div>
  <div className="flex-1">
- <div className="text-sm font-medium text-zinc-200">{a.title}</div>
- <div className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-600">{a.desc}</div>
+ <div className="text-sm font-medium dark:text-zinc-300">{a.title}</div>
+ <div className="mt-0.5 text-xs dark:text-zinc-600">{a.desc}</div>
  </div>
- <ArrowRightIcon size={14} className="mt-2 shrink-0 text-zinc-400 dark:text-zinc-700 transition-colors group-hover:text-zinc-500" />
+ <ArrowRightIcon size={14} className="mt-2 shrink-0 dark:text-zinc-700 transition-colors group-hover:text-zinc-600 dark:group-hover:text-zinc-400" />
  </motion.button>
  ))}
  </div>
@@ -179,51 +179,47 @@ export function Dashboard() {
  <FolderIcon size={14} className="text-zinc-500" />
  <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Saved Drafts</h2>
  {drafts.length > 0 && (
- <span className="ml-auto rounded-md bg-amber-100 dark:bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+ <span className="ml-auto rounded-md dark:bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium dark:text-amber-400">
  {drafts.length} {drafts.length === 1 ? 'draft' : 'drafts'}
  </span>
  )}
  </div>
- <div className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/30">
+ <div className="overflow-hidden rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
  {drafts.length === 0 ? (
  <div className="flex flex-col items-center gap-2 py-10">
- <FileTextIcon size={24} className="text-zinc-400 dark:text-zinc-700" />
+ <FileTextIcon size={24} className="dark:text-zinc-700" />
  <div className="text-sm font-medium text-zinc-500">No saved drafts yet</div>
- <div className="text-xs text-zinc-400 dark:text-zinc-700">Create content and save your progress</div>
+ <div className="text-xs dark:text-zinc-700">Create content and save your progress</div>
  </div>
  ) : (
- <div className="divide-y divide-zinc-800/50">
+ <div className="divide-y divide-zinc-200 dark:divide-zinc-800/50">
  {drafts.map((d, i) => (
  <motion.div
  key={d.id}
- className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-zinc-200/30 dark:bg-zinc-800/30"
+ className="flex items-center gap-3 px-4 py-3 transition-colors dark:hover:bg-zinc-800/30"
  initial={{ opacity: 0, x: -8 }}
  animate={{ opacity: 1, x: 0 }}
  transition={{ delay: 0.3 + i * 0.03 }}
  >
- <div className={`rounded-md p-1.5 ${
- d.type === 'mission' ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
- d.type === 'announcement' ? 'bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' :
- 'bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
- }`}>
+ <div className={`rounded-md p-1.5 ${ d.type === 'mission' ? 'bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400' : d.type === 'announcement' ? 'bg-amber-100 dark:bg-amber-500/10 dark:text-amber-400' : 'bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400' }`}>
  {d.type === 'mission' ? <TargetIcon size={14} /> : d.type === 'announcement' ? <MegaphoneIcon size={14} /> : <UsersIcon size={14} />}
  </div>
  <div className="min-w-0 flex-1">
- <div className="truncate text-sm font-medium text-zinc-700 dark:text-zinc-300">{d.title}</div>
- <div className="flex items-center gap-2 text-[10px] text-zinc-400 dark:text-zinc-600">
+ <div className="truncate text-sm font-medium dark:text-zinc-300">{d.title}</div>
+ <div className="flex items-center gap-2 text-[10px] dark:text-zinc-600">
  <span className="capitalize">{d.type}</span>
  <span>&middot;</span>
  <span>{new Date(d.updated).toLocaleDateString()}</span>
  </div>
  </div>
  <button
- className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700 dark:text-zinc-300"
+ className="rounded-lg px-2.5 py-1.5 text-xs font-medium dark:text-zinc-300 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700"
  onClick={() => { setPendingDraftId(d.id); setView('draftDiff') }}
  >
  Open
  </button>
  <button
- className="rounded-lg p-1.5 text-zinc-400 dark:text-zinc-700 transition-colors hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 dark:text-red-400"
+ className="rounded-lg p-1.5 dark:text-zinc-700 transition-colors hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 dark:text-red-400"
  onClick={() => { Storage.deleteDraft(d.type, d.id); addToast('Draft deleted', 'info') }}
  >
  <TrashIcon size={13} />
@@ -237,14 +233,14 @@ export function Dashboard() {
 
  <motion.div
  variants={item2}
- className="group relative overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800/50 bg-gradient-to-r from-zinc-50/80 dark:from-zinc-900/80 via-zinc-50 dark:via-zinc-900/50 to-zinc-50 dark:to-zinc-900/80 p-5 sm:p-6"
+ className="group relative overflow-hidden rounded-xl border dark:border-zinc-800/50 bg-gradient-to-r dark:from-zinc-900/80 dark:via-zinc-900/50 dark:to-zinc-900/80 p-5 sm:p-6"
  whileHover={{ borderColor: 'rgba(255,255,255,0.08)' }}
  >
  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/5 via-transparent to-transparent" />
  <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
  <div className="flex items-center gap-3">
- <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-500/10">
- <GitPullRequestIcon size={20} className="text-emerald-600 dark:text-emerald-400" />
+ <div className="flex h-10 w-10 items-center justify-center rounded-xl dark:bg-emerald-500/10">
+ <GitPullRequestIcon size={20} className="dark:text-emerald-400" />
  </div>
  <div>
  <div className="text-sm font-semibold text-zinc-900 dark:text-white">GitHub Pull Request</div>
@@ -252,7 +248,7 @@ export function Dashboard() {
  </div>
  </div>
  <button
- className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-4 text-xs font-semibold text-white transition-colors hover:bg-emerald-500 dark:hover:bg-emerald-400"
+ className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-4 text-xs font-semibold text-white transition-colors dark:hover:bg-emerald-400"
  onClick={() => setPrOpen(true)}
  >
  <GitPullRequestIcon size={14} />

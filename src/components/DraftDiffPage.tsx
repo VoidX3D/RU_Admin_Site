@@ -79,23 +79,23 @@ export function DraftDiffPage() {
  >
  <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
  <div className="flex items-center gap-3">
- <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-200 dark:border-zinc-800 text-zinc-400 dark:text-zinc-600 dark:text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-400 dark:text-zinc-600 dark:hover:text-zinc-900 dark:hover:text-zinc-200" onClick={() => setView('dashboard')}>
+ <button className="flex h-8 w-8 items-center justify-center rounded-lg border dark:border-zinc-800 dark:text-zinc-600 dark:hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setView('dashboard')}>
  <ArrowLeftIcon size={16} />
  </button>
  <div>
  <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
  {loading ? 'Loading...' : draftTitle || 'Draft Diff'}
  </h2>
- <p className="text-xs text-zinc-600 dark:text-zinc-400 dark:text-zinc-400 dark:text-zinc-600">
+ <p className="text-xs dark:text-zinc-600">
  {loading ? 'Comparing with live site data' : `${diffs.length} file${diffs.length !== 1 ? 's' : ''} changed`}
  </p>
  </div>
  </div>
  <div className="flex items-center gap-2">
- <button className="flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-200 dark:border-zinc-800 px-3 text-xs font-medium text-zinc-400 dark:text-zinc-600 dark:text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-400 dark:text-zinc-600 dark:hover:text-zinc-900 dark:hover:text-zinc-200" onClick={handleEdit}>
+ <button className="flex h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-600 dark:hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={handleEdit}>
  <EditIcon size={13} /> Edit Draft
  </button>
- <button className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-zinc-900 dark:text-white hover:bg-emerald-500 dark:hover:bg-emerald-400" onClick={handlePublish}>
+ <button className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-zinc-900 dark:text-white dark:hover:bg-emerald-400" onClick={handlePublish}>
  <FileTextIcon size={13} /> Publish
  </button>
  </div>
@@ -103,17 +103,17 @@ export function DraftDiffPage() {
 
  {loading ? (
  <div className="space-y-3">
- {[1,2,3].map(i => <div key={i} className="h-12 animate-pulse rounded-xl border border-zinc-200 dark:border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-50 dark:bg-zinc-900/50" />)}
+ {[1,2,3].map(i => <div key={i} className="h-12 animate-pulse rounded-xl border dark:border-zinc-800 dark:bg-zinc-900/50" />)}
  </div>
  ) : error ? (
- <div className="rounded-xl border border-red-200 dark:border-red-200 dark:border-red-800/30 bg-red-50 dark:bg-red-50 dark:bg-red-500/5 p-4 text-xs text-red-600 dark:text-red-600 dark:text-red-400">
+ <div className="rounded-xl border dark:border-red-800/30 dark:bg-red-500/5 p-4 text-xs dark:text-red-400">
  <span className="font-medium">Error:</span> {error}
  </div>
  ) : diffs.length === 0 ? (
- <div className="rounded-xl border border-zinc-200 dark:border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-50/50 dark:bg-zinc-900/30 py-12 text-center">
- <FileTextIcon size={28} className="mx-auto text-zinc-600 dark:text-zinc-400 dark:text-zinc-400 dark:text-zinc-700" />
- <div className="mt-3 text-sm font-medium text-zinc-500 dark:text-zinc-500">No changes detected</div>
- <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-400 dark:text-zinc-400 dark:text-zinc-700">This draft matches the live site data</div>
+ <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30 py-12 text-center">
+ <FileTextIcon size={28} className="mx-auto dark:text-zinc-700" />
+ <div className="mt-3 text-sm font-medium dark:text-zinc-500">No changes detected</div>
+ <div className="mt-1 text-xs dark:text-zinc-700">This draft matches the live site data</div>
  </div>
  ) : (
  <DiffView

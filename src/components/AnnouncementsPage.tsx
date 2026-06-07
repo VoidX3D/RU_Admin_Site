@@ -243,20 +243,20 @@ export function AnnouncementsPage() {
  >
  <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
  <div className="flex items-center gap-3">
- <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200" onClick={() => setMode('list')}>
+ <button className="flex h-8 w-8 items-center justify-center rounded-lg border dark:border-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>
  <ArrowLeftIcon size={16} />
  </button>
  <div>
   <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">{fId ? 'Edit Announcement' : 'Create Announcement'}</h2>
- <div className="text-xs text-zinc-400 dark:text-zinc-600">{fId}</div>
+ <div className="text-xs dark:text-zinc-600">{fId}</div>
  </div>
  </div>
  <div className="flex items-center gap-2">
- <span className="flex items-center gap-1.5 text-[10px] text-zinc-400 dark:text-zinc-600">
+ <span className="flex items-center gap-1.5 text-[10px] dark:text-zinc-600">
  {saveStatus === 'saving' && <>Saving...</>}
- {saveStatus === 'saved' && <><CheckIcon size={10} className="text-emerald-600 dark:text-emerald-400" /> Saved</>}
+ {saveStatus === 'saved' && <><CheckIcon size={10} className="dark:text-emerald-400" /> Saved</>}
  </span>
- <button className="rounded-lg border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200" onClick={() => setMode('list')}>Cancel</button>
+ <button className="rounded-lg border dark:border-zinc-800 px-3 py-1.5 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>Cancel</button>
  <button className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400" onClick={saveDraft}>
  <SaveIcon size={13} /> Save Draft
  </button>
@@ -264,10 +264,10 @@ export function AnnouncementsPage() {
  </div>
 
  <div className="space-y-4">
- <div className="rounded-xl border border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/30">
- <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800/50 px-4 py-3">
- <MegaphoneIcon size={14} className="text-amber-600 dark:text-amber-400" />
- <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">Basic Information</h3>
+ <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+ <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+ <MegaphoneIcon size={14} className="dark:text-amber-400" />
+ <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Basic Information</h3>
  </div>
  <div className="p-4">
  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -302,10 +302,10 @@ export function AnnouncementsPage() {
  </div>
  </div>
 
- <div className="rounded-xl border border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/30">
- <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800/50 px-4 py-3">
- <PlusIcon size={14} className="text-blue-600 dark:text-blue-400" />
- <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">Event Details</h3>
+ <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+ <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+ <PlusIcon size={14} className="dark:text-blue-400" />
+ <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Event Details</h3>
  </div>
  <div className="p-4">
  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -317,10 +317,10 @@ export function AnnouncementsPage() {
  </div>
  </div>
 
- <div className="rounded-xl border border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/30">
- <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800/50 px-4 py-3">
- <PlusIcon size={14} className="text-purple-600 dark:text-purple-400" />
- <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">Additional Information</h3>
+ <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+ <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+ <PlusIcon size={14} className="dark:text-purple-400" />
+ <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Additional Information</h3>
  </div>
  <div className="p-4">
  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -330,10 +330,10 @@ export function AnnouncementsPage() {
  </div>
  </div>
 
- <div className="rounded-xl border border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/30">
- <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800/50 px-4 py-3">
+ <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+ <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-zinc-500"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
- <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">Visibility</h3>
+ <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Visibility</h3>
  </div>
  <div className="p-4">
  <Toggle label="Show on site" checked={fActive} onChange={setFActive}
@@ -341,10 +341,10 @@ export function AnnouncementsPage() {
  </div>
  </div>
 
- <div className="rounded-xl border border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/30">
- <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800/50 px-4 py-3">
- <ImageIcon size={14} className="text-blue-600 dark:text-blue-400" />
- <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">Image</h3>
+ <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+ <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+ <ImageIcon size={14} className="dark:text-blue-400" />
+ <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Image</h3>
  </div>
  <div className="p-4">
  <ImageUpload images={fImg ? [fImg] : []} onChange={imgs => setFImg(imgs[0] || null)} single maxCount={1} />
@@ -369,33 +369,33 @@ export function AnnouncementsPage() {
  <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
  <div>
   <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Announcements</h2>
- <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-600">Create announcements with up to 1 image</p>
+ <p className="mt-0.5 text-xs dark:text-zinc-600">Create announcements with up to 1 image</p>
  </div>
  <div className="flex items-center gap-2">
- <button className="flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 px-3 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200" onClick={load}>
+ <button className="flex h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={load}>
  <RefreshIcon size={13} /> Refresh
  </button>
- <button className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white hover:bg-emerald-500 dark:hover:bg-emerald-400" onClick={startNew}>
+ <button className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white dark:hover:bg-emerald-400" onClick={startNew}>
  <PlusIcon size={13} /> New Announcement
  </button>
  </div>
  </div>
 
- <div className="mb-4 flex items-center gap-2 rounded-lg border border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/30 px-3 py-2">
- <SearchIcon size={14} className="text-zinc-400 dark:text-zinc-600" />
+ <div className="mb-4 flex items-center gap-2 rounded-lg border dark:border-zinc-800/50 dark:bg-zinc-900/30 px-3 py-2">
+ <SearchIcon size={14} className="dark:text-zinc-600" />
  <input
  value={search}
  onChange={e => setSearch(e.target.value)}
  placeholder="Search announcements..."
- className="flex-1 bg-transparent text-sm text-zinc-700 dark:text-zinc-300 outline-none placeholder:text-zinc-400 dark:text-zinc-700"
+ className="flex-1 bg-transparent text-sm dark:text-zinc-700 outline-none placeholder:text-zinc-400"
  />
  </div>
 
- <div className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800/50">
+ <div className="overflow-hidden rounded-xl border dark:border-zinc-800/50">
  <div className="overflow-x-auto">
  <table className="w-full text-left text-sm">
  <thead>
- <tr className="border-b border-zinc-200 dark:border-zinc-800/50 bg-zinc-50 dark:bg-zinc-900/50">
+ <tr className="border-b dark:border-zinc-800/50 dark:bg-zinc-900/50">
  <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Title</th>
  <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Tag</th>
  <th className="hidden px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:table-cell">Date</th>
@@ -408,16 +408,16 @@ export function AnnouncementsPage() {
  [...Array(4)].map((_, i) => (
  <tr key={i}>
  <td colSpan={5} className="px-4 py-3">
- <div className="h-4 w-full animate-pulse rounded bg-zinc-200/50 dark:bg-zinc-800/50" />
+ <div className="h-4 w-full animate-pulse rounded dark:bg-zinc-800/50" />
  </td>
  </tr>
  ))
  ) : filtered.length === 0 && allDrafts.length === 0 ? (
  <tr>
  <td colSpan={5} className="px-4 py-10 text-center">
- <MegaphoneIcon size={24} className="mx-auto text-zinc-400 dark:text-zinc-700" />
+ <MegaphoneIcon size={24} className="mx-auto dark:text-zinc-700" />
  <div className="mt-2 text-sm font-medium text-zinc-500">No announcements yet</div>
- <div className="text-xs text-zinc-400 dark:text-zinc-700">Click "New Announcement" to create one</div>
+ <div className="text-xs dark:text-zinc-700">Click "New Announcement" to create one</div>
  </td>
  </tr>
  ) : (
@@ -454,17 +454,15 @@ export function AnnouncementsPage() {
  return rows.map(r => (
  <tr key={r.id} className={`transition-colors hover:bg-zinc-200 dark:bg-zinc-800/20 ${r.hasDraft ? 'bg-amber-500/5' : ''}`}>
  <td className="px-4 py-3">
- <div className="font-medium text-zinc-700 dark:text-zinc-300">{r.title}</div>
- {r.hasDraft && <div className="text-[10px] text-amber-600 dark:text-amber-400">Draft</div>}
+ <div className="font-medium dark:text-zinc-300">{r.title}</div>
+ {r.hasDraft && <div className="text-[10px] dark:text-amber-400">Draft</div>}
  </td>
  <td className="px-4 py-3">
- <span className="inline-block rounded-md bg-amber-100 dark:bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">{r.tag}</span>
+ <span className="inline-block rounded-md dark:bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium dark:text-amber-400">{r.tag}</span>
  </td>
- <td className="hidden px-4 py-3 text-zinc-400 dark:text-zinc-600 sm:table-cell">{r.date}</td>
+ <td className="hidden px-4 py-3 dark:text-zinc-600 sm:table-cell">{r.date}</td>
  <td className="px-4 py-3">
- <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
- r.active ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-600'
- }`}>
+ <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${ r.active ? 'bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-600' }`}>
  {r.active && <div className="h-1 w-1 rounded-full bg-emerald-500" />}
  {r.active ? 'Active' : 'Hidden'}
  </span>
@@ -472,11 +470,11 @@ export function AnnouncementsPage() {
  <td className="px-4 py-3">
  {r.isDraftOnly ? (
  <div className="flex items-center gap-1">
- <button className="rounded-lg px-2 py-1 text-[10px] font-medium text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700 dark:text-zinc-300" onClick={() => { setPendingDraftId(r.id); setView('draftDiff') }}>Open</button>
- <button className="rounded-lg p-1 text-zinc-400 dark:text-zinc-700 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 dark:text-red-400" onClick={r.deleteDraft}><TrashIcon size={12} /></button>
+ <button className="rounded-lg px-2 py-1 text-[10px] font-medium dark:text-zinc-300 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700" onClick={() => { setPendingDraftId(r.id); setView('draftDiff') }}>Open</button>
+ <button className="rounded-lg p-1 dark:text-zinc-700 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 dark:text-red-400" onClick={r.deleteDraft}><TrashIcon size={12} /></button>
  </div>
  ) : (
- <button className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-medium text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700 dark:text-zinc-300" onClick={() => startEdit(r.id)}>
+ <button className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-medium dark:text-zinc-300 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700" onClick={() => startEdit(r.id)}>
  <EditIcon size={12} /> Edit
  </button>
  )}

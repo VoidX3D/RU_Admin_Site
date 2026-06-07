@@ -219,17 +219,17 @@ export function PRDialog({ open, onClose }: Props) {
  initial={{ opacity: 0, scale: 0.96 }}
  animate={{ opacity: 1, scale: 1 }}
  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
- className="w-full max-w-lg rounded-xl border border-zinc-200 dark:border-zinc-200 dark:border-zinc-800/50 bg-white dark:bg-white dark:bg-zinc-950 __S2XL__ shadow-black/5 dark:shadow-black/5 dark:shadow-black/40"
+ className="w-full max-w-lg rounded-xl border dark:border-zinc-800/50 bg-white dark:bg-zinc-950 shadow-xl dark:shadow-black/40"
  style={{ maxWidth: step === 'review' ? 720 : 440 }}
  onClick={e => e.stopPropagation()}
  >
  {/* Header */}
- <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-200 dark:border-zinc-800/50 px-4 py-3">
+ <div className="flex items-center justify-between border-b dark:border-zinc-800/50 px-4 py-3">
  <div className="flex items-center gap-3">
- <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-50 dark:bg-white dark:bg-zinc-900">
+ <div className="flex h-9 w-9 items-center justify-center rounded-lg dark:bg-zinc-900">
  {step === 'done'
- ? <CheckCircleIcon size={18} className="text-emerald-600 dark:text-emerald-600 dark:text-emerald-400" />
- : <GitPullRequestIcon size={18} className="text-emerald-600 dark:text-emerald-600 dark:text-emerald-400" />
+ ? <CheckCircleIcon size={18} className="dark:text-emerald-400" />
+ : <GitPullRequestIcon size={18} className="dark:text-emerald-400" />
  }
  </div>
  <div>
@@ -239,7 +239,7 @@ export function PRDialog({ open, onClose }: Props) {
  {step === 'publishing' && 'Publishing...'}
  {step === 'done' && 'Sent!'}
  </h3>
- <p className="text-[11px] text-zinc-600 dark:text-zinc-400 dark:text-zinc-400 dark:text-zinc-600">
+ <p className="text-[11px] dark:text-zinc-600">
  {step === 'verify' && `${drafts.length} draft${drafts.length !== 1 ? 's' : ''} · ${totalFiles} file${totalFiles !== 1 ? 's' : ''}`}
  {step === 'review' && (loadingDiffs ? 'Loading changes...' : `${diffs.length} file${diffs.length !== 1 ? 's' : ''} changed`)}
  {step === 'publishing' && 'This may take a moment'}
@@ -247,7 +247,7 @@ export function PRDialog({ open, onClose }: Props) {
  </p>
  </div>
  </div>
- <button className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-400 dark:text-zinc-700 dark:hover:text-zinc-700 dark:text-zinc-300" onClick={onClose}>
+ <button className="flex h-8 w-8 items-center justify-center rounded-lg dark:text-zinc-300 dark:hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-700" onClick={onClose}>
  <XIcon size={16} />
  </button>
  </div>
@@ -256,33 +256,31 @@ export function PRDialog({ open, onClose }: Props) {
  <div className="p-4">
  {step === 'verify' && (
  <div>
- <div className="mb-4 flex gap-3 rounded-lg border border-zinc-200/30 dark:border-zinc-800/30 dark:border-zinc-200 dark:border-zinc-800/30 bg-zinc-50/30 dark:bg-zinc-50/30 dark:bg-zinc-900/20 p-3">
- <LockIcon size={18} className="mt-0.5 shrink-0 text-zinc-600 dark:text-zinc-400 dark:text-zinc-400 dark:text-zinc-600" />
+ <div className="mb-4 flex gap-3 rounded-lg border dark:border-zinc-800/30 dark:bg-zinc-900/20 p-3">
+ <LockIcon size={18} className="mt-0.5 shrink-0 dark:text-zinc-600" />
  <div>
- <div className="text-xs font-semibold text-zinc-400 dark:text-zinc-600 dark:text-zinc-600 dark:text-zinc-400">Verification Code</div>
- <p className="mt-0.5 text-[11px] text-zinc-600 dark:text-zinc-400 dark:text-zinc-400 dark:text-zinc-600">Only authorized club members can publish changes to the live site.</p>
+ <div className="text-xs font-semibold dark:text-zinc-400">Verification Code</div>
+ <p className="mt-0.5 text-[11px] dark:text-zinc-600">Only authorized club members can publish changes to the live site.</p>
  </div>
  </div>
  {pubError && (
- <div className="mb-3 flex items-center gap-2 rounded-lg border border-red-200 dark:border-red-200 dark:border-red-800/30 bg-red-50 dark:bg-red-50 dark:bg-red-500/5 px-3 py-2 text-xs text-red-600 dark:text-red-600 dark:text-red-400">
+ <div className="mb-3 flex items-center gap-2 rounded-lg border dark:border-red-800/30 dark:bg-red-500/5 px-3 py-2 text-xs dark:text-red-400">
  <AlertTriangleIcon size={13} /> {pubError}
  </div>
  )}
- <label className="mb-1.5 block text-[11px] font-medium text-zinc-500 dark:text-zinc-500">Verification Code</label>
+ <label className="mb-1.5 block text-[11px] font-medium dark:text-zinc-500">Verification Code</label>
  <input value={code} onChange={e => { setCode(e.target.value); setCodeErr(''); setPubError('') }}
  onKeyDown={e => e.key === 'Enter' && handleVerify()}
  placeholder="Enter code..."
  autoFocus
- className={`w-full rounded-lg border bg-zinc-50 dark:bg-zinc-50 dark:bg-zinc-900/50 px-3 py-2.5 text-center text-sm font-semibold tracking-widest text-zinc-900 dark:text-white outline-none placeholder:text-zinc-700 dark:text-zinc-300 dark:placeholder:text-zinc-400 dark:text-zinc-700 focus:border-emerald-500/50 ${
- codeErr ? 'border-red-500/50' : 'border-zinc-200 dark:border-zinc-200 dark:border-zinc-800'
- }`}
+ className={`w-full rounded-lg border dark:bg-zinc-900/50 px-3 py-2.5 text-center text-sm font-semibold tracking-widest dark:text-zinc-700 dark:text-white outline-none dark:placeholder:text-zinc-400 focus:border-emerald-500/50 ${ codeErr ? 'border-red-500/50' : 'border-zinc-200 dark:border-zinc-800' }`}
  />
  {codeErr && (
- <div className="mt-2 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-600 dark:text-red-400">
+ <div className="mt-2 flex items-center gap-1.5 text-xs dark:text-red-400">
  <AlertTriangleIcon size={12} /> {codeErr}
  </div>
  )}
- <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-zinc-900 dark:text-white hover:bg-emerald-500 dark:hover:bg-emerald-400" onClick={handleVerify}>
+ <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-zinc-900 dark:text-white dark:hover:bg-emerald-400" onClick={handleVerify}>
  <GitPullRequestIcon size={15} /> Review Changes
  </button>
  </div>
@@ -291,8 +289,8 @@ export function PRDialog({ open, onClose }: Props) {
  {step === 'review' && (
  loadingDiffs ? (
  <div className="py-8 text-center">
- <LoaderIcon size={22} className="mx-auto animate-spin text-zinc-600 dark:text-zinc-400 dark:text-zinc-400 dark:text-zinc-600" />
- <p className="mt-3 text-xs text-zinc-600 dark:text-zinc-400 dark:text-zinc-400 dark:text-zinc-600">Loading current files from GitHub...</p>
+ <LoaderIcon size={22} className="mx-auto animate-spin dark:text-zinc-600" />
+ <p className="mt-3 text-xs dark:text-zinc-600">Loading current files from GitHub...</p>
  </div>
  ) : (
  <DiffView
@@ -307,30 +305,30 @@ export function PRDialog({ open, onClose }: Props) {
 
  {step === 'publishing' && (
  <div className="py-6 text-center">
- <LoaderIcon size={24} className="mx-auto animate-spin text-emerald-600 dark:text-emerald-600 dark:text-emerald-400" />
+ <LoaderIcon size={24} className="mx-auto animate-spin dark:text-emerald-400" />
  <p className="mt-3 text-sm font-semibold text-zinc-900 dark:text-white">Publishing...</p>
- <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400 dark:text-zinc-400 dark:text-zinc-600">Committing changes and creating pull request on GitHub</p>
+ <p className="mt-1 text-xs dark:text-zinc-600">Committing changes and creating pull request on GitHub</p>
  </div>
  )}
 
  {step === 'done' && (
  <div className="py-4 text-center">
- <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-100 dark:bg-emerald-500/15">
- <CheckCircleIcon size={28} className="text-emerald-600 dark:text-emerald-600 dark:text-emerald-400" />
+ <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full dark:bg-emerald-500/15">
+ <CheckCircleIcon size={28} className="dark:text-emerald-400" />
  </div>
  <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Pull Request Sent!</h3>
- <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400 dark:text-zinc-400 dark:text-zinc-600">
+ <p className="mt-1 text-xs dark:text-zinc-600">
  Submitted to {settings.repoOwner}/{settings.repoName}
  </p>
- <p className="mt-0.5 text-[11px] text-zinc-600 dark:text-zinc-400 dark:text-zinc-400 dark:text-zinc-700">
+ <p className="mt-0.5 text-[11px] dark:text-zinc-700">
  {drafts.length} draft{drafts.length !== 1 ? 's' : ''} · {totalFiles} file{totalFiles !== 1 ? 's' : ''}
  </p>
  <div className="mt-6 flex flex-col gap-2">
  <a href={prUrl} target="_blank" rel="noopener noreferrer"
- className="flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-zinc-900 dark:text-white hover:bg-emerald-500 dark:hover:bg-emerald-400">
+ className="flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-zinc-900 dark:text-white dark:hover:bg-emerald-400">
  <ExternalLinkIcon size={15} /> View Pull Request
  </a>
- <button className="rounded-lg border border-zinc-200 dark:border-zinc-200 dark:border-zinc-800 px-4 py-2.5 text-xs font-medium text-zinc-500 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-200/50 dark:bg-zinc-800/50 hover:text-zinc-400 dark:text-zinc-700 dark:hover:text-zinc-700 dark:text-zinc-300" onClick={onClose}>
+ <button className="rounded-lg border dark:border-zinc-800 px-4 py-2.5 text-xs font-medium dark:text-zinc-300 dark:hover:bg-zinc-200/50 dark:bg-zinc-800/50 dark:hover:text-zinc-700" onClick={onClose}>
  Close
  </button>
  </div>
