@@ -91,12 +91,10 @@ export const useStore = create<AppState>((set) => ({
   },
   removeToast: (id) => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })),
   setPrOpen: (prOpen) => set({ prOpen }),
-  toggleTheme: () => set(s => {
-    const next = s.theme === 'light' ? 'dark' : 'light';
-    try { localStorage.setItem('theme', next) } catch {}
-    document.documentElement.classList.toggle('dark', next === 'dark')
-    return { theme: next };
-  }),
+  toggleTheme: () => {
+    document.documentElement.classList.add('dark')
+    try { localStorage.setItem('theme', 'dark') } catch {}
+  },
   setPendingDraftId: (id) => set({ pendingDraftId: id }),
   setPendingAction: (a) => set({ pendingAction: a }),
   triggerRefresh: () => set(s => ({ refreshTrigger: s.refreshTrigger + 1 })),

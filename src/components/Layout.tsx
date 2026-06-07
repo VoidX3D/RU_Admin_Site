@@ -5,7 +5,7 @@ import { Storage } from '../utils/storage'
 import {
   TargetIcon, MegaphoneIcon, UsersIcon,
   SettingsIcon, HelpCircleIcon, FileTextIcon,
-  MenuIcon, XIcon, SunIcon, MoonIcon, LogOutIcon, RefreshIcon, GitPullRequestIcon,
+  MenuIcon, XIcon, LogOutIcon, RefreshIcon, GitPullRequestIcon,
   HomeIcon, ClockIcon,
 } from './Icons'
 
@@ -43,7 +43,6 @@ export function Layout({ children }: { children: ReactNode }) {
   const triggerRefresh = useStore(s => s.triggerRefresh)
   const addToast = useStore(s => s.addToast)
   const theme = useStore(s => s.theme)
-  const toggleTheme = useStore(s => s.toggleTheme)
   const [mobileOpen, setMobileOpen] = useState(false)
 
   useEffect(() => {
@@ -147,13 +146,9 @@ export function Layout({ children }: { children: ReactNode }) {
             <div className="truncate text-xs font-medium text-zinc-300">Administrator</div>
             <div className="text-[10px] text-zinc-600">Admin Access</div>
           </div>
-          <button
-            className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-          >
-            {theme === 'dark' ? <SunIcon size={13} /> : <MoonIcon size={13} />}
-          </button>
+          <div className="flex h-6 items-center gap-1.5 rounded-md bg-emerald-500/10 px-1.5">
+            <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          </div>
           <button
             className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-800 hover:text-red-400"
             onClick={logout}
