@@ -11,7 +11,7 @@ const VARIANTS = {
 
 const toastVariants = {
   initial: { opacity: 0, x: 40, scale: 0.95 },
-  animate: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.25, ease: [0.16, 1, 0.3, 1] } },
+  animate: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.25, ease: [0.16, 1, 0.3, 1] as const } },
   exit: { opacity: 0, x: 40, scale: 0.95, transition: { duration: 0.2 } },
 }
 

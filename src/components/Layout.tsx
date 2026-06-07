@@ -31,8 +31,8 @@ const PAGE_TITLES: Record<string, string> = {
 }
 
 const sidebarVariants = {
-  open: { x: 0, transition: { type: 'spring', damping: 25, stiffness: 250 } },
-  closed: { x: '-100%', transition: { type: 'spring', damping: 25, stiffness: 250 } },
+  open: { x: 0, transition: { type: 'spring' as const, damping: 25, stiffness: 250 } },
+  closed: { x: '-100%', transition: { type: 'spring' as const, damping: 25, stiffness: 250 } },
 }
 
 const navItemVariants = {

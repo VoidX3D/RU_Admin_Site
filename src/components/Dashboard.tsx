@@ -7,11 +7,13 @@ import {
   PlusIcon, ArrowRightIcon, GitPullRequestIcon, TrashIcon
 } from './Icons'
 
+const ease = [0.16, 1, 0.3, 1] as const
+
 const cardVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: (i: number) => ({
     opacity: 1, y: 0,
-    transition: { duration: 0.3, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.3, delay: i * 0.08, ease },
   }),
 }
 
@@ -19,7 +21,7 @@ const quickVariants = {
   hidden: { opacity: 0, x: -10 },
   visible: (i: number) => ({
     opacity: 1, x: 0,
-    transition: { duration: 0.25, delay: 0.3 + i * 0.06, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.25, delay: 0.3 + i * 0.06, ease },
   }),
 }
 
