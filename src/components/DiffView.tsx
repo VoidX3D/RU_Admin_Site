@@ -1,49 +1,30 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import type { FileDiff } from '../utils/diff'
+import type { FileDiff, DiffLine } from '../utils/diff'
 import { FileTextIcon, ImageIcon, ExternalLinkIcon, ChevronDownIcon, ChevronRightIcon } from './Icons'
 
-function Line({ text, type }: { text: string; type: 'add' | 'del' | 'same' }) {
+function Line({ line }: { line: DiffLine }) {
   return (
     <div className={`flex items-start gap-2 px-3 py-0.5 text-[11px] leading-relaxed font-mono ${
-      type === 'add' ? 'bg-emerald-500/5 text-emerald-300/80' :
-      type === 'del' ? 'bg-red-500/5 text-red-300/80' :
+      line.type === 'add' ? 'bg-emerald-500/5 text-emerald-300/80' :
+      line.type === 'del' ? 'bg-red-500/5 text-red-300/80' :
       'text-zinc-500'
     }`}>
-      <span className="shrink-0 w-4 text-center text-zinc-700 select-none">
-        {type === 'add' ? '+' : type === 'del' ? '-' : ' '}
+      <span className="w-4 shrink-0 text-center text-zinc-700 select-none">
+        {line.type === 'add' ? '+' : line.type === 'del' ? '-' : ' '}
       </span>
-      {text}
+      {line.text}
     </div>
   )
 }
 
 function UnifiedDiff({ diff }: { diff: FileDiff }) {
-  if (diff.binary) {
-    return (
-      <div className="flex items-center gap-2 px-4 py-2 text-[11px] text-zinc-600">
-        <ImageIcon size={12} className="text-zinc-700" />
-        Binary file
-      </div>
-    )
-  }
-
-  const lines = diff.hunks.flatMap(h => {
-    const result: { text: string; type: 'add' | 'del' | 'same' }[] = []
-    for (const change of h.changes) {
-      if (change.type === 'add') result.push({ text: change.content, type: 'add' })
-      else if (change.type === 'del') result.push({ text: change.content, type: 'del' })
-      else result.push({ text: change.content, type: 'same' })
-    }
-    return result
-  })
-
   return (
     <div className="overflow-x-auto rounded-lg border border-zinc-800/50 bg-zinc-950/50">
-      {lines.length === 0 ? (
+      {diff.lines.length === 0 ? (
         <div className="px-4 py-2 text-[11px] text-zinc-700">No content changes</div>
       ) : (
-        lines.map((l, i) => <Line key={i} type={l.type} text={l.text} />)
+        diff.lines.map((l, i) => <Line key={i} line={l} />)
       )}
     </div>
   )
@@ -51,6 +32,7 @@ function UnifiedDiff({ diff }: { diff: FileDiff }) {
 
 function DiffCard({ diff }: { diff: FileDiff }) {
   const [expanded, setExpanded] = useState(true)
+  const isBinary = diff.path.endsWith('.jpg') || diff.path.endsWith('.png')
 
   return (
     <motion.div
@@ -62,7 +44,7 @@ function DiffCard({ diff }: { diff: FileDiff }) {
         className="flex w-full items-center gap-2 px-4 py-3 text-left"
         onClick={() => setExpanded(!expanded)}
       >
-        {diff.path.endsWith('.jpg') || diff.path.endsWith('.png')
+        {isBinary
           ? <ImageIcon size={14} className="text-zinc-600" />
           : <FileTextIcon size={14} className="text-zinc-600" />
         }
@@ -78,7 +60,14 @@ function DiffCard({ diff }: { diff: FileDiff }) {
       </button>
       {expanded && (
         <div className="border-t border-zinc-800/50">
-          <UnifiedDiff diff={diff} />
+          {isBinary ? (
+            <div className="flex items-center gap-2 px-4 py-2 text-[11px] text-zinc-600">
+              <ImageIcon size={12} className="text-zinc-700" />
+              Binary file
+            </div>
+          ) : (
+            <UnifiedDiff diff={diff} />
+          )}
         </div>
       )}
     </motion.div>

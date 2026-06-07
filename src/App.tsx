@@ -103,11 +103,14 @@ export default function App() {
 
   if (appLoading) {
     return (
-      <div className="app-loader">
-        <div className="app-loader-spinner">
-          <div className="spinner spinner-lg" />
+      <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-4 bg-zinc-950">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full">
+          <svg className="h-8 w-8 animate-spin text-emerald-500" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" strokeWidth="3" stroke="currentColor" className="opacity-20" />
+            <path d="M12 2a10 10 0 0 1 10 10" strokeWidth="3" stroke="currentColor" strokeLinecap="round" />
+          </svg>
         </div>
-        <p className="app-loader-text">Loading Admin Panel...</p>
+        <p className="text-sm font-medium text-zinc-500">Loading Admin Panel...</p>
       </div>
     )
   }

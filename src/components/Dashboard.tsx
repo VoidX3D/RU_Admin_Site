@@ -8,13 +8,25 @@ import {
 } from './Icons'
 
 const container = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.06 } },
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.04 },
+  },
 }
 
 const item = {
+  hidden: { opacity: 0, y: 8 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.25, ease: [0.16, 1, 0.3, 1] as const },
+  },
+}
+
+const item2 = {
   hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] as const } },
 }
 
 export function Dashboard() {
@@ -224,7 +236,7 @@ export function Dashboard() {
       </motion.div>
 
       <motion.div
-        variants={item}
+        variants={item2}
         className="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-gradient-to-r from-zinc-900/80 via-zinc-900/50 to-zinc-900/80 p-5 sm:p-6"
         whileHover={{ borderColor: 'rgba(255,255,255,0.08)' }}
       >
