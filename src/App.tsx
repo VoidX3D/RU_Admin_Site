@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { Analytics } from '@vercel/analytics/react'
 import { useStore } from './store'
 import { Storage } from './utils/storage'
 import { Login } from './components/Login'
@@ -134,6 +135,7 @@ export default function App() {
         </Layout>
       )}
       {view !== 'login' && <PRDialog open={prOpen} onClose={() => setPrOpen(false)} />}
+      <Analytics />
     </ErrorBoundary>
   )
 }
