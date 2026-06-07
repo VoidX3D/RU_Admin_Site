@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { Storage } from '../utils/storage'
 import type { Member, MembersData } from '../types'
@@ -79,133 +80,137 @@ export function MembersPage() {
 
   if (loading) {
     return (
-      <div className="page-enter">
-        <div className="skeleton-header">
-          <div className="skeleton-header-left">
-            <div className="skeleton skeleton-text" style={{ width: 120 }} />
-            <div className="skeleton skeleton-text short" />
-          </div>
-          <div className="skeleton-header-right">
-            <div className="skeleton skeleton-button" />
-            <div className="skeleton skeleton-button" />
-          </div>
-        </div>
-        <div className="field-group field-group-4" style={{ marginBottom: 24 }}>
-          {[1,2,3,4].map(i => <div key={i} className="skeleton skeleton-stat" />)}
-        </div>
-        <div className="skeleton skeleton-card" style={{ height: 200 }} />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-24 animate-pulse rounded-xl border border-zinc-800 bg-zinc-900/50" />
+        ))}
       </div>
     )
   }
 
   return (
-    <div className="page-enter">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 700 }}>Members</h2>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>Edit teachers, core team, and general members</p>
+          <h2 className="text-sm font-semibold text-white">Members</h2>
+          <p className="mt-0.5 text-xs text-zinc-600">Edit teachers, core team, and general members</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-secondary btn-sm" onClick={load}><RefreshIcon size={14} /> Refresh</button>
-          <button className="btn" style={{ background: 'var(--amber)', color: '#fff' }} onClick={saveDraft}>
-            <SaveIcon size={14} /> Save Draft
+        <div className="flex items-center gap-2">
+          <button className="flex h-8 items-center gap-1.5 rounded-lg border border-zinc-800 px-3 text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200" onClick={load}>
+            <RefreshIcon size={13} /> Refresh
+          </button>
+          <button className="flex h-8 items-center gap-1.5 rounded-lg bg-amber-500 px-3 text-xs font-semibold text-white hover:bg-amber-400" onClick={saveDraft}>
+            <SaveIcon size={13} /> Save Draft
           </button>
         </div>
       </div>
 
-      <div className="field-group field-group-4" style={{ marginBottom: 24 }}>
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { count: teachers.length, label: 'Teachers', color: 'var(--purple)' },
-          { count: core.length, label: 'Core Team', color: 'var(--blue)' },
-          { count: general.length, label: 'General', color: 'var(--accent)' },
-          { count: total, label: 'Total', color: 'var(--text)' },
+          { count: teachers.length, label: 'Teachers', color: 'text-purple-400', bg: 'bg-purple-500/10' },
+          { count: core.length, label: 'Core Team', color: 'text-blue-400', bg: 'bg-blue-500/10' },
+          { count: general.length, label: 'General', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+          { count: total, label: 'Total', color: 'text-white', bg: 'bg-zinc-800' },
         ].map((s, i) => (
-          <div key={i} className="stat-card" style={{ textAlign: 'center', padding: 16 }}>
-            <div className="stat-value" style={{ color: s.color }}>{s.count}</div>
-            <div className="stat-label">{s.label}</div>
+          <div key={i} className="rounded-xl border border-zinc-800/50 bg-zinc-900/30 p-4 text-center">
+            <div className={`text-2xl font-bold ${s.color}`}>{s.count}</div>
+            <div className="mt-0.5 text-[11px] font-medium text-zinc-600">{s.label}</div>
           </div>
         ))}
       </div>
 
-      <div className="tabs">
+      <div className="mb-4 flex gap-1 rounded-lg border border-zinc-800/50 bg-zinc-900/30 p-1">
         {TABS.map(t => (
-          <button key={t.key} className={`tab${tab === t.key ? ' active' : ''}`} onClick={() => setTab(t.key)}>
+          <button
+            key={t.key}
+            className={`flex-1 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
+              tab === t.key
+                ? 'bg-zinc-800 text-zinc-200'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+            onClick={() => setTab(t.key)}
+          >
             {t.label}
-            <span className="badge" style={{ background: tab === t.key ? 'var(--accent-glow)' : 'var(--border)', color: tab === t.key ? 'var(--accent-dark)' : 'var(--text-tertiary)', marginLeft: 4 }}>{counts[t.key]}</span>
+            <span className={`ml-1.5 rounded px-1.5 py-0.5 text-[9px] ${
+              tab === t.key ? 'bg-zinc-700 text-zinc-400' : 'bg-zinc-800/50 text-zinc-600'
+            }`}>{counts[t.key]}</span>
           </button>
         ))}
       </div>
 
-      <div className="card"><div className="card-body">
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <UsersIcon size={18} style={{ color: 'var(--blue)' }} />
-            <span style={{ fontSize: 15, fontWeight: 600 }}>{tab === 'core' ? 'Core Team' : tab === 'teachers' ? 'Teachers' : 'General Members'}</span>
-            <span className="badge" style={{ background: 'var(--surface-hover)', color: 'var(--text-secondary)' }}>{current.length}</span>
+      <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/30">
+        <div className="flex items-center justify-between border-b border-zinc-800/50 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <UsersIcon size={14} className="text-blue-400" />
+            <span className="text-xs font-semibold text-zinc-300">
+              {tab === 'core' ? 'Core Team' : tab === 'teachers' ? 'Teachers' : 'General Members'}
+            </span>
+            <span className="rounded-md bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">{current.length}</span>
           </div>
-          <button className="btn btn-primary btn-sm" onClick={addMember}><PlusIcon size={14} /> Add Member</button>
+          <button className="flex items-center gap-1 rounded-lg bg-emerald-500 px-2.5 py-1.5 text-[10px] font-semibold text-white hover:bg-emerald-400" onClick={addMember}>
+            <PlusIcon size={12} /> Add Member
+          </button>
         </div>
 
-        {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {[1,2,3,4].map(i => (
-              <div key={i} className="member-row">
-                <div className="skeleton skeleton-avatar" />
-                <div className="member-fields">
-                  <div><div className="skeleton skeleton-text" /></div>
-                  <div><div className="skeleton skeleton-text short" /></div>
-                  <div><div className="skeleton skeleton-text" /></div>
-                  {tab !== 'general' && <div><div className="skeleton skeleton-text short" /></div>}
-                </div>
-                <div className="skeleton skeleton-button" />
-              </div>
-            ))}
-          </div>
-        ) : current.length === 0 ? (
-          <div className="empty-state" style={{ background: 'var(--surface-hover)', borderRadius: 'var(--radius)', border: '1px dashed var(--border)' }}>
-            <div className="empty-state-icon"><UsersIcon size={40} /></div>
-            <div className="empty-state-title">No {tab} members yet</div>
-            <div className="empty-state-desc">Click "Add Member" to create one.</div>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {current.map((m, i) => (
-              <div key={i} className="member-row">
-                <div className="member-avatar">{m.name.charAt(0).toUpperCase() || '?'}</div>
-                <div className="member-fields">
-                  <div>
-                    <label className="label">Name</label>
-                    <input value={m.name} onChange={e => upd(i, 'name', e.target.value)} placeholder="Full name" className="input" />
+        <div className="p-4">
+          {current.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-8">
+              <UsersIcon size={24} className="text-zinc-700" />
+              <div className="text-sm font-medium text-zinc-500">No {tab} members yet</div>
+              <div className="text-xs text-zinc-700">Click "Add Member" to create one</div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {current.map((m, i) => (
+                <div key={i} className="flex flex-col gap-3 rounded-lg border border-zinc-800/50 bg-zinc-900/50 p-3 sm:flex-row sm:items-center">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 text-xs font-bold text-emerald-400">
+                    {m.name.charAt(0).toUpperCase() || '?'}
                   </div>
-                  {tab !== 'teachers' && (
+                  <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
                     <div>
-                      <label className="label">Class</label>
-                      <input value={m.class || ''} onChange={e => upd(i, 'class', e.target.value)} placeholder="8A" className="input" />
+                      <label className="mb-1 block text-[10px] font-medium text-zinc-600">Name</label>
+                      <input value={m.name} onChange={e => upd(i, 'name', e.target.value)} placeholder="Full name"
+                        className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
                     </div>
-                  )}
-                  <div>
-                    <label className="label">Role</label>
-                    <input value={m.role} onChange={e => upd(i, 'role', e.target.value)} placeholder="Role" className="input" />
+                    {tab !== 'teachers' && (
+                      <div>
+                        <label className="mb-1 block text-[10px] font-medium text-zinc-600">Class</label>
+                        <input value={m.class || ''} onChange={e => upd(i, 'class', e.target.value)} placeholder="8A"
+                          className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
+                      </div>
+                    )}
+                    <div>
+                      <label className="mb-1 block text-[10px] font-medium text-zinc-600">Role</label>
+                      <input value={m.role} onChange={e => upd(i, 'role', e.target.value)} placeholder="Role"
+                        className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
+                    </div>
+                    {tab !== 'general' && (
+                      <div>
+                        <label className="mb-1 block text-[10px] font-medium text-zinc-600">Type</label>
+                        <select value={m.type || ''} onChange={e => upd(i, 'type', e.target.value)}
+                          className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10">
+                          {tab === 'teachers' ? (
+                            <><option value="patron">Patron</option><option value="advisor">Advisor</option></>
+                          ) : (
+                            <option value="coord">Coordinator</option>
+                          )}
+                        </select>
+                      </div>
+                    )}
                   </div>
-                  {tab !== 'general' && (
-                    <div>
-                      <label className="label">Type</label>
-                      <select value={m.type || ''} onChange={e => upd(i, 'type', e.target.value)} className="input">
-                        {tab === 'teachers' ? (
-                          <><option value="patron">Patron</option><option value="advisor">Advisor</option></>
-                        ) : (
-                          <option value="coord">Coordinator</option>
-                        )}
-                      </select>
-                    </div>
-                  )}
+                  <button className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-700 hover:bg-red-500/10 hover:text-red-400" onClick={() => remove(i)}>
+                    <XIcon size={14} />
+                  </button>
                 </div>
-                <button className="btn btn-danger btn-icon btn-sm" onClick={() => remove(i)}><XIcon size={16} /></button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div></div>
-    </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
   )
 }

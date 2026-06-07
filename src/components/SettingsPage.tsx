@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { Storage } from '../utils/storage'
 import { getEnvConfig, isProductionEnv, hasEnvAuth } from '../utils/env'
@@ -66,161 +67,163 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="page-enter page-container">
-      <div className="form-page-header">
-        <div>
-          <h2 style={{ fontSize: 20, fontWeight: 700 }}>Settings</h2>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>Configuration, credentials, and data management</p>
-        </div>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      className="mx-auto max-w-2xl"
+    >
+      <div className="mb-5">
+        <h2 className="text-sm font-semibold text-white">Settings</h2>
+        <p className="mt-0.5 text-xs text-zinc-600">Configuration, credentials, and data management</p>
       </div>
 
       {production && (
-        <div className="info-banner info-banner-warning" style={{ marginBottom: 20 }}>
-          <LockIcon size={18} style={{ flexShrink: 0 }} />
-          <div>
-            <strong>Production Mode Active</strong> — All settings locked and read from environment variables.
-            Edit your <code>.env</code> file to change configuration.
+        <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+          <LockIcon size={16} className="mt-0.5 shrink-0 text-amber-400" />
+          <div className="min-w-0 text-xs leading-relaxed text-amber-300/80">
+            <strong className="text-amber-300">Production Mode Active</strong> — All settings locked and read from environment variables.
+            Edit your <code className="rounded bg-amber-500/10 px-1 text-amber-400">.env</code> file to change configuration.
           </div>
         </div>
       )}
 
-      <div className="form-card">
-        <div className="form-card-header">
-          <UserIcon size={15} />
-          <h3>Login Credentials</h3>
+      <div className="mb-4 rounded-xl border border-zinc-800/50 bg-zinc-900/30">
+        <div className="flex items-center gap-2 border-b border-zinc-800/50 px-4 py-3">
+          <UserIcon size={14} className="text-zinc-400" />
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Login Credentials</h3>
         </div>
-        <div className="form-card-body">
-          <div className="field-group field-group-2">
+        <div className="p-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="label">Username</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input value={settings.username} className="input" readOnly
-                  style={{ cursor: 'default', opacity: 0.7 }} />
-                <span className="badge badge-info" style={{ flexShrink: 0, fontSize: 10 }}>
-                  <LockIcon size={10} /> from .env
+              <label className="mb-1 block text-[10px] font-medium text-zinc-600">Username</label>
+              <div className="flex items-center gap-2">
+                <input value={settings.username} readOnly
+                  className="w-full cursor-default rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-xs text-zinc-500 opacity-70 outline-none" />
+                <span className="flex shrink-0 items-center gap-1 rounded-md bg-zinc-800 px-1.5 py-1 text-[9px] font-medium text-zinc-500">
+                  <LockIcon size={9} /> from .env
                 </span>
               </div>
             </div>
             <div>
-              <label className="label">Password</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input type="password" value={settings.password.replace(/./g, '•')} className="input" readOnly
-                  style={{ cursor: 'default', opacity: 0.7 }} />
-                <span className="badge badge-info" style={{ flexShrink: 0, fontSize: 10 }}>
-                  <LockIcon size={10} /> from .env
+              <label className="mb-1 block text-[10px] font-medium text-zinc-600">Password</label>
+              <div className="flex items-center gap-2">
+                <input type="password" value={settings.password.replace(/./g, '•')} readOnly
+                  className="w-full cursor-default rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-xs text-zinc-500 opacity-70 outline-none" />
+                <span className="flex shrink-0 items-center gap-1 rounded-md bg-zinc-800 px-1.5 py-1 text-[9px] font-medium text-zinc-500">
+                  <LockIcon size={9} /> from .env
                 </span>
               </div>
             </div>
-            <div className="full">
-              <label className="label">Verification Code</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input value={settings.verifyCode} className="input" readOnly
-                  style={{ cursor: 'default', opacity: 0.7, maxWidth: 320 }} />
-                <span className="badge badge-info" style={{ flexShrink: 0, fontSize: 10 }}>
-                  <LockIcon size={10} /> from .env
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-[10px] font-medium text-zinc-600">Verification Code</label>
+              <div className="flex items-center gap-2">
+                <input value={settings.verifyCode} readOnly
+                  className="w-full max-w-xs cursor-default rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-xs text-zinc-500 opacity-70 outline-none" />
+                <span className="flex shrink-0 items-center gap-1 rounded-md bg-zinc-800 px-1.5 py-1 text-[9px] font-medium text-zinc-500">
+                  <LockIcon size={9} /> from .env
                 </span>
               </div>
-              <div className="form-row-hint">Required to publish PRs — always read from environment</div>
+              <div className="mt-1 text-[10px] text-zinc-700">Required to publish PRs — always read from environment</div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="form-card">
-        <div className="form-card-header"><FolderIcon size={15} /><h3>GitHub Repository</h3></div>
-        <div className="form-card-body">
-          <div className="field-group field-group-2">
+      <div className="mb-4 rounded-xl border border-zinc-800/50 bg-zinc-900/30">
+        <div className="flex items-center gap-2 border-b border-zinc-800/50 px-4 py-3">
+          <FolderIcon size={14} className="text-zinc-400" />
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">GitHub Repository</h3>
+        </div>
+        <div className="p-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="label">Owner</label>
+              <label className="mb-1 block text-[10px] font-medium text-zinc-600">Owner</label>
               <input value={repoOwner} onChange={e => setRepoOwner(e.target.value)}
-                placeholder="VoidX3D" className="input" readOnly={production} />
+                placeholder="VoidX3D" readOnly={production}
+                className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
             </div>
             <div>
-              <label className="label">Repository</label>
+              <label className="mb-1 block text-[10px] font-medium text-zinc-600">Repository</label>
               <input value={repoName} onChange={e => setRepoName(e.target.value)}
-                placeholder="RU_Club_Website" className="input" readOnly={production} />
+                placeholder="RU_Club_Website" readOnly={production}
+                className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
             </div>
             <div>
-              <label className="label"><BranchIcon size={11} style={{ verticalAlign: 'middle' }} /> Branch</label>
+              <label className="mb-1 block text-[10px] font-medium text-zinc-600">Branch</label>
               <input value={repoBranch} onChange={e => setRepoBranch(e.target.value)}
-                placeholder="main" className="input" style={{ maxWidth: 220 }} readOnly={production} />
+                placeholder="main" readOnly={production}
+                className="w-full max-w-[200px] rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="form-card" style={{
-        borderColor: env.GITHUB_TOKEN ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)',
-        background: env.GITHUB_TOKEN
-          ? 'linear-gradient(135deg, rgba(34,197,94,0.03), transparent)'
-          : 'linear-gradient(135deg, rgba(239,68,68,0.03), transparent)',
+      <div className="mb-4 rounded-xl border border-zinc-800/50 bg-zinc-900/30" style={{
+        borderColor: env.GITHUB_TOKEN ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
       }}>
-        <div className="form-card-header">
+        <div className="flex items-center gap-2 border-b border-zinc-800/50 px-4 py-3">
           {env.GITHUB_TOKEN
-            ? <CheckCircleIcon size={15} style={{ color: 'var(--accent-dark)' }} />
-            : <AlertTriangleIcon size={15} style={{ color: 'var(--red)' }} />
+            ? <CheckCircleIcon size={14} className="text-emerald-400" />
+            : <AlertTriangleIcon size={14} className="text-red-400" />
           }
-          <h3>GitHub Token</h3>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">GitHub Token</h3>
         </div>
-        <div className="form-card-body" style={{ padding: '16px 24px' }}>
+        <div className="p-4">
           {env.GITHUB_TOKEN ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="badge badge-success">Configured</span>
-                <span style={{ fontSize: 12 }}>Token is set via environment variable</span>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-xs text-zinc-500">
+                <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400">Configured</span>
+                <span>Token is set via environment variable</span>
               </div>
-              <div className="info-banner info-banner-warning" style={{ margin: 0 }}>
-                <AlertTriangleIcon size={14} style={{ flexShrink: 0, marginTop: 1 }} />
-                <span><strong>Security note:</strong> VITE_ prefixed variables are embedded in the client bundle. Anyone using the admin panel can extract this token via DevTools. Use a fine-grained PAT with minimal scopes, or set up a backend proxy for production.</span>
+              <div className="flex items-start gap-2 rounded-lg border border-amber-500/15 bg-amber-500/5 p-3">
+                <AlertTriangleIcon size={13} className="mt-0.5 shrink-0 text-amber-400" />
+                <div className="text-[10px] leading-relaxed text-amber-300/70">
+                  <strong className="text-amber-300">Security note:</strong> VITE_ prefixed variables are embedded in the client bundle. Anyone using the admin panel can extract this token via DevTools. Use a fine-grained PAT with minimal scopes.
+                </div>
               </div>
             </div>
           ) : (
-            <div style={{ fontSize: 13 }}>
-              Add <code className="badge" style={{ background: 'var(--bg)', fontSize: 11 }}>VITE_GITHUB_TOKEN=your_pat</code> to your <code className="badge" style={{ background: 'var(--bg)', fontSize: 11 }}>.env</code> file to enable publishing.
+            <div className="text-xs text-zinc-500">
+              Add <code className="rounded bg-zinc-800 px-1 py-0.5 text-[10px] text-zinc-400">VITE_GITHUB_TOKEN=your_pat</code> to your <code className="rounded bg-zinc-800 px-1 py-0.5 text-[10px] text-zinc-400">.env</code> file to enable publishing.
             </div>
           )}
         </div>
       </div>
 
-      <div className="form-card">
-        <div className="form-card-header"><DownloadIcon size={15} /><h3>Data Management</h3></div>
-        <div className="form-card-body">
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-            <button className="btn btn-secondary" onClick={handleExport}>
-              <DownloadIcon size={14} /> Export Backup
+      <div className="mb-4 rounded-xl border border-zinc-800/50 bg-zinc-900/30">
+        <div className="flex items-center gap-2 border-b border-zinc-800/50 px-4 py-3">
+          <DownloadIcon size={14} className="text-zinc-400" />
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Data Management</h3>
+        </div>
+        <div className="p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <button className="flex items-center gap-1.5 rounded-lg border border-zinc-800 px-3 py-2 text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200" onClick={handleExport}>
+              <DownloadIcon size={13} /> Export Backup
             </button>
-            <button className="btn btn-secondary" onClick={() => fileRef.current?.click()}>
-              <UploadIcon size={14} /> Import Backup
+            <button className="flex items-center gap-1.5 rounded-lg border border-zinc-800 px-3 py-2 text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200" onClick={() => fileRef.current?.click()}>
+              <UploadIcon size={13} /> Import Backup
             </button>
             <input ref={fileRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileImport} />
-            <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
-              All drafts and settings as JSON.
-            </span>
+            <span className="text-[10px] text-zinc-700">All drafts and settings as JSON</span>
           </div>
         </div>
       </div>
 
-      {/* Branch Management */}
       {env.GITHUB_TOKEN && (
         <BranchManagement repoOwner={repoOwner} repoName={repoName} token={env.GITHUB_TOKEN} />
       )}
 
       {!production && (
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-lg" onClick={save} style={{
-            background: saved
-              ? 'linear-gradient(135deg, var(--accent), var(--accent-dark))'
-              : 'linear-gradient(135deg, var(--blue), var(--blue-dark))',
-            color: '#fff',
-            boxShadow: saved ? '0 4px 14px var(--accent-glow)' : 'none',
-            transition: 'all var(--transition)',
-          }}>
-            {saved ? <CheckCircleIcon size={16} /> : <SaveIcon size={16} />}
-            {saved ? 'Saved!' : 'Save Repository Settings'}
-          </button>
-        </div>
+        <button
+          className="inline-flex h-9 items-center gap-2 rounded-lg bg-blue-500 px-4 text-xs font-semibold text-white transition-colors hover:bg-blue-400"
+          onClick={save}
+        >
+          {saved ? <CheckCircleIcon size={14} /> : <SaveIcon size={14} />}
+          {saved ? 'Saved!' : 'Save Repository Settings'}
+        </button>
       )}
-    </div>
+    </motion.div>
   )
 }
 
@@ -278,65 +281,52 @@ function BranchManagement({ repoOwner, repoName, token }: { repoOwner: string; r
   const staleCount = branches.filter(b => b.state === 'stale').length
 
   return (
-    <div className="form-card" style={{ marginTop: 20 }}>
-      <div className="form-card-header">
-        <GitPullRequestIcon size={15} />
-        <h3>Branch Management</h3>
+    <div className="mb-4 rounded-xl border border-zinc-800/50 bg-zinc-900/30">
+      <div className="flex items-center gap-2 border-b border-zinc-800/50 px-4 py-3">
+        <GitPullRequestIcon size={14} className="text-zinc-400" />
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Branch Management</h3>
       </div>
-      <div className="form-card-body">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+      <div className="p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-xs text-zinc-500">
             {loading ? 'Loading...' : `${branches.length} admin branch${branches.length !== 1 ? 'es' : ''}`}
           </span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button className="btn btn-secondary btn-sm" onClick={loadBranches} disabled={loading}>
-              <RefreshIcon size={13} /> Refresh
+          <div className="flex items-center gap-1">
+            <button className="flex items-center gap-1 rounded-lg border border-zinc-800 px-2 py-1 text-[10px] font-medium text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300" onClick={loadBranches} disabled={loading}>
+              <RefreshIcon size={11} /> Refresh
             </button>
             {mergedCount > 0 && (
-              <button className="btn btn-danger btn-sm" onClick={handleCleanup} disabled={cleaning}>
-                <TrashIcon size={13} /> Cleanup {mergedCount} Merged
+              <button className="flex items-center gap-1 rounded-lg border border-red-800/50 px-2 py-1 text-[10px] font-medium text-red-400 hover:bg-red-500/10" onClick={handleCleanup} disabled={cleaning}>
+                <TrashIcon size={11} /> Cleanup {mergedCount}
               </button>
             )}
           </div>
         </div>
 
         {loading ? (
-          <div>
-            {[1,2,3].map(i => <div key={i} className="skeleton skeleton-text" style={{ width: '70%', marginBottom: 8 }} />)}
+          <div className="space-y-2">
+            {[1,2,3].map(i => <div key={i} className="h-4 animate-pulse rounded bg-zinc-800/50" style={{ width: `${60 + i * 10}%` }} />)}
           </div>
         ) : branches.length === 0 ? (
-          <div style={{ fontSize: 13, color: 'var(--text-tertiary)', textAlign: 'center', padding: 20 }}>
-            No admin-update branches found
-          </div>
+          <div className="py-4 text-center text-xs text-zinc-700">No admin-update branches found</div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div className="space-y-1">
             {branches.map(b => {
-              const stateStyle = b.state === 'merged' ? { bg: 'var(--purple-light)', color: '#9333ea' }
-                : b.state === 'stale' ? { bg: 'var(--red-light)', color: 'var(--red-dark)' }
-                : b.state === 'active' && b.prNumber ? { bg: 'var(--accent-light)', color: 'var(--accent-dark)' }
-                : { bg: 'var(--amber-light)', color: 'var(--amber-dark)' }
+              const stateStyle = b.state === 'merged' ? 'bg-purple-500/10 text-purple-400'
+                : b.state === 'stale' ? 'bg-red-500/10 text-red-400'
+                : b.state === 'active' && b.prNumber ? 'bg-emerald-500/10 text-emerald-400'
+                : 'bg-amber-500/10 text-amber-400'
               return (
-                <div key={b.name} style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '8px 12px', borderRadius: 'var(--radius)',
-                  background: 'var(--surface-hover)', fontSize: 12,
-                  fontFamily: 'monospace',
-                }}>
-                  <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {b.name}
-                  </div>
-                  <span className="badge" style={{ background: stateStyle.bg, color: stateStyle.color, fontSize: 10 }}>
+                <div key={b.name} className="flex items-center gap-2 rounded-lg bg-zinc-900/50 px-3 py-2 text-xs font-mono">
+                  <span className="min-w-0 flex-1 truncate text-zinc-400">{b.name}</span>
+                  <span className={`rounded px-1.5 py-0.5 text-[9px] font-medium ${stateStyle}`}>
                     {b.state === 'active' && b.prNumber ? `PR #${b.prNumber}` : b.state}
                   </span>
-                  <span style={{ color: 'var(--text-tertiary)', fontSize: 10 }}>
-                    {b.daysOld}d
-                  </span>
+                  <span className="text-[10px] text-zinc-700">{b.daysOld}d</span>
                   {(b.state === 'stale' || b.state === 'merged') && (
-                    <button className="btn btn-ghost btn-icon btn-sm"
-                      style={{ color: 'var(--red)', width: 26, height: 26 }}
-                      onClick={() => handleDelete(b.name)}
-                      disabled={deleting === b.name}>
-                      {deleting === b.name ? '...' : <XIcon size={12} />}
+                    <button className="rounded p-1 text-zinc-700 hover:bg-red-500/10 hover:text-red-400"
+                      onClick={() => handleDelete(b.name)} disabled={deleting === b.name}>
+                      {deleting === b.name ? <span className="text-[10px]">...</span> : <XIcon size={11} />}
                     </button>
                   )}
                 </div>

@@ -1,7 +1,8 @@
+import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import {
   HelpCircleIcon, TargetIcon, MegaphoneIcon, UsersIcon,
-  SettingsIcon, GitPullRequestIcon
+  SettingsIcon, GitPullRequestIcon, KeyboardIcon
 } from './Icons'
 
 const SHORTCUTS: { label: string; desc: string }[] = [
@@ -19,15 +20,12 @@ const SHORTCUTS: { label: string; desc: string }[] = [
 
 const SECTIONS = [
   {
-    icon: <HelpCircleIcon size={18} />,
+    icon: <HelpCircleIcon size={16} />,
     title: 'Keyboard Shortcuts',
-    items: SHORTCUTS.map(s => ({
-      keys: s.label,
-      desc: s.desc,
-    })),
+    items: SHORTCUTS.map(s => ({ keys: s.label, desc: s.desc })),
   },
   {
-    icon: <TargetIcon size={18} />,
+    icon: <TargetIcon size={16} />,
     title: 'Missions',
     items: [
       { keys: null, desc: 'Create and edit mission posts with unlimited images' },
@@ -37,7 +35,7 @@ const SECTIONS = [
     ],
   },
   {
-    icon: <MegaphoneIcon size={18} />,
+    icon: <MegaphoneIcon size={16} />,
     title: 'Announcements',
     items: [
       { keys: null, desc: 'Create club notices with optional single image' },
@@ -46,7 +44,7 @@ const SECTIONS = [
     ],
   },
   {
-    icon: <UsersIcon size={18} />,
+    icon: <UsersIcon size={16} />,
     title: 'Members',
     items: [
       { keys: null, desc: 'Manage Teachers, Core Team, and General Members' },
@@ -55,7 +53,7 @@ const SECTIONS = [
     ],
   },
   {
-    icon: <GitPullRequestIcon size={18} />,
+    icon: <GitPullRequestIcon size={16} />,
     title: 'Publishing',
     items: [
       { keys: null, desc: 'All changes go through a Pull Request — never directly to main' },
@@ -63,7 +61,7 @@ const SECTIONS = [
     ],
   },
   {
-    icon: <SettingsIcon size={18} />,
+    icon: <SettingsIcon size={16} />,
     title: 'Settings',
     items: [
       { keys: null, desc: 'Login credentials are read-only from .env' },
@@ -78,76 +76,57 @@ export function HelpPage() {
   const theme = useStore(s => s.theme)
 
   return (
-    <div className="page-enter page-container">
-      <div className="form-page-header" style={{ marginBottom: 24 }}>
-        <div>
-          <h2 style={{ fontSize: 20, fontWeight: 700 }}>Help & Guide</h2>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>How to use the RU Club Motherland Admin Panel</p>
-        </div>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      className="mx-auto max-w-2xl"
+    >
+      <div className="mb-5">
+        <h2 className="text-sm font-semibold text-white">Help & Guide</h2>
+        <p className="mt-0.5 text-xs text-zinc-600">How to use the RU Club Motherland Admin Panel</p>
       </div>
 
-      {SECTIONS.map((section, i) => (
-        <div key={i} className="form-card">
-          <div className="form-card-header">
-            <span style={{ color: 'var(--accent)', display: 'flex' }}>{section.icon}</span>
-            <h3>{section.title}</h3>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {SECTIONS.map((section, i) => (
+          <div key={i} className="rounded-xl border border-zinc-800/50 bg-zinc-900/30">
+            <div className="flex items-center gap-2 border-b border-zinc-800/50 px-4 py-3">
+              <span className="text-zinc-400">{section.icon}</span>
+              <h3 className="text-xs font-semibold text-zinc-300">{section.title}</h3>
+            </div>
+            <div className="p-4">
+              <ul className="space-y-2">
+                {section.items.map((item, j) => (
+                  <li key={j} className="flex items-start gap-2 text-xs leading-relaxed">
+                    {item.keys ? (
+                      <span className="flex shrink-0 flex-wrap gap-1">
+                        {item.keys.split('+').map((k, ki) => (
+                          <span key={ki}
+                            className="inline-block rounded border border-zinc-800 bg-zinc-900 px-1.5 py-0.5 text-[9px] font-semibold text-zinc-400 shadow-sm shadow-black/20"
+                          >
+                            {k}
+                          </span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="mt-1 shrink-0 text-zinc-600">&#8226;</span>
+                    )}
+                    <span className="text-zinc-500">{item.desc}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-          <div className="form-card-body" style={{ padding: '16px 24px' }}>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {section.items.map((item, j) => (
-                <li key={j} style={{
-                  display: 'flex', alignItems: 'flex-start', gap: 10,
-                  padding: '6px 0',
-                  borderBottom: j < section.items.length - 1 ? '1px solid var(--border-light)' : 'none',
-                  fontSize: 13, lineHeight: 1.5,
-                }}>
-                  {item.keys ? (
-                    <span style={{
-                      display: 'inline-flex', gap: 4, flexShrink: 0,
-                      marginTop: 1,
-                    }}>
-                      {item.keys.split('+').map((k, ki) => (
-                        <span key={ki} style={{
-                          display: 'inline-block',
-                          padding: '1px 7px',
-                          borderRadius: 5,
-                          background: 'var(--surface-hover)',
-                          border: '1px solid var(--border)',
-                          fontSize: 11,
-                          fontFamily: 'monospace',
-                          fontWeight: 600,
-                          color: 'var(--text)',
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
-                        }}>
-                          {k}
-                        </span>
-                      ))}
-                    </span>
-                  ) : (
-                    <span style={{ color: 'var(--accent)', marginTop: 2, flexShrink: 0 }}>•</span>
-                  )}
-                  <span style={{ color: 'var(--text-secondary)' }}>{item.desc}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      ))}
-
-      <div className="form-card" style={{
-        background: theme === 'dark'
-          ? 'linear-gradient(135deg, rgba(34,197,94,0.08), transparent)'
-          : 'linear-gradient(135deg, rgba(34,197,94,0.04), transparent)',
-      }}>
-        <div className="form-card-body" style={{ textAlign: 'center', padding: '24px' }}>
-          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', lineHeight: 1.6 }}>
-            RU Club Motherland Admin Panel &middot; Built by &nbsp;
-            <strong style={{ color: 'var(--text)' }}>Sincee Bhattarai</strong>
-            <br />
-            <span style={{ fontSize: 11 }}>Edition for RU Club Site &middot; Content management system</span>
-          </p>
-        </div>
+        ))}
       </div>
-    </div>
+
+      <div className="mt-6 rounded-xl border border-zinc-800/50 bg-gradient-to-br from-emerald-500/5 to-transparent px-4 py-6 text-center">
+        <p className="text-xs leading-relaxed text-zinc-600">
+          RU Club Motherland Admin Panel &middot; Built by <strong className="font-semibold text-zinc-400">Sincee Bhattarai</strong>
+          <br />
+          <span className="text-[10px]">Edition for RU Club Site &middot; Content management system</span>
+        </p>
+      </div>
+    </motion.div>
   )
 }

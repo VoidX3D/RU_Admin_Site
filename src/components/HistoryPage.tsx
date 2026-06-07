@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { getPublishHistory, clearPublishHistory } from '../utils/history'
 import type { PublishRecord } from '../utils/history'
 import { getEnvConfig } from '../utils/env'
@@ -8,11 +9,11 @@ import {
   FileTextIcon, ImageIcon, ClockIcon
 } from './Icons'
 
-const STATE_META: Record<string, { label: string; bg: string; color: string }> = {
-  open:   { label: 'Open',    bg: 'rgba(34,197,94,0.12)', color: 'var(--accent-dark)' },
-  merged: { label: 'Merged',  bg: 'rgba(168,85,247,0.12)', color: '#9333ea' },
-  closed: { label: 'Closed',  bg: 'rgba(239,68,68,0.12)', color: '#dc2626' },
-  unknown: { label: 'Unknown', bg: 'rgba(139,148,158,0.12)', color: 'var(--text-tertiary)' },
+const STATE_META: Record<string, { label: string; color: string }> = {
+  open:   { label: 'Open',   color: 'text-emerald-400' },
+  merged: { label: 'Merged', color: 'text-purple-400' },
+  closed: { label: 'Closed', color: 'text-red-400' },
+  unknown: { label: 'Unknown', color: 'text-zinc-500' },
 }
 
 async function fetchPRState(token: string, owner: string, repo: string, prNumber: number): Promise<string> {
@@ -24,9 +25,7 @@ async function fetchPRState(token: string, owner: string, repo: string, prNumber
     const data = await res.json()
     if (data.merged) return 'merged'
     return data.state || 'unknown'
-  } catch {
-    return 'unknown'
-  }
+  } catch { return 'unknown' }
 }
 
 function FileList({ files }: { files: PublishRecord['files'] }) {
@@ -35,31 +34,23 @@ function FileList({ files }: { files: PublishRecord['files'] }) {
   return (
     <div>
       <button
-        className="btn btn-ghost btn-sm"
-        style={{ fontSize: 11, padding: '2px 8px' }}
+        className="rounded px-1.5 py-0.5 text-[10px] font-medium text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400"
         onClick={() => setOpen(!open)}
       >
-        {files.length} file{files.length !== 1 ? 's' : ''} {open ? '▲' : '▼'}
+        {files.length} file{files.length !== 1 ? 's' : ''} {open ? '\u25B2' : '\u25BC'}
       </button>
       {open && (
-        <div style={{ marginTop: 6 }}>
+        <div className="mt-1 space-y-0.5">
           {files.map(f => (
-            <div key={f.path} style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '3px 8px', fontSize: 11, fontFamily: 'monospace',
-            }}>
-              <span style={{
-                width: 16, height: 16, borderRadius: 3,
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 8, fontWeight: 700,
-                background: f.status === 'added' ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)',
-                color: f.status === 'added' ? 'var(--accent-dark)' : 'var(--amber)',
-              }}>
+            <div key={f.path} className="flex items-center gap-1.5 px-1.5 py-0.5 text-[10px] font-mono text-zinc-600">
+              <span className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded text-[7px] font-bold ${
+                f.status === 'added' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'
+              }`}>
                 {f.status === 'added' ? 'A' : 'M'}
               </span>
               {f.path.endsWith('.jpg') || f.path.endsWith('.png')
-                ? <ImageIcon size={11} style={{ color: 'var(--text-tertiary)' }} />
-                : <FileTextIcon size={11} style={{ color: 'var(--text-tertiary)' }} />
+                ? <ImageIcon size={9} className="text-zinc-700" />
+                : <FileTextIcon size={9} className="text-zinc-700" />
               }
               {f.path}
             </div>
@@ -106,96 +97,87 @@ export function HistoryPage() {
   }
 
   return (
-    <div className="page-enter page-container">
-      <div className="form-page-header" style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 700 }}>Publish History</h2>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
-              {records.length === 0
-                ? 'No publications yet'
-                : `${records.length} publication${records.length !== 1 ? 's' : ''} total`
-              }
-              {updating && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--text-tertiary)' }}>Updating...</span>}
-            </p>
-          </div>
-          {records.length > 0 && (
-            <button className="btn btn-danger btn-sm" style={{ marginLeft: 'auto', fontSize: 12 }} onClick={handleClear}>
-              <TrashIcon size={13} /> Clear All
-            </button>
-          )}
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      className="mx-auto max-w-2xl"
+    >
+      <div className="mb-5 flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-white">Publish History</h2>
+          <p className="mt-0.5 text-xs text-zinc-600">
+            {records.length === 0
+              ? 'No publications yet'
+              : `${records.length} publication${records.length !== 1 ? 's' : ''} total`
+            }
+            {updating && <span className="ml-2 text-[10px] text-zinc-700">Updating...</span>}
+          </p>
         </div>
+        {records.length > 0 && (
+          <button className="flex items-center gap-1 rounded-lg border border-red-800/30 px-2.5 py-1.5 text-[10px] font-medium text-red-400 hover:bg-red-500/10" onClick={handleClear}>
+            <TrashIcon size={11} /> Clear All
+          </button>
+        )}
       </div>
 
       {records.length === 0 ? (
-        <div className="card">
-          <div className="empty-state">
-            <div className="empty-state-icon" style={{ fontSize: 40 }}>📦</div>
-            <div className="empty-state-title">No publish history</div>
-            <div className="empty-state-desc">Published pull requests will appear here with their current status.</div>
-          </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/30 py-12 text-center">
+          <GitPullRequestIcon size={28} className="mx-auto text-zinc-700" />
+          <div className="mt-3 text-sm font-medium text-zinc-500">No publish history</div>
+          <div className="mt-1 text-xs text-zinc-700">Published pull requests will appear here with their current status</div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="space-y-2">
           {records.map((r, i) => {
             const meta = STATE_META[r.state || 'unknown'] || STATE_META.unknown
             return (
-              <div key={r.id} className="card" style={{
-                padding: 0, overflow: 'hidden',
-                animation: i < 3 ? `slideUp 0.2s ease ${i * 0.04}s both` : undefined,
-              }}>
-                <div style={{
-                  display: 'flex', alignItems: 'flex-start', gap: 12,
-                  padding: '16px 20px',
-                }}>
-                  <div style={{
-                    width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                    background: meta.bg,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <GitPullRequestIcon size={17} style={{ color: meta.color }} />
+              <motion.div
+                key={r.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className="rounded-xl border border-zinc-800/50 bg-zinc-900/30 p-4"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-800/50">
+                    <GitPullRequestIcon size={16} className={meta.color} />
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 14, fontWeight: 600 }}>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-medium text-zinc-300">
                         {r.commitMessage || 'Pull Request'}
                       </span>
                       {r.prNumber && (
-                        <span className="badge badge-info" style={{ fontSize: 10 }}>#{r.prNumber}</span>
+                        <span className="rounded-md bg-blue-500/10 px-1.5 py-0.5 text-[9px] font-medium text-blue-400">#{r.prNumber}</span>
                       )}
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '1px 8px', borderRadius: 10,
-                        fontSize: 10, fontWeight: 600,
-                        background: meta.bg, color: meta.color,
-                        border: '1px solid ' + meta.color + '30',
-                      }}>
+                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-medium ${meta.color.replace('text-', 'bg-').replace('emerald', 'emerald-500/10').replace('purple', 'purple-500/10').replace('red', 'red-500/10').replace('zinc', 'zinc-800')} ${meta.color}`}>
                         {meta.label}
                       </span>
-                      <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>
-                        <ClockIcon size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+                      <span className="ml-auto flex items-center gap-1 text-[10px] text-zinc-700">
+                        <ClockIcon size={10} />
                         {new Date(r.date).toLocaleDateString('en-US', {
                           month: 'short', day: 'numeric', year: 'numeric',
                           hour: '2-digit', minute: '2-digit'
                         })}
                       </span>
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div className="mt-1.5 flex items-center gap-2 text-xs text-zinc-600">
                       <span>{r.draftCount} draft{r.draftCount !== 1 ? 's' : ''}</span>
                       <FileList files={r.files} />
                     </div>
                   </div>
                   <a href={r.prUrl} target="_blank" rel="noopener noreferrer"
-                    className="btn btn-ghost btn-sm btn-icon" style={{ flexShrink: 0 }}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400"
                     title="View on GitHub">
-                    <ExternalLinkIcon size={15} />
+                    <ExternalLinkIcon size={14} />
                   </a>
                 </div>
-              </div>
+              </motion.div>
             )
           })}
         </div>
       )}
-    </div>
+    </motion.div>
   )
 }

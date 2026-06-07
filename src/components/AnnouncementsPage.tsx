@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef } from 'react'
+import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { Storage } from '../utils/storage'
-
 import type { AnnouncementEntry, PendingImage } from '../types'
-import { ArrowLeftIcon, PlusIcon, ImageIcon, MegaphoneIcon, RefreshIcon, SaveIcon, TrashIcon, EditIcon, CheckIcon } from './Icons'
+import {
+  ArrowLeftIcon, PlusIcon, ImageIcon, MegaphoneIcon, RefreshIcon, SaveIcon, TrashIcon, EditIcon, CheckIcon, SearchIcon,
+} from './Icons'
 import { Field, Textarea, Select, Toggle, ImageUpload } from './form'
 
 type Mode = 'list' | 'form'
@@ -35,6 +37,7 @@ export function AnnouncementsPage() {
   const [anns, setAnns] = useState<AnnouncementEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [search, setSearch] = useState('')
 
   const [fId, setFId] = useState('')
   const [fTitle, setFTitle] = useState('')
@@ -231,237 +234,259 @@ export function AnnouncementsPage() {
 
   if (mode === 'form') {
     return (
-      <div className="form-page">
-        <div className="form-page-header">
-          <div>
-            <div className="form-page-title">
-              <button className="btn btn-secondary btn-icon" onClick={() => setMode('list')}><ArrowLeftIcon size={18} /></button>
-              <h2>{fId ? 'Edit Announcement' : 'Create Announcement'}</h2>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200" onClick={() => setMode('list')}>
+              <ArrowLeftIcon size={16} />
+            </button>
+            <div>
+              <h2 className="text-sm font-semibold text-white">{fId ? 'Edit Announcement' : 'Create Announcement'}</h2>
+              <div className="text-xs text-zinc-600">{fId}</div>
             </div>
-            <div className="form-page-id">{fId}</div>
           </div>
-          <div className="form-page-actions" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 11, color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 text-[10px] text-zinc-600">
               {saveStatus === 'saving' && <>Saving...</>}
-              {saveStatus === 'saved' && <><CheckIcon size={11} style={{ color: 'var(--accent-dark)' }} /> Saved</>}
+              {saveStatus === 'saved' && <><CheckIcon size={10} className="text-emerald-400" /> Saved</>}
             </span>
-            <button className="btn btn-secondary" onClick={() => setMode('list')}>Cancel</button>
-            <button className="btn" style={{ background: 'var(--amber)', color: '#fff' }} onClick={saveDraft}>
-              <SaveIcon size={16} /> Save Draft
+            <button className="rounded-lg border border-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200" onClick={() => setMode('list')}>Cancel</button>
+            <button className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400" onClick={saveDraft}>
+              <SaveIcon size={13} /> Save Draft
             </button>
           </div>
         </div>
 
-        <div className="form-card">
-          <div className="form-card-header">
-            <MegaphoneIcon size={16} style={{ color: 'var(--amber-dark)' }} />
-            <h3>Basic Information</h3>
-          </div>
-          <div className="form-card-body">
-            <div className="field-group field-group-2">
-              <Field label="ID" value={fId} onChange={() => {}} readOnly />
-              <Select label="Tag" value={fTag} onChange={setFTag}
-                options={[
-                  { value: 'Update', label: 'Update' },
-                  { value: 'Event', label: 'Event' },
-                  { value: 'Notice', label: 'Notice' },
-                  { value: 'Opportunity', label: 'Opportunity' },
-                ]} />
-              <Field label="Date" value={fDate} onChange={setFDate} error={errors.date} />
-              <Select label="Status" value={fStatus} onChange={setFStatus} placeholder="None"
-                options={[
-                  { value: 'ongoing', label: 'Ongoing' },
-                  { value: 'deadline', label: 'Deadline' },
-                  { value: 'ended', label: 'Ended' },
-                  { value: 'urgent', label: 'Urgent' },
-                  { value: 'upcoming', label: 'Upcoming' },
-                ]} />
-              <Field label="Deadline" value={fDeadline} onChange={setFDeadline} placeholder="e.g. June 15, 2026" hint="Display deadline date (shown when status is Deadline)" />
-              <div className="full">
-                <Field label="Title *" value={fTitle} onChange={setFTitle} placeholder="Announcement title" error={errors.title}
-                  maxLength={120} hint="Keep it concise and descriptive" />
-              </div>
-              <div className="full">
-                <Textarea label="Summary *" value={fSummary} onChange={setFSummary} placeholder="One-sentence summary for the card"
-                  error={errors.summary} maxLength={300} rows={2} />
-              </div>
-              <div className="full">
-                <Textarea label="Full Description" value={fDesc} onChange={setFDesc} placeholder="Full announcement details, context, and information..." rows={6} />
+        <div className="space-y-4">
+          <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/30">
+            <div className="flex items-center gap-2 border-b border-zinc-800/50 px-4 py-3">
+              <MegaphoneIcon size={14} className="text-amber-400" />
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Basic Information</h3>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="ID" value={fId} onChange={() => {}} readOnly />
+                <Select label="Tag" value={fTag} onChange={setFTag}
+                  options={[
+                    { value: 'Update', label: 'Update' },
+                    { value: 'Event', label: 'Event' },
+                    { value: 'Notice', label: 'Notice' },
+                    { value: 'Opportunity', label: 'Opportunity' },
+                  ]} />
+                <Field label="Date" value={fDate} onChange={setFDate} error={errors.date} />
+                <Select label="Status" value={fStatus} onChange={setFStatus} placeholder="None"
+                  options={[
+                    { value: 'ongoing', label: 'Ongoing' },
+                    { value: 'deadline', label: 'Deadline' },
+                    { value: 'ended', label: 'Ended' },
+                    { value: 'urgent', label: 'Urgent' },
+                    { value: 'upcoming', label: 'Upcoming' },
+                  ]} />
+                <Field label="Deadline" value={fDeadline} onChange={setFDeadline} placeholder="e.g. June 15, 2026" hint="Display deadline date" />
+                <div className="sm:col-span-2">
+                  <Field label="Title *" value={fTitle} onChange={setFTitle} placeholder="Announcement title" error={errors.title} maxLength={120} hint="Keep it concise and descriptive" />
+                </div>
+                <div className="sm:col-span-2">
+                  <Textarea label="Summary *" value={fSummary} onChange={setFSummary} placeholder="One-sentence summary for the card" error={errors.summary} maxLength={300} rows={2} />
+                </div>
+                <div className="sm:col-span-2">
+                  <Textarea label="Full Description" value={fDesc} onChange={setFDesc} placeholder="Full announcement details, context, and information..." rows={6} />
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="form-card">
-          <div className="form-card-header">
-            <PlusIcon size={16} style={{ color: 'var(--blue)' }} />
-            <h3>Event Details</h3>
+          <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/30">
+            <div className="flex items-center gap-2 border-b border-zinc-800/50 px-4 py-3">
+              <PlusIcon size={14} className="text-blue-400" />
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Event Details</h3>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Day" value={fDay} onChange={setFDay} placeholder="e.g. Monday" hint="Day of the week" />
+                <Field label="Time" value={fTime} onChange={setFTime} placeholder="e.g. 9:00 AM" />
+                <Field label="Location" value={fLoc} onChange={setFLoc} placeholder="e.g. School ground" />
+                <Field label="Issued By" value={fIssued} onChange={setFIssued} placeholder="e.g. Club Coordinator" />
+              </div>
+            </div>
           </div>
-          <div className="form-card-body">
-            <div className="field-group field-group-2">
-              <Field label="Day" value={fDay} onChange={setFDay} placeholder="e.g. Monday" hint="Day of the week" />
-              <Field label="Time" value={fTime} onChange={setFTime} placeholder="e.g. 9:00 AM" />
-              <Field label="Location" value={fLoc} onChange={setFLoc} placeholder="e.g. School ground" />
-              <Field label="Issued By" value={fIssued} onChange={setFIssued} placeholder="e.g. Club Coordinator" />
+
+          <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/30">
+            <div className="flex items-center gap-2 border-b border-zinc-800/50 px-4 py-3">
+              <PlusIcon size={14} className="text-purple-400" />
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Additional Information</h3>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Textarea label="Why It Matters" value={fImport} onChange={setFImport} placeholder="Explain the importance of this announcement..." rows={4} />
+                <Textarea label="Instructions" value={fInstr} onChange={setFInstr} placeholder="How to participate, what to prepare..." rows={4} />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/30">
+            <div className="flex items-center gap-2 border-b border-zinc-800/50 px-4 py-3">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-zinc-500"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Visibility</h3>
+            </div>
+            <div className="p-4">
+              <Toggle label="Show on site" checked={fActive} onChange={setFActive}
+                onLabel="Active on site" offLabel="Hidden from visitors" />
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/30">
+            <div className="flex items-center gap-2 border-b border-zinc-800/50 px-4 py-3">
+              <ImageIcon size={14} className="text-blue-400" />
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Image</h3>
+            </div>
+            <div className="p-4">
+              <ImageUpload images={fImg ? [fImg] : []} onChange={imgs => setFImg(imgs[0] || null)} single maxCount={1} />
             </div>
           </div>
         </div>
-
-        <div className="form-card">
-          <div className="form-card-header">
-            <PlusIcon size={16} style={{ color: 'var(--purple)' }} />
-            <h3>Additional Information</h3>
-          </div>
-          <div className="form-card-body">
-            <div className="field-group field-group-2">
-              <Textarea label="Why It Matters" value={fImport} onChange={setFImport} placeholder="Explain the importance of this announcement..." rows={4} />
-              <Textarea label="Instructions" value={fInstr} onChange={setFInstr} placeholder="How to participate, what to prepare..." rows={4} />
-            </div>
-          </div>
-        </div>
-
-        <div className="form-card">
-          <div className="form-card-header">
-            <span style={{ color: 'var(--text-tertiary)' }}>👁</span>
-            <h3>Visibility</h3>
-          </div>
-          <div className="form-card-body">
-            <Toggle label="Show on site" checked={fActive} onChange={setFActive}
-              onLabel="Active on site" offLabel="Hidden from visitors" />
-          </div>
-        </div>
-
-        <div className="form-card">
-          <div className="form-card-header">
-            <ImageIcon size={16} style={{ color: 'var(--blue)' }} />
-            <h3>Image</h3>
-          </div>
-          <div className="form-card-body">
-            <ImageUpload images={fImg ? [fImg] : []} onChange={imgs => setFImg(imgs[0] || null)} single maxCount={1} />
-          </div>
-        </div>
-      </div>
+      </motion.div>
     )
   }
 
   const allDrafts = Storage.listDrafts().filter(d => d.type === 'announcement')
+  const filtered = anns.filter(a =>
+    !search || a.title.toLowerCase().includes(search.toLowerCase()) || a.id.toLowerCase().includes(search.toLowerCase())
+  )
+
   return (
-    <div className="page-enter">
-      <div className="form-page-header" style={{ marginBottom: 20 }}>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 700 }}>Announcements</h2>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>Create announcements with up to 1 image</p>
+          <h2 className="text-sm font-semibold text-white">Announcements</h2>
+          <p className="mt-0.5 text-xs text-zinc-600">Create announcements with up to 1 image</p>
         </div>
-        <div className="form-page-actions">
-          <button className="btn btn-secondary btn-sm" onClick={load}><RefreshIcon size={14} /> Refresh</button>
-          <button className="btn btn-primary btn-sm" onClick={startNew}><PlusIcon size={14} /> New Announcement</button>
+        <div className="flex items-center gap-2">
+          <button className="flex h-8 items-center gap-1.5 rounded-lg border border-zinc-800 px-3 text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200" onClick={load}>
+            <RefreshIcon size={13} /> Refresh
+          </button>
+          <button className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white hover:bg-emerald-400" onClick={startNew}>
+            <PlusIcon size={13} /> New Announcement
+          </button>
         </div>
       </div>
 
-      <div className="table-wrap">
-        {loading ? (
-          <div>
-            <div className="skeleton-table-row" style={{ background: 'var(--surface-hover)' }}>
-              <div className="skeleton skeleton-text" style={{ width: '35%' }} />
-              <div className="skeleton skeleton-badge" />
-              <div className="skeleton skeleton-text short" />
-              <div className="skeleton skeleton-text short" style={{ width: 50 }} />
-              <div className="skeleton skeleton-badge" />
-              <div className="skeleton skeleton-button" style={{ marginLeft: 'auto' }} />
-            </div>
-            {[1,2,3,4].map(i => (
-              <div key={i} className="skeleton-table-row">
-                <div className="skeleton skeleton-text" style={{ width: '35%' }} />
-                <div className="skeleton skeleton-badge" />
-                <div className="skeleton skeleton-text short" />
-                <div className="skeleton skeleton-text short" style={{ width: 50 }} />
-                <div className="skeleton skeleton-badge" />
-                <div className="skeleton skeleton-button" style={{ marginLeft: 'auto' }} />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <table>
+      <div className="mb-4 flex items-center gap-2 rounded-lg border border-zinc-800/50 bg-zinc-900/30 px-3 py-2">
+        <SearchIcon size={14} className="text-zinc-600" />
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search announcements..."
+          className="flex-1 bg-transparent text-sm text-zinc-300 outline-none placeholder:text-zinc-700"
+        />
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-zinc-800/50">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
             <thead>
-              <tr><th>Title</th><th>Tag</th><th>Date</th><th>Image</th><th>Status</th><th>Actions</th></tr>
+              <tr className="border-b border-zinc-800/50 bg-zinc-900/50">
+                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Title</th>
+                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Tag</th>
+                <th className="hidden px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:table-cell">Date</th>
+                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Status</th>
+                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Actions</th>
+              </tr>
             </thead>
-            <tbody>
-              {anns.length === 0 && allDrafts.length === 0 ? (
-                <tr><td colSpan={6}><div className="empty-state">
-                  <div className="empty-state-icon">📢</div>
-                  <div className="empty-state-title">No announcements yet</div>
-                  <div className="empty-state-desc">Click "New Announcement" to create one.</div>
-                </div></td></tr>
+            <tbody className="divide-y divide-zinc-800/30">
+              {loading ? (
+                [...Array(4)].map((_, i) => (
+                  <tr key={i}>
+                    <td colSpan={5} className="px-4 py-3">
+                      <div className="h-4 w-full animate-pulse rounded bg-zinc-800/50" />
+                    </td>
+                  </tr>
+                ))
+              ) : filtered.length === 0 && allDrafts.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center">
+                    <MegaphoneIcon size={24} className="mx-auto text-zinc-700" />
+                    <div className="mt-2 text-sm font-medium text-zinc-500">No announcements yet</div>
+                    <div className="text-xs text-zinc-700">Click "New Announcement" to create one</div>
+                  </td>
+                </tr>
               ) : (
-                <>
-                  {(() => {
-                    const draftMap = new Map(allDrafts.map(d => [d.id, d]))
-                    const merged = anns.map(a => {
-                      const draft = draftMap.get(a.id)
-                      return { live: a, draft, hasDraft: !!draft }
+                (() => {
+                  const draftMap = new Map(allDrafts.map(d => [d.id, d]))
+                  const merged = filtered.map(a => {
+                    const draft = draftMap.get(a.id)
+                    return { live: a, draft, hasDraft: !!draft }
+                  })
+                  const draftOnly = allDrafts.filter(d => !anns.find(a => a.id === d.id))
+                  const rows: { id: string; title: string; tag: string; date: string; active: boolean; hasDraft: boolean; isDraftOnly: boolean; deleteDraft?: () => void }[] = []
+                  for (const m of merged) {
+                    const d = m.draft
+                    const title = (d?.title as string) || m.live.title
+                    const tag = (d?.tag as string) || m.live.tag || 'Update'
+                    const date = (d?.date as string) || m.live.date || '—'
+                    const active = d ? d.active !== false : m.live.active !== false
+                    const liveTag = m.live.tag || 'Update'
+                    const liveDate = m.live.date || '—'
+                    const changed = d && (
+                      title !== m.live.title || tag !== liveTag || date !== liveDate ||
+                      active !== (m.live.active !== false) ||
+                      (d.summary as string) !== (m.live.summary || '')
+                    )
+                    rows.push({ id: m.live.id, title, tag, date, active, hasDraft: m.hasDraft && !!changed, isDraftOnly: false })
+                  }
+                  for (const d of draftOnly) {
+                    rows.push({
+                      id: d.id, title: d.title as string, tag: '—', date: (d.date as string) || '—',
+                      active: d.active !== false, hasDraft: true, isDraftOnly: true,
+                      deleteDraft: () => { Storage.deleteDraft('announcement', d.id); addToast('Draft deleted', 'info') },
                     })
-                    const draftOnly = allDrafts.filter(d => !anns.find(a => a.id === d.id))
-                    const rows: { id: string; title: string; tag: string; date: string; active: boolean; hasDraft: boolean; isDraftOnly: boolean; hasImage: boolean; deleteDraft?: () => void }[] = []
-                    for (const m of merged) {
-                      const d = m.draft
-                      const title = (d?.title as string) || m.live.title
-                      const tag = (d?.tag as string) || m.live.tag || 'Update'
-                      const date = (d?.date as string) || m.live.date || '—'
-                      const active = d ? d.active !== false : m.live.active !== false
-                      const hasImage = !!(d?.image || m.live.image)
-                      const liveTag = m.live.tag || 'Update'
-                      const liveDate = m.live.date || '—'
-                      const changed = d && (
-                        title !== m.live.title ||
-                        tag !== liveTag ||
-                        date !== liveDate ||
-                        active !== (m.live.active !== false) ||
-                        hasImage !== !!m.live.image ||
-                        (d.summary as string) !== (m.live.summary || '')
-                      )
-                      rows.push({
-                        id: m.live.id, title, tag, date, active,
-                        hasDraft: m.hasDraft && !!changed, isDraftOnly: false, hasImage,
-                      })
-                    }
-                    for (const d of draftOnly) {
-                      rows.push({
-                        id: d.id, title: d.title as string, tag: '—', date: (d.date as string) || '—',
-                        active: d.active !== false, hasDraft: true, isDraftOnly: true, hasImage: !!d.image,
-                        deleteDraft: () => { Storage.deleteDraft('announcement', d.id); addToast('Draft deleted', 'info') },
-                      })
-                    }
-                    return rows.map(r => (
-                      <tr key={r.id} style={r.hasDraft ? { background: 'var(--amber-glow)' } : undefined}>
-                        <td>
-                          <div style={{ fontWeight: 600 }}>{r.title}</div>
-                          {r.hasDraft && <span style={{ fontSize: 11, color: 'var(--amber-dark)' }}>Draft</span>}
-                        </td>
-                        <td><span className="badge badge-info">{r.tag}</span></td>
-                        <td style={{ color: 'var(--text-secondary)' }}>{r.date}</td>
-                        <td>{r.hasImage ? <ImageIcon size={16} style={{ color: 'var(--amber)' }} /> : <span style={{ color: 'var(--text-tertiary)' }}>—</span>}</td>
-                        <td>{r.active ? <span className="badge badge-success">Active</span> : <span className="badge" style={{ background: 'var(--border)', color: 'var(--text-tertiary)' }}>Hidden</span>}</td>
-                        <td>
-                          {r.isDraftOnly ? (
-                            <div style={{ display: 'flex', gap: 6 }}>
-                              <button className="btn btn-secondary btn-sm" onClick={() => { setPendingDraftId(r.id); setView('draftDiff') }}>Open</button>
-                              <button className="btn btn-danger btn-sm btn-icon" onClick={r.deleteDraft}><TrashIcon size={13} /></button>
-                            </div>
-                          ) : (
-                            <div style={{ display: 'flex', gap: 6 }}>
-                              <button className="btn btn-secondary btn-sm" onClick={() => startEdit(r.id)}><EditIcon size={13} /> Edit</button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  })()}
-                </>
+                  }
+                  return rows.map(r => (
+                    <tr key={r.id} className={`transition-colors hover:bg-zinc-800/20 ${r.hasDraft ? 'bg-amber-500/5' : ''}`}>
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-zinc-300">{r.title}</div>
+                        {r.hasDraft && <div className="text-[10px] text-amber-400">Draft</div>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-block rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">{r.tag}</span>
+                      </td>
+                      <td className="hidden px-4 py-3 text-zinc-600 sm:table-cell">{r.date}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          r.active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-zinc-800 text-zinc-600'
+                        }`}>
+                          {r.active && <div className="h-1 w-1 rounded-full bg-emerald-500" />}
+                          {r.active ? 'Active' : 'Hidden'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {r.isDraftOnly ? (
+                          <div className="flex items-center gap-1">
+                            <button className="rounded-lg px-2 py-1 text-[10px] font-medium text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300" onClick={() => { setPendingDraftId(r.id); setView('draftDiff') }}>Open</button>
+                            <button className="rounded-lg p-1 text-zinc-700 hover:bg-red-500/10 hover:text-red-400" onClick={r.deleteDraft}><TrashIcon size={12} /></button>
+                          </div>
+                        ) : (
+                          <button className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-medium text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300" onClick={() => startEdit(r.id)}>
+                            <EditIcon size={12} /> Edit
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                })()
               )}
             </tbody>
           </table>
-        )}
+        </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
