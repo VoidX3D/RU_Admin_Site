@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useStore, checkLoginRateLimit, resetLoginRateLimit } from '../store'
 import { Storage } from '../utils/storage'
 import { sha256 } from '../utils/crypto'
@@ -69,15 +69,13 @@ export function Login() {
       t += 0.003
       ctx.clearRect(0, 0, w, h)
 
-      // Gradient base
       const grad = ctx.createLinearGradient(0, 0, w, h)
-      grad.addColorStop(0, 'rgba(2, 6, 23, 1)')
-      grad.addColorStop(0.5, 'rgba(3, 7, 18, 1)')
-      grad.addColorStop(1, 'rgba(2, 6, 23, 1)')
+      grad.addColorStop(0, '#020617')
+      grad.addColorStop(0.5, '#030712')
+      grad.addColorStop(1, '#020617')
       ctx.fillStyle = grad
       ctx.fillRect(0, 0, w, h)
 
-      // Large pulsing circles
       for (let i = 0; i < 3; i++) {
         const cx = w * (0.2 + i * 0.3) + Math.sin(t + i * 2) * 40
         const cy = h * (0.3 + (i % 2) * 0.3) + Math.cos(t * 0.7 + i) * 30
@@ -90,7 +88,6 @@ export function Login() {
         ctx.fillRect(0, 0, w, h)
       }
 
-      // Grid lines
       ctx.strokeStyle = 'rgba(255,255,255,0.015)'
       ctx.lineWidth = 1
       const step = 50
@@ -107,7 +104,6 @@ export function Login() {
         ctx.stroke()
       }
 
-      // Particles
       particles.forEach(p => {
         p.x += p.vx + Math.sin(t + p.hue) * 0.1
         p.y += p.vy + Math.cos(t * 0.5 + p.hue) * 0.1
@@ -121,7 +117,6 @@ export function Login() {
         ctx.fill()
       })
 
-      // Connecting lines between nearby particles
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x
@@ -167,12 +162,12 @@ export function Login() {
   }
 
   return (
-    <div className="fixed inset-0 flex bg-zinc-950">
+    <div className="fixed inset-0 flex bg-zinc-50 dark:bg-zinc-950">
       {/* Left Panel — Animated Background */}
       <div className="relative hidden w-[55%] overflow-hidden lg:block">
         <canvas ref={canvasRef} className="absolute inset-0" />
 
-        {/* Overlay content */}
+        {/* Overlay on canvas */}
         <motion.div
           className="absolute inset-0 flex flex-col items-center justify-center p-16"
           initial={{ opacity: 0 }}
@@ -212,7 +207,7 @@ export function Login() {
             {FLOATING_WORDS.map((word, i) => (
               <motion.span
                 key={word}
-                className="rounded-full border border-zinc-800/50 bg-zinc-900/30 px-3 py-1 text-[11px] font-medium text-zinc-600 backdrop-blur-sm"
+                className="rounded-full border border-zinc-700/50 bg-zinc-800/30 px-3 py-1 text-[11px] font-medium text-zinc-500 backdrop-blur-sm"
                 initial={{ opacity: 0, y: 20 }}
                 animate={mounted ? {
                   opacity: 1,
@@ -220,7 +215,7 @@ export function Login() {
                 } : {}}
                 transition={{
                   duration: 0.5, delay: 0.7 + i * 0.08,
-                  y: { duration: 2 + i * 0.3, repeat: Infinity, ease: 'easeInOut', delay: i * 0.2 },
+                  y: { duration: 2 + i * 0.3, repeat: Infinity, ease: 'easeInOut' },
                 }}
               >
                 {word}
@@ -234,8 +229,8 @@ export function Login() {
             animate={mounted ? { opacity: 1 } : {}}
             transition={{ duration: 0.6, delay: 1.5 }}
           >
-            <p className="text-[11px] leading-relaxed text-zinc-700">
-              Built by <span className="font-medium text-zinc-500">Sincee Bhattarai</span>
+            <p className="text-[11px] leading-relaxed text-zinc-500">
+              Built by <span className="font-medium text-zinc-400">Sincee Bhattarai</span>
               <br />
               <span className="text-[9px]">Edition for RU Club Site</span>
             </p>
@@ -244,18 +239,15 @@ export function Login() {
       </div>
 
       {/* Right Panel — Login Form */}
-      <div className="flex flex-1 items-center justify-center bg-zinc-950 p-6 lg:bg-zinc-950/95">
+      <div className="flex flex-1 items-center justify-center bg-zinc-50 p-6 dark:bg-zinc-950">
         <motion.div
           className="w-full max-w-sm"
           variants={containerVariants}
           initial="hidden"
           animate={mounted ? 'visible' : 'hidden'}
         >
-          {/* Mobile logo (hidden on desktop) */}
-          <motion.div
-            className="mb-8 text-center lg:hidden"
-            variants={itemVariants}
-          >
+          {/* Mobile logo */}
+          <motion.div className="mb-8 text-center lg:hidden" variants={itemVariants}>
             <motion.div
               className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20"
               animate={{ scale: [1, 1.03, 1] }}
@@ -263,19 +255,19 @@ export function Login() {
             >
               <span className="text-lg font-bold text-white">RU</span>
             </motion.div>
-            <h1 className="text-lg font-bold text-white">RU Club Motherland</h1>
+            <h1 className="text-lg font-bold text-zinc-900 dark:text-white">RU Club Motherland</h1>
             <p className="mt-0.5 text-xs text-zinc-500">Admin Panel</p>
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <h2 className="text-xl font-semibold text-white">Welcome back</h2>
+            <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">Welcome back</h2>
             <p className="mt-1 text-xs text-zinc-500">Sign in to access the admin panel</p>
           </motion.div>
 
           <motion.div className="mt-8 space-y-5" variants={itemVariants}>
             {error && (
               <motion.div
-                className="flex items-center gap-2 rounded-lg border border-red-900/50 bg-red-950/50 px-3 py-2.5 text-sm text-red-400"
+                className="flex items-center gap-2 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/50 px-3 py-2.5 text-sm text-red-600 dark:text-red-400"
                 initial={{ opacity: 0, height: 0, scale: 0.95 }}
                 animate={{ opacity: 1, height: 'auto', scale: 1 }}
               >
@@ -285,11 +277,9 @@ export function Login() {
             )}
 
             <div>
-              <label className="mb-1.5 block text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                Username
-              </label>
+              <label className="mb-1.5 block text-xs font-medium tracking-wide text-zinc-500 uppercase">Username</label>
               <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-600">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-400 dark:text-zinc-600">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
                 <input
@@ -298,17 +288,15 @@ export function Login() {
                   onKeyDown={e => e.key === 'Enter' && handleLogin()}
                   placeholder="Enter your username"
                   autoFocus
-                  className="w-full rounded-lg border border-zinc-800 bg-zinc-900/50 py-2.5 pl-10 pr-3 text-sm text-white placeholder-zinc-600 outline-none transition-all focus:border-emerald-500/50 focus:bg-zinc-900 focus:ring-1 focus:ring-emerald-500/20"
+                  className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 py-2.5 pl-10 pr-3 text-sm text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition-all focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20"
                 />
               </div>
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                Password
-              </label>
+              <label className="mb-1.5 block text-xs font-medium tracking-wide text-zinc-500 uppercase">Password</label>
               <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-600">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-400 dark:text-zinc-600">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                 </div>
                 <input
@@ -317,7 +305,7 @@ export function Login() {
                   onChange={e => { setPass(e.target.value); setError('') }}
                   onKeyDown={e => e.key === 'Enter' && handleLogin()}
                   placeholder="Enter your password"
-                  className="w-full rounded-lg border border-zinc-800 bg-zinc-900/50 py-2.5 pl-10 pr-3 text-sm text-white placeholder-zinc-600 outline-none transition-all focus:border-emerald-500/50 focus:bg-zinc-900 focus:ring-1 focus:ring-emerald-500/20"
+                  className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 py-2.5 pl-10 pr-3 text-sm text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition-all focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20"
                 />
               </div>
             </div>
@@ -350,17 +338,17 @@ export function Login() {
           </motion.div>
 
           <motion.p
-            className="mt-8 text-center text-[11px] text-zinc-700"
+            className="mt-8 text-center text-[11px] text-zinc-400 dark:text-zinc-700"
             variants={itemVariants}
           >
             Restricted to authorized club members only
           </motion.p>
 
           <motion.div
-            className="mt-6 border-t border-zinc-800/50 pt-5 text-center lg:hidden"
+            className="mt-6 border-t border-zinc-200 dark:border-zinc-800/50 pt-5 text-center lg:hidden"
             variants={itemVariants}
           >
-            <p className="text-[10px] leading-relaxed text-zinc-700">
+            <p className="text-[10px] leading-relaxed text-zinc-500">
               RU Club Motherland &middot; Built by <span className="font-medium text-zinc-500">Sincee Bhattarai</span>
             </p>
           </motion.div>
