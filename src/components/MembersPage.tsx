@@ -90,7 +90,7 @@ export function MembersPage() {
             <div className="skeleton skeleton-button" />
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
+        <div className="field-group field-group-4" style={{ marginBottom: 24 }}>
           {[1,2,3,4].map(i => <div key={i} className="skeleton skeleton-stat" />)}
         </div>
         <div className="skeleton skeleton-card" style={{ height: 200 }} />
@@ -113,7 +113,7 @@ export function MembersPage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
+      <div className="field-group field-group-4" style={{ marginBottom: 24 }}>
         {[
           { count: teachers.length, label: 'Teachers', color: 'var(--purple)' },
           { count: core.length, label: 'Core Team', color: 'var(--blue)' },
@@ -151,7 +151,7 @@ export function MembersPage() {
             {[1,2,3,4].map(i => (
               <div key={i} className="member-row">
                 <div className="skeleton skeleton-avatar" />
-                <div className="member-fields" style={{ gridTemplateColumns: tab === 'core' ? '1fr 100px 1fr 120px' : tab === 'teachers' ? '1.2fr 1fr 120px' : '1.2fr 100px 1fr' }}>
+                <div className="member-fields">
                   <div><div className="skeleton skeleton-text" /></div>
                   <div><div className="skeleton skeleton-text short" /></div>
                   <div><div className="skeleton skeleton-text" /></div>
@@ -172,7 +172,7 @@ export function MembersPage() {
             {current.map((m, i) => (
               <div key={i} className="member-row">
                 <div className="member-avatar">{m.name.charAt(0).toUpperCase() || '?'}</div>
-                <div className="member-fields" style={{ gridTemplateColumns: tab === 'core' ? '1fr 100px 1fr 120px' : tab === 'teachers' ? '1.2fr 1fr 120px' : '1.2fr 100px 1fr' }}>
+                <div className="member-fields">
                   <div>
                     <label className="label">Name</label>
                     <input value={m.name} onChange={e => upd(i, 'name', e.target.value)} placeholder="Full name" className="input" />

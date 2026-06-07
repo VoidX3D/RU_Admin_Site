@@ -106,7 +106,7 @@ export function Dashboard() {
 
   return (
     <div>
-      <div className="stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 16, marginBottom: 24 }}>
+      <div className="stagger field-group field-group-4" style={{ marginBottom: 24 }}>
         {cards.map((c, i) => (
           <div key={i} className="stat-card">
             <div className="stat-icon" style={{ background: c.bg, color: c.color }}>{c.icon}</div>
@@ -120,7 +120,7 @@ export function Dashboard() {
         <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
           <PlusIcon size={16} /> Quick Actions
         </h2>
-        <div className="stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 12 }}>
+        <div className="stagger field-group field-group-3">
           {quick.map((item, i) => (
             <div key={i} className="card" style={{ cursor: 'pointer', padding: 20, display: 'flex', alignItems: 'flex-start', gap: 14 }}
               onClick={() => setView(item.view)}
