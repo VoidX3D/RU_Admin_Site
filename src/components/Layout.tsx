@@ -133,7 +133,7 @@ export function Layout({ children }: { children: ReactNode }) {
         </header>
 
         <main className="app-body">
-          <div className="page-enter">{children}</div>
+          {children}
         </main>
       </div>
 

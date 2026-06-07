@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useStore } from './store'
 import { Storage } from './utils/storage'
 import { Login } from './components/Login'
@@ -14,6 +15,23 @@ import { DraftDiffPage } from './components/DraftDiffPage'
 import { Toast } from './components/Toast'
 import { PRDialog } from './components/PRDialog'
 import { ErrorBoundary } from './components/ErrorBoundary'
+
+const pageVariants = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: [0.16, 1, 0.3, 1] } },
+  exit: { opacity: 0, y: -8, transition: { duration: 0.15 } },
+}
+
+const PAGES: Record<string, React.ReactNode> = {
+  dashboard: <Dashboard />,
+  missions: <MissionsPage />,
+  announcements: <AnnouncementsPage />,
+  members: <MembersPage />,
+  settings: <SettingsPage />,
+  help: <HelpPage />,
+  history: <HistoryPage />,
+  draftDiff: <DraftDiffPage />,
+}
 
 export default function App() {
   const view = useStore(s => s.view)
@@ -99,14 +117,17 @@ export default function App() {
       <Toast />
       {view === 'login' ? <Login /> : (
         <Layout>
-          {view === 'dashboard' && <Dashboard />}
-          {view === 'missions' && <MissionsPage />}
-          {view === 'announcements' && <AnnouncementsPage />}
-          {view === 'members' && <MembersPage />}
-          {view === 'settings' && <SettingsPage />}
-          {view === 'help' && <HelpPage />}
-          {view === 'history' && <HistoryPage />}
-          {view === 'draftDiff' && <DraftDiffPage />}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={view}
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              {PAGES[view] || <Dashboard />}
+            </motion.div>
+          </AnimatePresence>
         </Layout>
       )}
       {view !== 'login' && <PRDialog open={prOpen} onClose={() => setPrOpen(false)} />}
