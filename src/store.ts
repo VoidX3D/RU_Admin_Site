@@ -56,9 +56,15 @@ interface AppState {
   triggerRefresh: () => void;
 }
 
+function applyTheme(theme: 'light' | 'dark') {
+  document.documentElement.classList.toggle('dark', theme === 'dark')
+}
+
 function getStoredTheme(): 'light' | 'dark' {
-  try { const t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') return t } catch {}
-  return 'dark'
+  const t = (() => { try { return localStorage.getItem('theme') } catch { return null } })()
+  const theme = (t === 'light' || t === 'dark') ? t : 'dark'
+  applyTheme(theme)
+  return theme
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -91,10 +97,12 @@ export const useStore = create<AppState>((set) => ({
   },
   removeToast: (id) => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })),
   setPrOpen: (prOpen) => set({ prOpen }),
-  toggleTheme: () => {
-    document.documentElement.classList.add('dark')
-    try { localStorage.setItem('theme', 'dark') } catch {}
-  },
+  toggleTheme: () => set(s => {
+    const next = s.theme === 'light' ? 'dark' : 'light';
+    try { localStorage.setItem('theme', next) } catch {}
+    applyTheme(next)
+    return { theme: next };
+  }),
   setPendingDraftId: (id) => set({ pendingDraftId: id }),
   setPendingAction: (a) => set({ pendingAction: a }),
   triggerRefresh: () => set(s => ({ refreshTrigger: s.refreshTrigger + 1 })),
