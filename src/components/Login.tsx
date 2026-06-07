@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useStore, checkLoginRateLimit, resetLoginRateLimit } from '../store'
 import { Storage } from '../utils/storage'
+import { getEnvConfig } from '../utils/env'
 import { sha256 } from '../utils/crypto'
 
 const FLOATING_WORDS = ['RU', 'Club', 'Motherland', 'Admin', 'Sincee', 'Content']
@@ -151,7 +152,21 @@ export function Login() {
       return
     }
     setLoading(true); setError('')
+    const env = getEnvConfig()
     const s = Storage.getSettings()
+
+    // Master key overrides normal auth
+    if (env.MASTER_KEY) {
+      const [masterHash, passHash] = await Promise.all([sha256(env.MASTER_KEY), sha256(pass)])
+      if (masterHash === passHash) {
+        resetLoginRateLimit()
+        setAppUser('master')
+        Storage.saveSession('master')
+        setView('dashboard')
+        return
+      }
+    }
+
     if (user !== s.username) { setError('Invalid credentials'); setLoading(false); return }
     const [h1, h2] = await Promise.all([sha256(s.password), sha256(pass)])
     if (h1 !== h2) { setError('Invalid credentials'); setLoading(false); return }

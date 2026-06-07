@@ -1,6 +1,7 @@
 interface EnvConfig {
   ADMIN_USERNAME: string
   ADMIN_PASSWORD: string
+  MASTER_KEY: string
   PR_VERIFY_CODE: string
   GITHUB_OWNER: string
   GITHUB_REPO: string
@@ -12,6 +13,7 @@ interface EnvConfig {
 const DEFAULTS: EnvConfig = {
   ADMIN_USERNAME: '',
   ADMIN_PASSWORD: '',
+  MASTER_KEY: '',
   PR_VERIFY_CODE: '',
   GITHUB_OWNER: 'VoidX3D',
   GITHUB_REPO: 'RU_Club_Website',
@@ -28,6 +30,7 @@ export function getEnvConfig(): EnvConfig {
   return {
     ADMIN_USERNAME: getEnvVar('ADMIN_USERNAME') || DEFAULTS.ADMIN_USERNAME,
     ADMIN_PASSWORD: getEnvVar('ADMIN_PASSWORD') || DEFAULTS.ADMIN_PASSWORD,
+    MASTER_KEY: getEnvVar('MASTER_KEY') || DEFAULTS.MASTER_KEY,
     PR_VERIFY_CODE: getEnvVar('PR_VERIFY_CODE') || DEFAULTS.PR_VERIFY_CODE,
     GITHUB_OWNER: getEnvVar('GITHUB_OWNER') || DEFAULTS.GITHUB_OWNER,
     GITHUB_REPO: getEnvVar('GITHUB_REPO') || DEFAULTS.GITHUB_REPO,
