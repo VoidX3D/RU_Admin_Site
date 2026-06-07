@@ -1,10 +1,27 @@
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import { useStore, getDrafts } from '../store'
 import { Storage } from '../utils/storage'
 import {
   TargetIcon, MegaphoneIcon, UsersIcon, FileTextIcon,
   PlusIcon, ArrowRightIcon, GitPullRequestIcon, TrashIcon
 } from './Icons'
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1, y: 0,
+    transition: { duration: 0.3, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] },
+  }),
+}
+
+const quickVariants = {
+  hidden: { opacity: 0, x: -10 },
+  visible: (i: number) => ({
+    opacity: 1, x: 0,
+    transition: { duration: 0.25, delay: 0.3 + i * 0.06, ease: [0.16, 1, 0.3, 1] },
+  }),
+}
 
 export function Dashboard() {
   const missions = useStore(s => s.missions)
@@ -89,13 +106,13 @@ export function Dashboard() {
 
   if (loading) {
     return (
-      <div className="page-enter">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 16, marginBottom: 24 }}>
+      <div>
+        <div className="field-group field-group-4" style={{ marginBottom: 24 }}>
           {[1,2,3,4].map(i => <div key={i} className="skeleton skeleton-stat" />)}
         </div>
         <div style={{ marginBottom: 24 }}>
           <div className="skeleton skeleton-text short" style={{ marginBottom: 16 }} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 12 }}>
+          <div className="field-group field-group-3">
             {[1,2,3].map(i => <div key={i} className="skeleton skeleton-card-sm" />)}
           </div>
         </div>
@@ -106,40 +123,84 @@ export function Dashboard() {
 
   return (
     <div>
-      <div className="stagger field-group field-group-4" style={{ marginBottom: 24 }}>
+      <div className="field-group field-group-4" style={{ marginBottom: 24 }}>
         {cards.map((c, i) => (
-          <div key={i} className="stat-card">
-            <div className="stat-icon" style={{ background: c.bg, color: c.color }}>{c.icon}</div>
-            <div className="stat-value">{c.value}</div>
+          <motion.div
+            key={i}
+            className="stat-card"
+            custom={i}
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <motion.div
+              className="stat-icon"
+              style={{ background: c.bg, color: c.color }}
+              whileHover={{ scale: 1.05, rotate: [0, -5, 5, 0] }}
+              transition={{ duration: 0.3 }}
+            >
+              {c.icon}
+            </motion.div>
+            <motion.div
+              className="stat-value"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: 0.1 + i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+            >
+              {c.value}
+            </motion.div>
             <div className="stat-label">{c.label}</div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <h2 className="flex items-center gap-2 text-sm font-bold" style={{ marginBottom: 12 }}>
           <PlusIcon size={16} /> Quick Actions
         </h2>
-        <div className="stagger field-group field-group-3">
+        <div className="field-group field-group-3">
           {quick.map((item, i) => (
-            <div key={i} className="card" style={{ cursor: 'pointer', padding: 20, display: 'flex', alignItems: 'flex-start', gap: 14 }}
+            <motion.div
+              key={i}
+              className="card"
+              custom={i}
+              variants={quickVariants}
+              initial="hidden"
+              animate="visible"
+              style={{ cursor: 'pointer', padding: 20, display: 'flex', alignItems: 'flex-start', gap: 14 }}
               onClick={() => setView(item.view)}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = item.color; e.currentTarget.style.boxShadow = 'var(--shadow-md)' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = ''; e.currentTarget.style.boxShadow = '' }}>
-              <div style={{ width: 44, height: 44, borderRadius: 10, background: item.bg, color: item.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              whileHover={{ borderColor: item.color, boxShadow: 'var(--shadow-md)' }}
+              whileTap={{ scale: 0.99 }}
+            >
+              <motion.div
+                className="flex items-center justify-center shrink-0"
+                style={{ width: 44, height: 44, borderRadius: 10, background: item.bg, color: item.color }}
+                whileHover={{ scale: 1.1 }}
+              >
                 {item.icon}
-              </div>
+              </motion.div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{item.title}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.4 }}>{item.desc}</div>
               </div>
-              <ArrowRightIcon size={16} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
-            </div>
+              <motion.div
+                animate={{ x: [0, 3, 0] }}
+                transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+              >
+                <ArrowRightIcon size={16} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+              </motion.div>
+            </motion.div>
           ))}
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 24 }}>
+      <motion.div
+        className="card"
+        style={{ marginBottom: 24 }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.5 }}
+      >
         <div className="card-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <FileTextIcon size={16} style={{ color: 'var(--amber)' }} />
@@ -156,8 +217,14 @@ export function Dashboard() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {drafts.map(d => (
-                <div key={d.id} className="draft-item">
+              {drafts.map((d, i) => (
+                <motion.div
+                  key={d.id}
+                  className="draft-item"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5 + i * 0.03 }}
+                >
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 600 }}>{d.title}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
@@ -171,33 +238,46 @@ export function Dashboard() {
                       <TrashIcon size={14} />
                     </button>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
 
-      <div style={{
-        background: 'linear-gradient(135deg, #1e293b, #0f172a)',
-        borderRadius: 'var(--radius-md)',
-        padding: '24px 28px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexWrap: 'wrap', gap: 16,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <motion.div
+        className="flex items-center justify-between flex-wrap gap-4 rounded-xl p-6 sm:p-7"
+        style={{
+          background: 'linear-gradient(135deg, #1e293b, #0f172a)',
+        }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.6 }}
+        whileHover={{ boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}
+      >
+        <div className="flex items-center gap-3.5">
+          <motion.div
+            className="flex items-center justify-center"
+            style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(255,255,255,0.1)' }}
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
+          >
             <GitPullRequestIcon size={22} style={{ color: '#fff' }} />
-          </div>
+          </motion.div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>GitHub Pull Request</div>
             <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>Publish your changes to the live site.</div>
           </div>
         </div>
-        <button className="btn btn-primary btn-lg" onClick={() => setPrOpen(true)}>
+        <motion.button
+          className="btn btn-primary btn-lg"
+          onClick={() => setPrOpen(true)}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
           <GitPullRequestIcon size={16} /> Send Pull Request
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
     </div>
   )
 }
