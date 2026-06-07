@@ -1,4 +1,4 @@
 User-agent: *
 Disallow: /
 
-Sitemap: https://ru-club-motherland-admin.pages.dev/sitemap.xml
+Sitemap: https://ru-admin-site.vercel.app/sitemap.xml
