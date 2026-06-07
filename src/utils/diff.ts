@@ -21,11 +21,25 @@ function normalizeFmt(s: string): string {
   return s.replace(/\r\n?/g, '\n').replace(/\n*$/, '\n')
 }
 
-// LCS-based line diff
+const DIFF_CACHE = new Map<string, DiffLine[]>()
+const MAX_DIFF_LINES = 2000
+
+// LCS-based line diff with fast-path for large files
 export function computeLineDiff(oldText: string, newText: string): DiffLine[] {
+  const cacheKey = oldText.length + ':' + newText.length + ':' + oldText.slice(0, 100) + ':' + newText.slice(0, 100)
+  const cached = DIFF_CACHE.get(cacheKey)
+  if (cached) return cached
+
   const a = splitLines(normalizeFmt(oldText))
   const b = splitLines(normalizeFmt(newText))
   const m = a.length, n = b.length
+
+  if (m > MAX_DIFF_LINES || n > MAX_DIFF_LINES) {
+    const result = simpleDiff(a, b)
+    DIFF_CACHE.set(cacheKey, result)
+    if (DIFF_CACHE.size > 50) DIFF_CACHE.clear()
+    return result
+  }
 
   const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0))
   for (let i = 1; i <= m; i++)
@@ -47,7 +61,30 @@ export function computeLineDiff(oldText: string, newText: string): DiffLine[] {
       i--
     }
   }
-  while (stack.length > 0) result.push(stack.pop()!)
+  while (stack.length > 0) {
+    const line = stack.pop()
+    if (line) result.push(line)
+  }
+
+  DIFF_CACHE.set(cacheKey, result)
+  if (DIFF_CACHE.size > 50) DIFF_CACHE.clear()
+  return result
+}
+
+function simpleDiff(a: string[], b: string[]): DiffLine[] {
+  const result: DiffLine[] = []
+  const maxLen = Math.min(a.length, b.length)
+  let i = 0
+  while (i < maxLen && a[i] === b[i]) {
+    result.push({ type: 'same', oldLine: i + 1, newLine: i + 1, text: a[i] })
+    i++
+  }
+  for (let j = i; j < a.length; j++) {
+    result.push({ type: 'del', oldLine: j + 1, newLine: null, text: a[j] })
+  }
+  for (let j = i; j < b.length; j++) {
+    result.push({ type: 'add', oldLine: null, newLine: j + 1, text: b[j] })
+  }
   return result
 }
 

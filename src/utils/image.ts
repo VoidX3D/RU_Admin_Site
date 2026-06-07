@@ -1,6 +1,8 @@
 import type { PendingImage } from '../types';
 
-const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024
+const MAX_IMAGE_DIMENSION = 4096
 
 export function renameImage(index: number) {
   return 'img-' + String(index + 1).padStart(2, '0') + '.jpg';
@@ -21,13 +23,25 @@ export function dataUrlToBlob(dataUrl: string): Blob {
   }
 }
 
+function getDataUrlSize(dataUrl: string): number {
+  const raw = dataUrl.split(',')[1]
+  if (!raw) return 0
+  return Math.ceil((raw.length * 3) / 4)
+}
+
 function compress(file: File, maxW = 1920, quality = 0.8): Promise<PendingImage> {
   return new Promise((resolve, reject) => {
-    if (!ALLOWED.includes(file.type)) { reject(new Error('Invalid type')); return; }
+    if (!ALLOWED.has(file.type)) { reject(new Error('Invalid type')); return; }
+    if (file.size > MAX_IMAGE_SIZE) { reject(new Error('File too large (max 5MB)')); return; }
+
     const reader = new FileReader();
     reader.onload = e => {
       const img = new Image();
       img.onload = () => {
+        if (img.width > MAX_IMAGE_DIMENSION || img.height > MAX_IMAGE_DIMENSION) {
+          reject(new Error('Image dimensions too large (max 4096px)'))
+          return
+        }
         const canvas = document.createElement('canvas');
         let w = img.width, h = img.height;
         if (w > maxW) { h = h * maxW / w; w = maxW; }
@@ -38,13 +52,14 @@ function compress(file: File, maxW = 1920, quality = 0.8): Promise<PendingImage>
         const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
         const q = file.type === 'image/png' ? 0.9 : quality;
         canvas.toBlob(blob => {
-          resolve({ dataUrl: canvas.toDataURL(mime, q), name: file.name, size: blob!.size });
+          const dataUrl = canvas.toDataURL(mime, q)
+          resolve({ dataUrl, name: file.name, size: blob?.size ?? getDataUrlSize(dataUrl) });
         }, mime, q);
       };
-      img.onerror = reject;
+      img.onerror = () => reject(new Error('Failed to decode image'));
       img.src = (e.target as FileReader).result as string;
     };
-    reader.onerror = reject;
+    reader.onerror = () => reject(new Error('Failed to read file'));
     reader.readAsDataURL(file);
   });
 }
@@ -53,9 +68,13 @@ export async function processFiles(files: FileList | File[], maxCount = Infinity
   const results: PendingImage[] = [];
   const arr = Array.from(files);
   for (const file of arr) {
-    if (!ALLOWED.includes(file.type)) continue;
+    if (!ALLOWED.has(file.type)) continue;
     try { results.push(await compress(file)); } catch {}
     if (results.length >= maxCount) break;
   }
   return results;
+}
+
+export function estimateDataUrlSize(dataUrl: string): number {
+  return getDataUrlSize(dataUrl)
 }

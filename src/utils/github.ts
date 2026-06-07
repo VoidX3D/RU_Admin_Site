@@ -8,6 +8,25 @@ const ALLOWED_EXTENSIONS = new Set([
 
 const PROTECTED_BRANCHES = new Set(['main', 'master', 'production', 'prod', 'live', 'deploy'])
 
+interface GitHubBranch {
+  name: string
+  commit: { sha: string; commit: { committer: { date: string } | null } }
+}
+
+interface GitHubPR {
+  number: number
+  title: string
+  state: string
+  html_url: string
+  created_at: string
+  head: { ref: string }
+  base: { ref: string }
+}
+
+interface GitHubContent { sha: string; content: string; encoding: string }
+interface GitHubRef { object: { sha: string } }
+interface GitHubCompare { ahead_by: number }
+
 function headers(token: string) {
   return { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
 }
@@ -17,10 +36,10 @@ async function api(url: string, token: string, opts: RequestInit = {}) {
   if (!res.ok) {
     let msg = `GitHub API error: ${res.status}`;
     try {
-      const d = await res.json();
+      const d = await res.json() as { message?: string; errors?: { message?: string; resource?: string; field?: string; code?: string }[] };
       msg = d.message || msg;
       if (d.errors && Array.isArray(d.errors)) {
-        const details = d.errors.map((e: { message?: string; resource?: string; field?: string; code?: string }) =>
+        const details = d.errors.map(e =>
           `${e.resource || ''}${e.field ? '.' + e.field : ''}: ${e.message || e.code || ''}`
         ).filter(Boolean).join('; ');
         if (details) msg += ' (' + details + ')';
@@ -31,10 +50,6 @@ async function api(url: string, token: string, opts: RequestInit = {}) {
   return res.status !== 204 ? res.json() : null;
 }
 
-/**
- * Guards against committing source code files.
- * Only allows content files (JSON, images, SVGs, markdown, etc.)
- */
 export function assertNotProtectedBranch(branch: string) {
   if (PROTECTED_BRANCHES.has(branch)) {
     throw new Error(`Blocked: cannot commit directly to "${branch}". All changes must go through a feature branch + PR.`)
@@ -58,7 +73,7 @@ export async function testToken(token: string, owner?: string, repo?: string) {
   try {
     await api(BASE + '/user', token);
     return true;
-  } catch (e: unknown) {
+  } catch {
     if (owner && repo) {
       try {
         await api(`${BASE}/repos/${owner}/${repo}`, token);
@@ -74,8 +89,8 @@ export async function testToken(token: string, owner?: string, repo?: string) {
 
 export async function getFile(token: string, owner: string, repo: string, path: string, branch: string) {
   try {
-    const data = await api(`${BASE}/repos/${owner}/${repo}/contents/${path}?ref=${branch}`, token);
-    return { sha: data.sha as string, content: atob((data.content as string).replace(/\n/g, '')), exists: true };
+    const data = await api(`${BASE}/repos/${owner}/${repo}/contents/${path}?ref=${branch}`, token) as GitHubContent;
+    return { sha: data.sha, content: atob(data.content.replace(/\n/g, '')), exists: true };
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : '';
     if (msg.includes('404') || msg.includes('Not Found')) return { sha: null, content: null, exists: false };
@@ -86,7 +101,7 @@ export async function getFile(token: string, owner: string, repo: string, path: 
 /** Quick fetch just the SHA of a file on a given branch. Returns null if the file doesn't exist. */
 export async function getFileSha(token: string, owner: string, repo: string, path: string, branch: string): Promise<string | null> {
   try {
-    const data = await api(`${BASE}/repos/${owner}/${repo}/contents/${path}?ref=${branch}`, token) as { sha: string };
+    const data = await api(`${BASE}/repos/${owner}/${repo}/contents/${path}?ref=${branch}`, token) as GitHubContent;
     return data.sha;
   } catch {
     return null;
@@ -96,7 +111,7 @@ export async function getFileSha(token: string, owner: string, repo: string, pat
 /** Compare two branches — returns how many commits ahead the head is. */
 export async function getCommitAhead(token: string, owner: string, repo: string, base: string, head: string): Promise<number> {
   try {
-    const data = await api(`${BASE}/repos/${owner}/${repo}/compare/${base}...${head}`, token) as { ahead_by: number };
+    const data = await api(`${BASE}/repos/${owner}/${repo}/compare/${base}...${head}`, token) as GitHubCompare;
     return data.ahead_by;
   } catch {
     return 0;
@@ -113,7 +128,7 @@ async function putFile(token: string, owner: string, repo: string, path: string,
 
 export async function createBranch(token: string, owner: string, repo: string, baseBranch: string, newBranch: string) {
   assertNotProtectedBranch(newBranch)
-  const base = await api(`${BASE}/repos/${owner}/${repo}/git/refs/heads/${baseBranch}`, token);
+  const base = await api(`${BASE}/repos/${owner}/${repo}/git/refs/heads/${baseBranch}`, token) as GitHubRef;
   await api(`${BASE}/repos/${owner}/${repo}/git/refs`, token, {
     method: 'POST',
     body: JSON.stringify({ ref: 'refs/heads/' + newBranch, sha: base.object.sha })
@@ -152,11 +167,11 @@ export interface PRInfo {
 }
 
 export async function listBranches(token: string, owner: string, repo: string): Promise<BranchInfo[]> {
-  const data = await api(`${BASE}/repos/${owner}/${repo}/branches?per_page=100`, token) as any[]
+  const data = await api(`${BASE}/repos/${owner}/${repo}/branches?per_page=100`, token) as GitHubBranch[]
   return data.map(b => ({
-    name: b.name as string,
-    sha: b.commit.sha as string,
-    updated: b.commit.commit?.committer?.date as string || '',
+    name: b.name,
+    sha: b.commit.sha,
+    updated: b.commit.commit?.committer?.date || '',
   }))
 }
 
@@ -166,22 +181,18 @@ export async function listAdminBranches(token: string, owner: string, repo: stri
 }
 
 export async function listPRs(token: string, owner: string, repo: string, state: string = 'all'): Promise<PRInfo[]> {
-  const data = await api(`${BASE}/repos/${owner}/${repo}/pulls?state=${state}&per_page=30&sort=updated&direction=desc`, token) as any[]
+  const data = await api(`${BASE}/repos/${owner}/${repo}/pulls?state=${state}&per_page=30&sort=updated&direction=desc`, token) as GitHubPR[]
   return data.map(p => ({
-    number: p.number as number,
-    title: p.title as string,
-    state: p.state as string,
-    html_url: p.html_url as string,
-    created_at: p.created_at as string,
-    head: { ref: p.head.ref as string },
-    base: { ref: p.base.ref as string },
+    number: p.number,
+    title: p.title,
+    state: p.state,
+    html_url: p.html_url,
+    created_at: p.created_at,
+    head: { ref: p.head.ref },
+    base: { ref: p.base.ref },
   }))
 }
 
-/**
- * Generates the next branch name by scanning existing admin-update-* branches
- * and incrementing the highest number found.
- */
 export async function getNextBranchName(token: string, owner: string, repo: string): Promise<string> {
   try {
     const branches = await listAdminBranches(token, owner, repo)
@@ -289,8 +300,8 @@ export async function createPR(token: string, owner: string, repo: string, title
       base,
       maintainer_can_modify: true,
     })
-  });
-  return { url: data.html_url as string, number: data.number as number };
+  }) as { html_url: string; number: number };
+  return { url: data.html_url, number: data.number };
 }
 
 export async function updatePR(token: string, owner: string, repo: string, prNumber: number, title: string, body: string) {
@@ -315,7 +326,7 @@ export async function branchExists(token: string, owner: string, repo: string, b
 export async function resetBranch(token: string, owner: string, repo: string, branch: string, targetBranch: string) {
   assertNotProtectedBranch(branch)
   assertAdminBranch(branch)
-  const target = await api(`${BASE}/repos/${owner}/${repo}/git/refs/heads/${targetBranch}`, token);
+  const target = await api(`${BASE}/repos/${owner}/${repo}/git/refs/heads/${targetBranch}`, token) as GitHubRef;
   await api(`${BASE}/repos/${owner}/${repo}/git/refs/heads/${branch}`, token, {
     method: 'PATCH',
     body: JSON.stringify({ sha: target.object.sha, force: true }),

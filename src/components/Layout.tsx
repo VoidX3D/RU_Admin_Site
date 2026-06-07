@@ -52,8 +52,36 @@ export function Layout({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
+  useEffect(() => {
+    let lastActivity = Date.now()
+    const INACTIVITY_TIMEOUT = 30 * 60 * 1000
+    const resetTimer = () => { lastActivity = Date.now() }
+    window.addEventListener('mousedown', resetTimer)
+    window.addEventListener('keydown', resetTimer)
+    window.addEventListener('touchstart', resetTimer)
+    const check = () => {
+      const s = Storage.getSession()
+      if (!s || (Date.now() - lastActivity > INACTIVITY_TIMEOUT)) {
+        Storage.clearSession()
+        Storage.clearToken()
+        setUser(null)
+        setView('login')
+        addToast('Session expired due to inactivity', 'info')
+      }
+    }
+    check()
+    const interval = setInterval(check, 60000)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('mousedown', resetTimer)
+      window.removeEventListener('keydown', resetTimer)
+      window.removeEventListener('touchstart', resetTimer)
+    }
+  }, [])
+
   function logout() {
     Storage.clearSession()
+    Storage.clearToken()
     setUser(null)
     setView('login')
   }

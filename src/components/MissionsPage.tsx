@@ -180,8 +180,10 @@ export function MissionsPage() {
       setMode('form'); return
     }
 
+    const missionId = m?.id
+    if (!missionId) return
     try {
-      const r = await fetch(getBase(`src/mission/${m!.id}/info.json`))
+      const r = await fetch(getBase(`src/mission/${missionId}/info.json`))
       if (r.ok) {
         const info = await r.json()
         setFDetail(info.detail || '')
@@ -189,7 +191,7 @@ export function MissionsPage() {
         setFPartners(info.partners || [])
         const imgs: PendingImage[] = []
         for (const f of (info.images || [])) {
-          const img = await fetchImg(getBase(`src/mission/${m!.id}/${f}`))
+          const img = await fetchImg(getBase(`src/mission/${missionId}/${f}`))
           if (img) imgs.push(img)
         }
         setFImages(imgs)

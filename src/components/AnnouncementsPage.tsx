@@ -194,8 +194,10 @@ export function AnnouncementsPage() {
       setMode('form'); return
     }
 
+    const annId = a?.id
+    if (!annId) return
     try {
-      const r = await fetch(getBase(`src/announcements/main/${a!.id}.json`))
+      const r = await fetch(getBase(`src/announcements/main/${annId}.json`))
       if (r.ok) {
         const info = await r.json()
         setFDesc(info.description || ''); setFStatus(info.status || '')

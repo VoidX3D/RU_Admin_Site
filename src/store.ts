@@ -6,6 +6,24 @@ export type View = 'login' | 'dashboard' | 'missions' | 'announcements' | 'membe
 
 export interface Toast { id: string; message: string; type: 'success' | 'error' | 'warning' | 'info'; }
 
+interface LoginAttempt {
+  count: number
+  lastAttempt: number
+}
+
+let loginAttempts: LoginAttempt = { count: 0, lastAttempt: 0 }
+
+export function checkLoginRateLimit(): number {
+  const now = Date.now()
+  if (now - loginAttempts.lastAttempt > 60000) loginAttempts = { count: 0, lastAttempt: now }
+  loginAttempts.count++
+  loginAttempts.lastAttempt = now
+  if (loginAttempts.count > 5) return Math.min((loginAttempts.count - 5) * 2000, 30000)
+  return 0
+}
+
+export function resetLoginRateLimit() { loginAttempts = { count: 0, lastAttempt: 0 } }
+
 interface AppState {
   view: View;
   user: string | null;
@@ -38,6 +56,11 @@ interface AppState {
   triggerRefresh: () => void;
 }
 
+function getStoredTheme(): 'light' | 'dark' {
+  try { const t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') return t } catch {}
+  return 'dark'
+}
+
 export const useStore = create<AppState>((set) => ({
   view: 'login',
   user: null,
@@ -48,7 +71,7 @@ export const useStore = create<AppState>((set) => ({
   pendingAnnImage: null,
   toasts: [],
   prOpen: false,
-  theme: (localStorage.getItem('theme') as 'light' | 'dark') || 'light',
+  theme: getStoredTheme(),
   pendingDraftId: null,
   pendingAction: null,
   refreshTrigger: 0,
@@ -62,7 +85,7 @@ export const useStore = create<AppState>((set) => ({
   removePendingImage: (i) => set(s => ({ pendingImages: s.pendingImages.filter((_, idx) => idx !== i) })),
   setPendingAnnImage: (img) => set({ pendingAnnImage: img }),
   addToast: (message, type) => {
-    const id = Math.random().toString(36).slice(2);
+    const id = Math.random().toString(36).slice(2, 10);
     set(s => ({ toasts: [...s.toasts, { id, message, type }] }));
     setTimeout(() => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })), 4000);
   },
@@ -70,7 +93,8 @@ export const useStore = create<AppState>((set) => ({
   setPrOpen: (prOpen) => set({ prOpen }),
   toggleTheme: () => set(s => {
     const next = s.theme === 'light' ? 'dark' : 'light';
-    localStorage.setItem('theme', next);
+    try { localStorage.setItem('theme', next) } catch {}
+    document.documentElement.classList.toggle('dark', next === 'dark')
     return { theme: next };
   }),
   setPendingDraftId: (id) => set({ pendingDraftId: id }),
@@ -79,4 +103,3 @@ export const useStore = create<AppState>((set) => ({
 }));
 
 export function getDrafts(): Draft[] { return Storage.listDrafts(); }
-

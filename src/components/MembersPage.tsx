@@ -64,7 +64,7 @@ export function MembersPage() {
     data.stats.core = data.core.length
     data.stats.general = data.general.length
     data.stats.total = data.teachers.length + data.core.length + data.general.length
-    Storage.saveDraft('members', 'members', data as unknown as Record<string, unknown>)
+    Storage.saveDraft('members', 'members', data as unknown as Record<string, unknown> & MembersData)
     addToast('Members draft saved!', 'success')
   }
 

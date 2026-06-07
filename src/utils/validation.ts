@@ -20,21 +20,26 @@ const RULES_CACHE = new Map<string, ValidationRule[]>()
 
 function compileRules(rules: FieldRules): ValidationRule[] {
   const key = JSON.stringify(rules)
-  if (RULES_CACHE.has(key)) return RULES_CACHE.get(key)!
+  const cached = RULES_CACHE.get(key)
+  if (cached) return cached
   const compiled: ValidationRule[] = []
   if (rules.required) {
     compiled.push({ validate: v => v.trim().length > 0, message: rules.required })
   }
   if (rules.minLength) {
-    compiled.push({ validate: v => v.length >= rules.minLength!.value, message: rules.minLength.message })
+    const { value, message } = rules.minLength
+    compiled.push({ validate: v => v.length >= value, message })
   }
   if (rules.maxLength) {
-    compiled.push({ validate: v => v.length <= rules.maxLength!.value, message: rules.maxLength.message })
+    const { value, message } = rules.maxLength
+    compiled.push({ validate: v => v.length <= value, message })
   }
   if (rules.pattern) {
-    compiled.push({ validate: v => rules.pattern!.regex.test(v), message: rules.pattern.message })
+    const { regex, message } = rules.pattern
+    compiled.push({ validate: v => regex.test(v), message })
   }
   if (rules.custom) compiled.push(...rules.custom)
+  if (RULES_CACHE.size > 100) RULES_CACHE.clear()
   RULES_CACHE.set(key, compiled)
   return compiled
 }
