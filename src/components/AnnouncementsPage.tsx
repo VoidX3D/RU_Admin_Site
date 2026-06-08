@@ -2,32 +2,14 @@ import { useEffect, useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { Storage } from '../utils/storage'
+import { fetchAnnouncements, fetchAnnouncementDetail, saveAnnouncement, uploadBase64Image } from '../utils/supabase'
 import type { AnnouncementEntry, PendingImage } from '../types'
 import {
- ArrowLeftIcon, PlusIcon, ImageIcon, MegaphoneIcon, RefreshIcon, SaveIcon, TrashIcon, EditIcon, CheckIcon, SearchIcon,
+  ArrowLeftIcon, PlusIcon, ImageIcon, MegaphoneIcon, RefreshIcon, SaveIcon, TrashIcon, EditIcon, CheckIcon, SearchIcon, DatabaseIcon,
 } from './Icons'
 import { Field, Textarea, Select, Toggle, ImageUpload } from './form'
 
 type Mode = 'list' | 'form'
-
-function getBase(path = '') {
- const s = Storage.getSettings()
- return `https://raw.githubusercontent.com/${s.repoOwner}/${s.repoName}/${s.repoBranch}/${path}`
-}
-
-async function fetchImg(url: string): Promise<PendingImage | null> {
- try {
- const r = await fetch(url)
- if (!r.ok) return null
- const blob = await r.blob()
- return new Promise(resolve => {
- const fr = new FileReader()
- fr.onloadend = () => resolve({ dataUrl: fr.result as string, name: url.split('/').pop() || 'image', remote: true })
- fr.onerror = () => resolve(null)
- fr.readAsDataURL(blob)
- })
- } catch { return null }
-}
 
 export function AnnouncementsPage() {
  const setView = useStore(s => s.setView)
@@ -131,20 +113,18 @@ export function AnnouncementsPage() {
  }
  }
 
- async function load() {
- setLoading(true)
- try {
- const r = await fetch(getBase('src/announcements/list.json'))
- const d = await r.json()
- const live = Array.isArray(d) ? d : []
- setAnns(live)
- cleanupStaleDrafts(live)
- } catch {
- setAnns([])
- addToast('Failed to load announcements', 'error')
- }
- setLoading(false)
- }
+  async function load() {
+  setLoading(true)
+  try {
+  const live = await fetchAnnouncements()
+  setAnns(live || [])
+  cleanupStaleDrafts(live || [])
+  } catch {
+  setAnns([])
+  addToast('Failed to load announcements', 'error')
+  }
+  setLoading(false)
+  }
 
  function startNew() {
  const n = String(anns.length + 1).padStart(2, '0')
@@ -194,24 +174,21 @@ export function AnnouncementsPage() {
  setMode('form'); return
  }
 
- const annId = a?.id
- if (!annId) return
- try {
- const r = await fetch(getBase(`src/announcements/main/${annId}.json`))
- if (r.ok) {
- const info = await r.json()
- setFDesc(info.description || ''); setFStatus(info.status || '')
- setFDay(info.day || ''); setFTime(info.time || ''); setFLoc(info.location || '')
- setFIssued(info.issuedBy || ''); setFImport(info.importance || ''); setFInstr(info.instructions || '')
- setFDeadline(info.deadline || '')
- if (info.image) {
- const fn = info.image.split('/').pop() || ''
- const img = await fetchImg(getBase(`src/announcements/assets/${fn}`))
- if (img) setFImg(img)
- }
- }
- } catch { /* ignore */ }
- setMode('form')
+  const annId = a?.id
+  if (!annId) return
+  try {
+  const info = await fetchAnnouncementDetail(annId)
+  if (info) {
+  setFDesc(info.description || ''); setFStatus(info.status || '')
+  setFDay(info.day || ''); setFTime(info.time || ''); setFLoc(info.location || '')
+  setFIssued(info.issuedBy || ''); setFImport(info.importance || ''); setFInstr(info.instructions || '')
+  setFDeadline(info.deadline || '')
+  if (info.image) {
+  setFImg({ dataUrl: info.image, name: info.image.split('/').pop() || 'image', remote: true })
+  }
+  }
+  } catch { /* ignore */ }
+  setMode('form')
  }
 
  function validate(): boolean {
@@ -257,11 +234,33 @@ export function AnnouncementsPage() {
  {saveStatus === 'saved' && <><CheckIcon size={10} className="dark:text-emerald-400" /> Saved</>}
  </span>
  <button className="rounded-lg border dark:border-zinc-800 px-3 py-1.5 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>Cancel</button>
- <button className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400" onClick={saveDraft}>
- <SaveIcon size={13} /> Save Draft
- </button>
- </div>
- </div>
+          <button className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400" onClick={saveDraft}>
+            <SaveIcon size={13} /> Save Draft
+          </button>
+          <button className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-400" onClick={async () => {
+            if (!validate()) { addToast('Please fix form errors', 'error'); return }
+            let imageUrl = fImg?.dataUrl || null
+            if (imageUrl?.startsWith('data:')) {
+              const filename = `announcements/${fId}.jpg`
+              const result = await uploadBase64Image('public', filename, imageUrl)
+              if (result.url) imageUrl = result.url
+            }
+            const { error } = await saveAnnouncement(fId, {
+              title: fTitle, tag: fTag, status: fStatus, date: fDate,
+              day: fDay, time: fTime, location: fLoc, issued_by: fIssued,
+              summary: fSummary, description: fDesc, importance: fImport,
+              instructions: fInstr, active: fActive, deadline: fDeadline, image: imageUrl,
+            })
+            if (error) { addToast('Publish failed: ' + error.message, 'error'); return }
+            Storage.deleteDraft('announcement', fId)
+            addToast('Announcement published to database!', 'success')
+            setMode('list')
+            load()
+          }}>
+            <DatabaseIcon size={13} /> Publish
+          </button>
+          </div>
+          </div>
 
  <div className="space-y-4">
  <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">

@@ -2,15 +2,11 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { Storage } from '../utils/storage'
+import { fetchMembers, saveMembers } from '../utils/supabase'
 import type { Member, MembersData } from '../types'
-import { UsersIcon, PlusIcon, XIcon, RefreshIcon, SaveIcon } from './Icons'
+import { UsersIcon, PlusIcon, XIcon, RefreshIcon, SaveIcon, DatabaseIcon } from './Icons'
 
 type Tab = 'teachers' | 'core' | 'general'
-
-function getBase(path = '') {
- const s = Storage.getSettings()
- return `https://raw.githubusercontent.com/${s.repoOwner}/${s.repoName}/${s.repoBranch}/${path}`
-}
 
 export function MembersPage() {
  const addToast = useStore(s => s.addToast)
@@ -23,15 +19,16 @@ export function MembersPage() {
 
  useEffect(() => { load() }, [refreshTrigger])
 
- async function load() {
- setLoading(true)
- try {
- const r = await fetch(getBase('src/info/members.json'))
- const d: MembersData = await r.json()
- setTeachers(d.teachers || []); setCore(d.core || []); setGeneral(d.general || [])
- } catch { /* ignore */ }
- setLoading(false)
- }
+  async function load() {
+  setLoading(true)
+  try {
+  const d = await fetchMembers()
+  if (d) {
+  setTeachers(d.teachers || []); setCore(d.core || []); setGeneral(d.general || [])
+  }
+  } catch { /* ignore */ }
+  setLoading(false)
+  }
 
  function addMember() {
  const m: Member = { name: '', class: '', role: 'General Member' }
@@ -103,9 +100,19 @@ export function MembersPage() {
  <button className="flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 px-3 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200" onClick={load}>
  <RefreshIcon size={13} /> Refresh
  </button>
- <button className="flex h-8 items-center gap-1.5 rounded-lg bg-amber-500 px-3 text-xs font-semibold text-white hover:bg-amber-400" onClick={saveDraft}>
- <SaveIcon size={13} /> Save Draft
- </button>
+    <button className="flex h-8 items-center gap-1.5 rounded-lg bg-amber-500 px-3 text-xs font-semibold text-white hover:bg-amber-400" onClick={saveDraft}>
+    <SaveIcon size={13} /> Save Draft
+    </button>
+    <button className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white hover:bg-emerald-400" onClick={async () => {
+    const filtered = { teachers: teachers.filter(t => t.name.trim()), core: core.filter(c => c.name.trim()), general: general.filter(g => g.name.trim()) }
+    const stats = { teachers: filtered.teachers.length, core: filtered.core.length, general: filtered.general.length, total: filtered.teachers.length + filtered.core.length + filtered.general.length }
+    const { error } = await saveMembers({ ...filtered, stats })
+    if (error) { addToast('Publish failed: ' + error.message, 'error'); return }
+    Storage.deleteDraft('members', 'members')
+    addToast('Members published to database!', 'success')
+    }}>
+    <DatabaseIcon size={13} /> Publish
+    </button>
  </div>
  </div>
 

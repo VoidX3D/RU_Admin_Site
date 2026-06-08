@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useStore, getDrafts } from '../store'
 import { Storage } from '../utils/storage'
+import { fetchMissions, fetchAnnouncements, fetchMembers } from '../utils/supabase'
 import {
- TargetIcon, MegaphoneIcon, UsersIcon, FileTextIcon,
- PlusIcon, ArrowRightIcon, GitPullRequestIcon, TrashIcon, FolderIcon, StarIcon, ActivityIcon,
+  TargetIcon, MegaphoneIcon, UsersIcon, FileTextIcon,
+  PlusIcon, ArrowRightIcon, DatabaseIcon, TrashIcon, FolderIcon, StarIcon, ActivityIcon,
 } from './Icons'
 
 const container = {
@@ -46,38 +47,36 @@ export function Dashboard() {
  const [liveStats, setLiveStats] = useState({ missions: '...', announcements: '...', members: '...' })
  const [loading, setLoading] = useState(true)
 
- useEffect(() => {
- setLoading(true)
- async function load() {
- const s = Storage.getSettings()
- const B = `https://raw.githubusercontent.com/${s.repoOwner}/${s.repoName}/${s.repoBranch}`
- try {
- const [mRes, aRes, memRes] = await Promise.allSettled([
- fetch(B + '/src/mission/list.json'),
- fetch(B + '/src/announcements/list.json'),
- fetch(B + '/src/info/members.json'),
- ])
- if (mRes.status === 'fulfilled') {
- const d = await mRes.value.json()
- setMissions(d.missions || [])
- setLiveStats(p => ({ ...p, missions: String((d.missions || []).filter((m: { show?: boolean }) => m.show !== false).length) }))
- }
- if (aRes.status === 'fulfilled') {
- const d = await aRes.value.json()
- setAnnouncements(Array.isArray(d) ? d : [])
- setLiveStats(p => ({ ...p, announcements: String((Array.isArray(d) ? d : []).filter((a: { active?: boolean }) => a.active !== false).length) }))
- }
- if (memRes.status === 'fulfilled') {
- const d = await memRes.value.json()
- setMembers(d)
- const total = d.stats?.total || (d.teachers?.length || 0) + (d.core?.length || 0) + (d.general?.length || 0)
- setLiveStats(p => ({ ...p, members: String(total) }))
- }
- } catch { /* ignore */ }
- setLoading(false)
- }
- load()
- }, [refreshTrigger])
+  useEffect(() => {
+  setLoading(true)
+  async function load() {
+  try {
+  const [missionsData, announcementsData, membersData] = await Promise.allSettled([
+  fetchMissions(),
+  fetchAnnouncements(),
+  fetchMembers(),
+  ])
+  if (missionsData.status === 'fulfilled') {
+  const data = missionsData.value
+  setMissions(data || [])
+  setLiveStats(p => ({ ...p, missions: String((data || []).filter((m: { show?: boolean }) => m.show !== false).length) }))
+  }
+  if (announcementsData.status === 'fulfilled') {
+  const data = announcementsData.value
+  setAnnouncements(data || [])
+  setLiveStats(p => ({ ...p, announcements: String((data || []).filter((a: { active?: boolean }) => a.active !== false).length) }))
+  }
+  if (membersData.status === 'fulfilled') {
+  const data = membersData.value
+  setMembers(data)
+  const total = data?.stats?.total || (data?.teachers?.length || 0) + (data?.core?.length || 0) + (data?.general?.length || 0)
+  setLiveStats(p => ({ ...p, members: String(total) }))
+  }
+  } catch { /* ignore */ }
+  setLoading(false)
+  }
+  load()
+  }, [refreshTrigger])
 
  const missionDrafts = drafts.filter(d => d.type === 'mission')
  const announcementDrafts = drafts.filter(d => d.type === 'announcement')
@@ -231,31 +230,31 @@ export function Dashboard() {
  </div>
  </motion.div>
 
- <motion.div
- variants={item2}
- className="group relative overflow-hidden rounded-xl border dark:border-zinc-800/50 bg-gradient-to-r dark:from-zinc-900/80 dark:via-zinc-900/50 dark:to-zinc-900/80 p-5 sm:p-6"
- whileHover={{ borderColor: 'rgba(255,255,255,0.08)' }}
- >
- <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/5 via-transparent to-transparent" />
- <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
- <div className="flex items-center gap-3">
- <div className="flex h-10 w-10 items-center justify-center rounded-xl dark:bg-emerald-500/10">
- <GitPullRequestIcon size={20} className="dark:text-emerald-400" />
- </div>
- <div>
- <div className="text-sm font-semibold text-zinc-900 dark:text-white">GitHub Pull Request</div>
- <div className="mt-0.5 text-xs text-zinc-500">Publish your changes to the live site</div>
- </div>
- </div>
- <button
- className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-4 text-xs font-semibold text-white transition-colors dark:hover:bg-emerald-400"
- onClick={() => setPrOpen(true)}
- >
- <GitPullRequestIcon size={14} />
- Send Pull Request
- </button>
- </div>
- </motion.div>
+  <motion.div
+  variants={item2}
+  className="group relative overflow-hidden rounded-xl border dark:border-zinc-800/50 bg-gradient-to-r dark:from-zinc-900/80 dark:via-zinc-900/50 dark:to-zinc-900/80 p-5 sm:p-6"
+  whileHover={{ borderColor: 'rgba(255,255,255,0.08)' }}
+  >
+  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/5 via-transparent to-transparent" />
+  <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div className="flex items-center gap-3">
+  <div className="flex h-10 w-10 items-center justify-center rounded-xl dark:bg-emerald-500/10">
+  <DatabaseIcon size={20} className="dark:text-emerald-400" />
+  </div>
+  <div>
+  <div className="text-sm font-semibold text-zinc-900 dark:text-white">Supabase Database</div>
+  <div className="mt-0.5 text-xs text-zinc-500">Publish directly to the live database</div>
+  </div>
+  </div>
+  <button
+  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-4 text-xs font-semibold text-white transition-colors dark:hover:bg-emerald-400"
+  onClick={() => setPrOpen(true)}
+  >
+  <DatabaseIcon size={14} />
+  Publish to Database
+  </button>
+  </div>
+  </motion.div>
  </motion.div>
  )
 }

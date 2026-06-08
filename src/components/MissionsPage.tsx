@@ -2,32 +2,14 @@ import { useEffect, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useStore } from '../store'
 import { Storage } from '../utils/storage'
+import { fetchMissions, fetchMissionDetail, saveMission, uploadBase64Image } from '../utils/supabase'
 import type { MissionEntry, StatRow, PendingImage, Draft } from '../types'
 import {
- ArrowLeftIcon, PlusIcon, ImageIcon, TargetIcon, RefreshIcon, SaveIcon, TrashIcon, EditIcon, CheckIcon, SearchIcon,
+  ArrowLeftIcon, PlusIcon, ImageIcon, TargetIcon, RefreshIcon, SaveIcon, TrashIcon, EditIcon, CheckIcon, SearchIcon, DatabaseIcon,
 } from './Icons'
 import { Field, Textarea, Toggle, ImageUpload, StatsEditor, PartnersEditor } from './form'
 
 type Mode = 'list' | 'form'
-
-function getBase(path = '') {
- const s = Storage.getSettings()
- return `https://raw.githubusercontent.com/${s.repoOwner}/${s.repoName}/${s.repoBranch}/${path}`
-}
-
-async function fetchImg(url: string): Promise<PendingImage | null> {
- try {
- const r = await fetch(url)
- if (!r.ok) return null
- const blob = await r.blob()
- return new Promise(resolve => {
- const fr = new FileReader()
- fr.onloadend = () => resolve({ dataUrl: fr.result as string, name: url.split('/').pop() || 'image', remote: true })
- fr.onerror = () => resolve(null)
- fr.readAsDataURL(blob)
- })
- } catch { return null }
-}
 
 export function MissionsPage() {
  const setView = useStore(s => s.setView)
@@ -126,20 +108,18 @@ export function MissionsPage() {
  }
  }
 
- async function loadMissions() {
- setLoading(true)
- try {
- const r = await fetch(getBase('src/mission/list.json'))
- const d = await r.json()
- const live = d.missions || []
- setMissions(live)
- cleanupStaleDrafts(live)
- } catch {
- setMissions([])
- addToast('Failed to load missions', 'error')
- }
- setLoading(false)
- }
+  async function loadMissions() {
+  setLoading(true)
+  try {
+  const live = await fetchMissions()
+  setMissions(live || [])
+  cleanupStaleDrafts(live || [])
+  } catch {
+  setMissions([])
+  addToast('Failed to load missions', 'error')
+  }
+  setLoading(false)
+  }
 
  function startNew() {
  const n = String(missions.length + 1).padStart(2, '0')
@@ -180,24 +160,21 @@ export function MissionsPage() {
  setMode('form'); return
  }
 
- const missionId = m?.id
- if (!missionId) return
- try {
- const r = await fetch(getBase(`src/mission/${missionId}/info.json`))
- if (r.ok) {
- const info = await r.json()
- setFDetail(info.detail || '')
- setFStats(Object.entries(info.stats || {}).map(([k, v]) => ({ key: k, value: String(v) })))
- setFPartners(info.partners || [])
- const imgs: PendingImage[] = []
- for (const f of (info.images || [])) {
- const img = await fetchImg(getBase(`src/mission/${missionId}/${f}`))
- if (img) imgs.push(img)
- }
- setFImages(imgs)
- }
- } catch { /* ignore */ }
- setMode('form')
+  const missionId = m?.id
+  if (!missionId) return
+  try {
+  const info = await fetchMissionDetail(missionId)
+  if (info) {
+  setFDetail(info.detail || '')
+  setFStats(Object.entries(info.stats || {}).map(([k, v]) => ({ key: k, value: String(v) })))
+  setFPartners(info.partners || [])
+  const imgs: PendingImage[] = (info.images || []).map((url: string) => ({
+  dataUrl: url, name: url.split('/').pop() || 'image', remote: true,
+  }))
+  setFImages(imgs)
+  }
+  } catch { /* ignore */ }
+  setMode('form')
  }
 
  function validate(): boolean {
@@ -248,11 +225,40 @@ export function MissionsPage() {
  <button className="rounded-lg border dark:border-zinc-800 px-3 py-1.5 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>
  Cancel
  </button>
- <button className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400" onClick={saveDraft}>
- <SaveIcon size={13} /> Save Draft
- </button>
- </div>
- </div>
+          <button className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400" onClick={saveDraft}>
+            <SaveIcon size={13} /> Save Draft
+          </button>
+          <button className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-400" onClick={async () => {
+            if (!validate()) { addToast('Please fix form errors', 'error'); return }
+            const images = fImages.filter(i => i.dataUrl.startsWith('data:'))
+            const imageUrls: string[] = []
+            for (let i = 0; i < fImages.length; i++) {
+              if (fImages[i].remote && fImages[i].dataUrl.startsWith('http')) imageUrls.push(fImages[i].dataUrl)
+              else if (fImages[i].dataUrl.startsWith('data:')) {
+                const filename = `missions/${fId}/img-${String(i + 1).padStart(2, '0')}.jpg`
+                const result = await uploadBase64Image('public', filename, fImages[i].dataUrl)
+                if (result.url) imageUrls.push(result.url)
+              }
+            }
+            const statsObj: Record<string, string> = {}
+            fStats.forEach(s => { if (s.key) statsObj[s.key] = s.value })
+            const { error } = await saveMission(fId, {
+              slug: fId, title: fTitle, tag: fTag, date: fDate,
+              description: fDesc, detail: fDetail, show: fShow,
+              image_count: fImages.length, featured: imageUrls[0] || null,
+              images: imageUrls, stats: statsObj,
+              partners: fPartners.filter(p => p.trim()),
+            })
+            if (error) { addToast('Publish failed: ' + error.message, 'error'); return }
+            Storage.deleteDraft('mission', fId)
+            addToast('Mission published to database!', 'success')
+            setMode('list')
+            loadMissions()
+          }}>
+            <DatabaseIcon size={13} /> Publish
+          </button>
+          </div>
+          </div>
 
  <div className="space-y-4">
  <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
