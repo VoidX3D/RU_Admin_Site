@@ -68,7 +68,7 @@ export function Dashboard() {
   }
   if (membersData.status === 'fulfilled') {
   const data = membersData.value
-  setMembers(data)
+  setMembers(data || { teachers: [], core: [], general: [], stats: { teachers: 0, core: 0, general: 0, total: 0 } })
   const total = data?.stats?.total || (data?.teachers?.length || 0) + (data?.core?.length || 0) + (data?.general?.length || 0)
   setLiveStats(p => ({ ...p, members: String(total) }))
   }

@@ -43,15 +43,14 @@ export function PRDialog({ open, onClose }: Props) {
             if (images[i].remote && images[i].dataUrl.startsWith('http')) {
               imageUrls.push(images[i].dataUrl)
             } else if (images[i].dataUrl.startsWith('data:')) {
-              const filename = `missions/${d.id}/img-${String(i + 1).padStart(2, '0')}.jpg`
+              const filename = `mission/${d.id}/img-${String(i + 1).padStart(2, '0')}.jpg`
               const result = await uploadBase64Image('public', filename, images[i].dataUrl)
               if (result.url) imageUrls.push(result.url)
             }
           }
 
-          const stats = (d.stats as { key: string; value: string }[]) || []
-          const statsObj: Record<string, string> = {}
-          stats.forEach(s => { if (s.key) statsObj[s.key] = s.value })
+          const rawStats = (d.stats as { key: string; value: string }[]) || []
+          const statsArr = rawStats.filter(s => s.key).map(s => ({ label: s.key, value: s.value }))
 
           const { error } = await saveMission(d.id as string, {
             slug: d.id,
@@ -64,7 +63,7 @@ export function PRDialog({ open, onClose }: Props) {
             image_count: images.length,
             featured: imageUrls[0] || null,
             images: imageUrls,
-            stats: statsObj,
+            stats: statsArr,
             partners: (d.partners as string[]) || [],
           })
           if (error) throw error

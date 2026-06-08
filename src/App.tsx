@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useStore } from './store'
 import { Storage } from './utils/storage'
+import { initAdminAnalytics, trackAdminPage } from './utils/analytics'
 import { Login } from './components/Login'
 import { Layout } from './components/Layout'
 import { Dashboard } from './components/Dashboard'
@@ -49,6 +50,7 @@ export default function App() {
   prRef.current = prOpen
 
   useEffect(() => {
+    initAdminAnalytics()
     const session = Storage.getSession()
     if (session?.user) {
       setUser(session.user)
@@ -60,6 +62,12 @@ export default function App() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
   }, [theme])
+
+  useEffect(() => {
+    if (view !== 'login') {
+      trackAdminPage(`/admin/${view}`, `Admin — ${view.charAt(0).toUpperCase() + view.slice(1)}`)
+    }
+  }, [view])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -121,15 +129,15 @@ export default function App() {
       {view === 'login' ? <Login /> : (
         <Layout>
           <AnimatePresence mode="wait">
-            <motion.div
-              key={view}
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-            >
-              {PAGES[view] || <Dashboard />}
-            </motion.div>
+              <motion.div
+                key={view}
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+              >
+                {PAGES[view] || <Dashboard />}
+              </motion.div>
           </AnimatePresence>
         </Layout>
       )}

@@ -5,7 +5,14 @@ export interface MissionEntry {
 export interface MissionInfo {
   id: string; title: string; slug: string; tag?: string; date?: string;
   description: string; detail?: string; images: string[];
-  stats?: Record<string,string>; partners?: string[]; show?: boolean;
+  stats?: { label: string; value: string }[];
+  partners?: string[]; show?: boolean;
+  goals?: string[]; timeline?: MissionTimeline[];
+  participants?: { group_name: string; participant_count: string }[];
+  budget?: { item: string; amount?: string }[];
+}
+export interface MissionTimeline {
+  title: string; date?: string; description?: string;
 }
 export interface AnnouncementEntry {
   id: string; title: string; tag?: string; date: string; day?: string;
@@ -18,9 +25,9 @@ export interface AnnouncementFull {
   summary: string; description: string; importance?: string;
   instructions?: string; image?: string; active?: boolean; gallery?: string[];
 }
-export interface Member { name: string; class?: string; role: string; type?: string; }
+export interface Member { name: string; class?: string; role: string; memberType?: string; groupName?: string; }
 export interface MembersData { teachers: Member[]; core: Member[]; general: Member[]; stats: { teachers: number; core: number; general: number; total: number; }; }
-export interface Draft { type: 'mission' | 'announcement' | 'members'; id: string; title: string; updated: number; date?: string; imageCount?: number; image?: unknown; stats?: StatRow[]; partners?: string[]; show?: boolean; description?: string; detail?: string; tag?: string; [k: string]: unknown; }
+export interface Draft { type: 'mission' | 'announcement' | 'members'; id: string; title: string; updated: number; date?: string; imageCount?: number; image?: unknown; stats?: { label: string; value: string }[]; partners?: string[]; show?: boolean; description?: string; detail?: string; tag?: string; goals?: string[]; timeline?: MissionTimeline[]; participants?: { group_name: string; participant_count: string }[]; budget?: { item: string; amount?: string }[]; [k: string]: unknown; }
 export interface PendingImage { dataUrl: string; name: string; size?: number; remote?: boolean; }
 export interface Settings {
   username: string; password: string; verifyCode: string;

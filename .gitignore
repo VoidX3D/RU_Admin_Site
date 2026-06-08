@@ -1,5 +1,26 @@
-node_modules
-dist
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Env
 .env
+.env.local
+
+# Dependencies
+node_modules/
+
+# Vercel
+.vercel/
+
+# Build artifacts
+*.tsbuildinfo
 *.local
-tsconfig.tsbuildinfo

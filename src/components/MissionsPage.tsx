@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useStore } from '../store'
 import { Storage } from '../utils/storage'
 import { fetchMissions, fetchMissionDetail, saveMission, uploadBase64Image } from '../utils/supabase'
-import type { MissionEntry, StatRow, PendingImage, Draft } from '../types'
+import type { MissionEntry, StatRow, PendingImage, Draft, MissionTimeline } from '../types'
 import {
   ArrowLeftIcon, PlusIcon, ImageIcon, TargetIcon, RefreshIcon, SaveIcon, TrashIcon, EditIcon, CheckIcon, SearchIcon, DatabaseIcon,
 } from './Icons'
@@ -22,34 +22,49 @@ export function MissionsPage() {
  const [errors, setErrors] = useState<Record<string, string>>({})
  const [search, setSearch] = useState('')
 
- const [fId, setFId] = useState('')
- const [fTitle, setFTitle] = useState('')
- const [fTag, setFTag] = useState('')
- const [fDate, setFDate] = useState('')
- const [fDesc, setFDesc] = useState('')
- const [fDetail, setFDetail] = useState('')
- const [fShow, setFShow] = useState(true)
- const [fStats, setFStats] = useState<StatRow[]>([])
- const [fPartners, setFPartners] = useState<string[]>([])
- const [fImages, setFImages] = useState<PendingImage[]>([])
- const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [fId, setFId] = useState('')
+  const [fTitle, setFTitle] = useState('')
+  const [fTag, setFTag] = useState('')
+  const [fDate, setFDate] = useState('')
+  const [fDesc, setFDesc] = useState('')
+  const [fDetail, setFDetail] = useState('')
+  const [fShow, setFShow] = useState(true)
+  const [fStatus, setFStatus] = useState('completed')
+  const [fCategory, setFCategory] = useState('')
+  const [fLocation, setFLocation] = useState('')
+  const [fDuration, setFDuration] = useState('')
+  const [fImpact, setFImpact] = useState('')
+  const [fCoordinator, setFCoordinator] = useState('')
+  const [fStats, setFStats] = useState<StatRow[]>([])
+  const [fPartners, setFPartners] = useState<string[]>([])
+  const [fGoals, setFGoals] = useState<string[]>([])
+  const [fTimeline, setFTimeline] = useState<MissionTimeline[]>([])
+  const [fParticipants, setFParticipants] = useState<{ group_name: string; participant_count: string }[]>([])
+  const [fBudget, setFBudget] = useState<{ item: string; amount: string }[]>([])
+  const [fImages, setFImages] = useState<PendingImage[]>([])
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
 
- function doSave() {
- Storage.saveDraft('mission', fId, {
- id: fId, title: fTitle, tag: fTag, date: fDate,
- description: fDesc, detail: fDetail,
- stats: fStats.filter(s => s.key || s.value),
- partners: fPartners.filter(p => p.trim()),
- show: fShow, images: fImages, imageCount: fImages.length,
- })
- setSaveStatus('saved')
- }
+  function doSave() {
+  Storage.saveDraft('mission', fId, {
+  id: fId, title: fTitle, tag: fTag, date: fDate,
+  description: fDesc, detail: fDetail,
+  stats: fStats.filter(s => s.key || s.value),
+  partners: fPartners.filter(p => p.trim()),
+  show: fShow, status: fStatus, category: fCategory,
+  location_name: fLocation, duration: fDuration,
+  impact: fImpact, coordinator: fCoordinator,
+  goals: fGoals, timeline: fTimeline,
+  participants: fParticipants, budget: fBudget,
+  images: fImages, imageCount: fImages.length,
+  })
+  setSaveStatus('saved')
+  }
 
- useEffect(() => {
- if (mode !== 'form' || !fId) return
- setSaveStatus('saving')
- doSave()
- }, [fId, fTitle, fTag, fDate, fDesc, fDetail, fShow, fStats, fPartners, fImages, mode])
+  useEffect(() => {
+  if (mode !== 'form' || !fId) return
+  setSaveStatus('saving')
+  doSave()
+  }, [fId, fTitle, fTag, fDate, fDesc, fDetail, fShow, fStatus, fCategory, fLocation, fDuration, fImpact, fCoordinator, fStats, fPartners, fGoals, fTimeline, fParticipants, fBudget, fImages, mode])
 
  const doSaveRef = useRef(doSave)
  doSaveRef.current = doSave
@@ -121,14 +136,18 @@ export function MissionsPage() {
   setLoading(false)
   }
 
- function startNew() {
- const n = String(missions.length + 1).padStart(2, '0')
- setFId('mission-' + n); setFTitle(''); setFTag('Mission #' + n)
- setFDate(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' }))
- setFDesc(''); setFDetail(''); setFShow(true)
- setFStats([]); setFPartners([]); setFImages([]); setErrors({})
- setMode('form')
- }
+  function startNew() {
+  const n = String(missions.length + 1).padStart(2, '0')
+  setFId('mission-' + n); setFTitle(''); setFTag('Mission #' + n)
+  setFDate(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' }))
+  setFDesc(''); setFDetail(''); setFShow(true)
+  setFStatus('planned'); setFCategory(''); setFLocation('')
+  setFDuration(''); setFImpact(''); setFCoordinator('')
+  setFStats([]); setFPartners([]); setFGoals([])
+  setFTimeline([]); setFParticipants([]); setFBudget([])
+  setFImages([]); setErrors({})
+  setMode('form')
+  }
 
  async function startEdit(id: string) {
  const m = missions.find(x => x.id === id || x.slug === id)
@@ -145,20 +164,33 @@ export function MissionsPage() {
  setFDate(''); setFDesc('')
  setFShow(true)
  }
- setFDetail(''); setFStats([]); setFPartners([]); setFImages([]); setErrors({})
+  setFDetail(''); setFStats([]); setFPartners([]); setFImages([]); setErrors({})
+  setFStatus('completed'); setFCategory(''); setFLocation('')
+  setFDuration(''); setFImpact(''); setFCoordinator('')
+  setFGoals([]); setFTimeline([]); setFParticipants([]); setFBudget([])
 
- if (draft) {
- setFTitle((draft.title as string) || (m?.title || ''))
- setFTag((draft.tag as string) || (m?.tag || ''))
- setFDate((draft.date as string) || (m?.date || ''))
- setFDesc((draft.description as string) || (m?.description || ''))
- setFShow(draft.show !== false)
- setFDetail((draft.detail as string) || '')
- setFStats((draft.stats as StatRow[]) || [])
- setFPartners((draft.partners as string[]) || [])
- setFImages((draft.images as PendingImage[]) || [])
- setMode('form'); return
- }
+  if (draft) {
+  setFTitle((draft.title as string) || (m?.title || ''))
+  setFTag((draft.tag as string) || (m?.tag || ''))
+  setFDate((draft.date as string) || (m?.date || ''))
+  setFDesc((draft.description as string) || (m?.description || ''))
+  setFShow(draft.show !== false)
+  setFDetail((draft.detail as string) || '')
+  setFStatus((draft.status as string) || 'completed')
+  setFCategory((draft.category as string) || '')
+  setFLocation((draft.location_name as string) || '')
+  setFDuration((draft.duration as string) || '')
+  setFImpact((draft.impact as string) || '')
+  setFCoordinator((draft.coordinator as string) || '')
+  setFStats((draft.stats as StatRow[]) || [])
+  setFPartners((draft.partners as string[]) || [])
+  setFGoals((draft.goals as string[]) || [])
+  setFTimeline((draft.timeline as MissionTimeline[]) || [])
+  setFParticipants((draft.participants as { group_name: string; participant_count: string }[]) || [])
+  setFBudget((draft.budget as { item: string; amount: string }[]) || [])
+  setFImages((draft.images as PendingImage[]) || [])
+  setMode('form'); return
+  }
 
   const missionId = m?.id
   if (!missionId) return
@@ -235,18 +267,17 @@ export function MissionsPage() {
             for (let i = 0; i < fImages.length; i++) {
               if (fImages[i].remote && fImages[i].dataUrl.startsWith('http')) imageUrls.push(fImages[i].dataUrl)
               else if (fImages[i].dataUrl.startsWith('data:')) {
-                const filename = `missions/${fId}/img-${String(i + 1).padStart(2, '0')}.jpg`
+                const filename = `mission/${fId}/img-${String(i + 1).padStart(2, '0')}.jpg`
                 const result = await uploadBase64Image('public', filename, fImages[i].dataUrl)
                 if (result.url) imageUrls.push(result.url)
               }
             }
-            const statsObj: Record<string, string> = {}
-            fStats.forEach(s => { if (s.key) statsObj[s.key] = s.value })
+            const statsArr = fStats.filter(s => s.key).map(s => ({ label: s.key, value: s.value }))
             const { error } = await saveMission(fId, {
               slug: fId, title: fTitle, tag: fTag, date: fDate,
               description: fDesc, detail: fDetail, show: fShow,
               image_count: fImages.length, featured: imageUrls[0] || null,
-              images: imageUrls, stats: statsObj,
+              images: imageUrls, stats: statsArr,
               partners: fPartners.filter(p => p.trim()),
             })
             if (error) { addToast('Publish failed: ' + error.message, 'error'); return }
