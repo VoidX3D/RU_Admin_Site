@@ -32,9 +32,9 @@ export function MembersPage() {
     try {
       const d = await fetchMembers()
       if (d) {
-        setTeachers((d.teachers || []).map(m => ({ name: m.name, class: m.class, role: m.role, image: (m as unknown as Record<string, string>).image, member_type: (m as unknown as Record<string, string>).member_type })))
-        setCore((d.core || []).map(m => ({ name: m.name, class: m.class, role: m.role, image: (m as unknown as Record<string, string>).image, member_type: (m as unknown as Record<string, string>).member_type })))
-        setGeneral((d.general || []).map(m => ({ name: m.name, class: m.class, role: m.role, image: (m as unknown as Record<string, string>).image, member_type: (m as unknown as Record<string, string>).member_type })))
+        setTeachers(d.teachers || [])
+        setCore(d.core || [])
+        setGeneral(d.general || [])
       }
     } catch { /* ignore */ }
     setLoading(false)
@@ -84,12 +84,27 @@ export function MembersPage() {
     input.click()
   }
 
+  function stripUrl(url: string): string {
+    if (url.startsWith('http')) {
+      const parts = url.split('/')
+      const bucketIdx = parts.findIndex(p => p === 'ruclub')
+      if (bucketIdx !== -1) {
+        const afterAssets = parts.slice(bucketIdx + 3).join('/')
+        return afterAssets
+      }
+      const memberIdx = parts.findIndex(p => p.startsWith('members'))
+      if (memberIdx !== -1) return parts.slice(memberIdx).join('/')
+      return url.split('/').pop() || url
+    }
+    return url
+  }
+
   async function handleSave() {
     setSaving(true)
     const filtered = {
-      teachers: teachers.filter(t => t.name.trim()),
-      core: core.filter(c => c.name.trim()),
-      general: general.filter(g => g.name.trim()),
+      teachers: teachers.filter(t => t.name.trim()).map(m => ({ ...m, image: m.image ? stripUrl(m.image) : '' })),
+      core: core.filter(c => c.name.trim()).map(m => ({ ...m, image: m.image ? stripUrl(m.image) : '' })),
+      general: general.filter(g => g.name.trim()).map(m => ({ ...m, image: m.image ? stripUrl(m.image) : '' })),
     }
     const { error } = await saveMembers(filtered as unknown as Record<string, unknown>)
     if (error) { addToast('Save failed: ' + error.message, 'error'); setSaving(false); return }
@@ -207,21 +222,21 @@ export function MembersPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.02 }}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-3">
                     {/* Avatar / Image */}
                     <div
-                      className="relative flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border dark:border-zinc-800 bg-gradient-to-br from-emerald-500/20 to-emerald-500/5"
+                      className="relative flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border dark:border-zinc-800 bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 self-center sm:self-auto"
                       onClick={() => handleImageUpload(i)}
                     >
                       {m.image ? (
                         <img src={m.image} alt="" className="h-full w-full object-cover" />
                       ) : (
-                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                        <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
                           {m.name.charAt(0).toUpperCase() || '?'}
                         </span>
                       )}
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors hover:bg-black/30">
-                        <ImageIcon size={12} className="text-white opacity-0 transition-opacity hover:opacity-100" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors hover:bg-black/40">
+                        <ImageIcon size={14} className="text-white opacity-0 transition-opacity hover:opacity-100" />
                       </div>
                     </div>
 
@@ -255,12 +270,11 @@ export function MembersPage() {
                       </div>
                     </div>
 
-                    <button className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 dark:text-zinc-600 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 mt-5" onClick={() => remove(i)}>
+                    <button className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 dark:text-zinc-600 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 self-center sm:self-start sm:mt-5" onClick={() => remove(i)}>
                       <XIcon size={14} />
                     </button>
                   </div>
 
-                  {/* Image URL field */}
                   <div className="flex items-center gap-2">
                     <input value={m.image || ''} onChange={e => upd(i, 'image', e.target.value)} placeholder="Image URL (or click avatar to upload)"
                       className="flex-1 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-[10px] text-zinc-500 dark:text-zinc-500 outline-none focus:border-emerald-500/30 font-mono" />

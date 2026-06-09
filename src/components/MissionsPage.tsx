@@ -27,7 +27,7 @@ export function MissionsPage() {
   const [fDesc, setFDesc] = useState('')
   const [fDetail, setFDetail] = useState('')
   const [fShow, setFShow] = useState(true)
-  const [fStats, setFStats] = useState<{ key: string; value: string }[]>([])
+  const [fStats, setFStats] = useState<{ label: string; value: string }[]>([])
   const [fPartners, setFPartners] = useState<string[]>([])
   const [fGoals, setFGoals] = useState<string[]>([])
   const [fTimeline, setFTimeline] = useState<MissionTimeline[]>([])
@@ -94,7 +94,7 @@ export function MissionsPage() {
       const info = await fetchMissionDetail(missionId)
       if (info) {
         setFDetail(info.detail || '')
-        setFStats(Object.entries(info.stats || {}).map(([k, v]) => ({ key: k, value: String(v) })))
+        setFStats((info.stats || []).map((s: { label: string; value: string }) => ({ label: s.label, value: String(s.value) })))
         setFPartners(info.partners || [])
         setFGoals(info.goals || [])
         setFTimeline(info.timeline || [])
@@ -135,7 +135,7 @@ export function MissionsPage() {
         }
       }
 
-      const statsArr = fStats.filter(s => s.key).map(s => ({ label: s.key, value: s.value }))
+      const statsArr = fStats.filter(s => s.label).map(s => ({ label: s.label, value: s.value }))
       const { error } = await saveMission(fId, {
         slug: fId, title: fTitle, tag: fTag, date: fDate,
         description: fDesc, detail: fDetail, show: fShow,

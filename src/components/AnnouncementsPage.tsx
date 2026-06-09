@@ -104,7 +104,7 @@ export function AnnouncementsPage() {
       if (info) {
         setFDesc(info.description || ''); setFStatus(info.status || '')
         setFDay(info.day || ''); setFTime(info.time || ''); setFLoc(info.location || '')
-        setFIssued(info.issuedBy || ''); setFImport(info.importance || ''); setFInstr(info.instructions || '')
+        setFIssued(info.issued_by || ''); setFImport(info.importance || ''); setFInstr(info.instructions || '')
         setFDeadline(info.deadline || '')
         if (info.image) {
           setFImg({ dataUrl: info.image, name: info.image.split('/').pop() || 'image', remote: true })
@@ -113,7 +113,7 @@ export function AnnouncementsPage() {
           setFTags(info.tags)
         }
         if (info.gallery && Array.isArray(info.gallery)) {
-          setFGallery(info.gallery.map((g: string | { url: string; alt?: string }) => {
+          setFGallery(info.gallery.map((g: { url: string; alt?: string }) => {
             const url = typeof g === 'string' ? g : g.url
             return { dataUrl: url, name: url.split('/').pop() || 'gallery', remote: true }
           }))

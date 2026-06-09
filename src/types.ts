@@ -1,6 +1,6 @@
 export interface MissionEntry {
   slug: string; id: string; title: string; description: string;
-  tag?: string; date?: string; show?: boolean; imageCount?: number; featured?: string;
+  tag?: string; date?: string; show?: boolean; image_count?: number; featured?: string;
 }
 export interface MissionInfo {
   id: string; title: string; slug: string; tag?: string; date?: string;
@@ -21,13 +21,18 @@ export interface AnnouncementEntry {
 export interface AnnouncementFull {
   id: string; title: string; tag?: string; status?: string;
   tags?: string[]; date: string; day?: string; deadline?: string;
-  time?: string; location?: string; issuedBy?: string;
+  time?: string; location?: string; issued_by?: string;
   summary: string; description: string; importance?: string;
   instructions?: string; image?: string; active?: boolean;
   gallery?: { url: string; alt?: string }[];
 }
-export interface Member { name: string; class?: string; role: string; }
-export interface MembersData { teachers: Member[]; core: Member[]; general: Member[]; stats: { teachers: number; core: number; general: number; total: number; }; }
+export interface Member {
+  name: string; class?: string; role: string; image?: string; member_type?: string;
+}
+export interface MembersData {
+  teachers: Member[]; core: Member[]; general: Member[];
+  stats: { teachers: number; core: number; general: number; total: number; };
+}
 export interface PendingImage { dataUrl: string; name: string; size?: number; remote?: boolean; }
 export interface Settings { username: string; password: string; verifyCode: string; }
-export interface StatRow { key: string; value: string; }
+export interface StatRow { label: string; value: string; }
