@@ -27,7 +27,7 @@ export function initAdminAnalytics() {
   GA_MEASUREMENT_IDS.forEach((id) => {
     window.gtag('config', id, {
       send_page_view: false,
-      linker: { domains: ['ruclubmss.vercel.app'] },
+      linker: { domains: ['ruclub.motherland.edu.np', 'ruclubmss.vercel.app'] },
     })
   })
 }
