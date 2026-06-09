@@ -154,7 +154,6 @@ export function Login() {
     }
     setLoading(true); setError('')
     const env = getEnvConfig()
-    const s = Storage.getSettings()
 
     // Master key overrides normal auth
     if (env.MASTER_KEY) {
@@ -168,8 +167,9 @@ export function Login() {
       }
     }
 
-    if (user !== s.username) { setError('Invalid credentials'); setLoading(false); return }
-    const [h1, h2] = await Promise.all([sha256(s.password), sha256(pass)])
+    // Compare against env vars
+    if (user !== env.ADMIN_USERNAME) { setError('Invalid credentials'); setLoading(false); return }
+    const [h1, h2] = await Promise.all([sha256(env.ADMIN_PASSWORD), sha256(pass)])
     if (h1 !== h2) { setError('Invalid credentials'); setLoading(false); return }
     resetLoginRateLimit()
     setAppUser(user)

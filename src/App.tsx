@@ -1,20 +1,36 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, lazy, Suspense } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useStore } from './store'
 import { Storage } from './utils/storage'
-import { Login } from './components/Login'
-import { Layout } from './components/Layout'
-import { Dashboard } from './components/Dashboard'
-import { MissionsPage } from './components/MissionsPage'
-import { AnnouncementsPage } from './components/AnnouncementsPage'
-import { MembersPage } from './components/MembersPage'
-import { SettingsPage } from './components/SettingsPage'
-import { HelpPage } from './components/HelpPage'
-import { HistoryPage } from './components/HistoryPage'
-import { DraftDiffPage } from './components/DraftDiffPage'
-import { Toast } from './components/Toast'
-import { PRDialog } from './components/PRDialog'
-import { ErrorBoundary } from './components/ErrorBoundary'
+import { initAdminAnalytics, trackAdminPage } from './utils/analytics'
+
+const Login = lazy(() => import('./components/Login').then(m => ({ default: m.Login })))
+const Layout = lazy(() => import('./components/Layout').then(m => ({ default: m.Layout })))
+const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })))
+const MissionsPage = lazy(() => import('./components/MissionsPage').then(m => ({ default: m.MissionsPage })))
+const AnnouncementsPage = lazy(() => import('./components/AnnouncementsPage').then(m => ({ default: m.AnnouncementsPage })))
+const MembersPage = lazy(() => import('./components/MembersPage').then(m => ({ default: m.MembersPage })))
+const ContactSubmissions = lazy(() => import('./components/ContactSubmissions').then(m => ({ default: m.ContactSubmissions })))
+const StatsEditorPage = lazy(() => import('./components/StatsEditorPage').then(m => ({ default: m.StatsEditorPage })))
+const PartnersEditorPage = lazy(() => import('./components/PartnersEditorPage').then(m => ({ default: m.PartnersEditorPage })))
+const SettingsPage = lazy(() => import('./components/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const HelpPage = lazy(() => import('./components/HelpPage').then(m => ({ default: m.HelpPage })))
+const Toast = lazy(() => import('./components/Toast').then(m => ({ default: m.Toast })))
+const ErrorBoundary = lazy(() => import('./components/ErrorBoundary').then(m => ({ default: m.ErrorBoundary })))
+
+function PageLoader() {
+  return (
+    <div className="flex h-40 items-center justify-center">
+      <div className="flex flex-col items-center gap-2">
+        <svg className="h-6 w-6 animate-spin text-emerald-500" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" strokeWidth="3" stroke="currentColor" className="opacity-20" />
+          <path d="M12 2a10 10 0 0 1 10 10" strokeWidth="3" stroke="currentColor" strokeLinecap="round" />
+        </svg>
+        <p className="text-[10px] text-zinc-500">Loading...</p>
+      </div>
+    </div>
+  )
+}
 
 const pageVariants = {
   initial: { opacity: 0, y: 8 },
@@ -27,28 +43,26 @@ const PAGES: Record<string, React.ReactNode> = {
   missions: <MissionsPage />,
   announcements: <AnnouncementsPage />,
   members: <MembersPage />,
+  contact: <ContactSubmissions />,
+  stats: <StatsEditorPage />,
+  partners: <PartnersEditorPage />,
   settings: <SettingsPage />,
   help: <HelpPage />,
-  history: <HistoryPage />,
-  draftDiff: <DraftDiffPage />,
 }
 
 export default function App() {
   const view = useStore(s => s.view)
   const setUser = useStore(s => s.setUser)
   const setView = useStore(s => s.setView)
-  const prOpen = useStore(s => s.prOpen)
-  const setPrOpen = useStore(s => s.setPrOpen)
   const theme = useStore(s => s.theme)
   const setPendingAction = useStore(s => s.setPendingAction)
   const [appLoading, setAppLoading] = useState(true)
 
   const viewRef = useRef(view)
   viewRef.current = view
-  const prRef = useRef(prOpen)
-  prRef.current = prOpen
 
   useEffect(() => {
+    initAdminAnalytics()
     const session = Storage.getSession()
     if (session?.user) {
       setUser(session.user)
@@ -62,27 +76,15 @@ export default function App() {
   }, [theme])
 
   useEffect(() => {
+    if (view !== 'login') {
+      trackAdminPage(`/admin/${view}`, `Admin — ${view.charAt(0).toUpperCase() + view.slice(1)}`)
+    }
+  }, [view])
+
+  useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const el = e.target as HTMLElement
       const isInput = el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable
-
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'p' || e.key === 'P')) {
-        e.preventDefault()
-        if (viewRef.current !== 'login') setPrOpen(true)
-        return
-      }
-
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 's' || e.key === 'S')) {
-        e.preventDefault()
-        setView('settings')
-        return
-      }
-
-      if (e.key === 'Escape') {
-        if (prRef.current) { setPrOpen(false); return }
-        return
-      }
-
       if (isInput) return
 
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
@@ -93,6 +95,7 @@ export default function App() {
           case 'm': e.preventDefault(); setView('missions'); break
           case 'a': e.preventDefault(); setView('announcements'); break
           case 'u': e.preventDefault(); setView('members'); break
+          case 'c': e.preventDefault(); setView('contact'); break
         }
       }
     }
@@ -116,24 +119,27 @@ export default function App() {
   }
 
   return (
-    <ErrorBoundary>
-      <Toast />
-      {view === 'login' ? <Login /> : (
-        <Layout>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={view}
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-            >
-              {PAGES[view] || <Dashboard />}
-            </motion.div>
-          </AnimatePresence>
-        </Layout>
-      )}
-      {view !== 'login' && <PRDialog open={prOpen} onClose={() => setPrOpen(false)} />}
-    </ErrorBoundary>
+    <Suspense fallback={<PageLoader />}>
+      <ErrorBoundary>
+        <Toast />
+        {view === 'login' ? <Login /> : (
+          <Layout>
+            <AnimatePresence mode="wait">
+              <Suspense fallback={<PageLoader />}>
+                <motion.div
+                  key={view}
+                  variants={pageVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                >
+                  {PAGES[view] || <Dashboard />}
+                </motion.div>
+              </Suspense>
+            </AnimatePresence>
+          </Layout>
+        )}
+      </ErrorBoundary>
+    </Suspense>
   )
 }

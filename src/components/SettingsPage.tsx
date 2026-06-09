@@ -1,340 +1,218 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
-import { Storage } from '../utils/storage'
 import { getEnvConfig, isProductionEnv, hasEnvAuth } from '../utils/env'
+import { checkDBConnection } from '../utils/supabase'
 import { exportBackup, importBackup } from '../utils/backup'
-import { listAdminBranches, analyzeBranches, deleteBranch, cleanupStaleBranches } from '../utils/github'
-import type { BranchStatus } from '../utils/github'
-import type { Settings } from '../types'
 import {
- DownloadIcon, UploadIcon, RefreshIcon, AlertTriangleIcon, CheckCircleIcon,
- SaveIcon, LockIcon, FolderIcon, BranchIcon,
- EyeIcon, EyeOffIcon, GitPullRequestIcon, TrashIcon, PlusIcon,
- UserIcon, XIcon,
+  DownloadIcon, UploadIcon, CheckCircleIcon, DatabaseIcon, UserIcon, LockIcon,
+  FileTextIcon, KeyIcon, AlertCircleIcon, AlertTriangleIcon, RefreshIcon,
 } from './Icons'
 
 export function SettingsPage() {
- const addToast = useStore(s => s.addToast)
- const settings = Storage.getSettings()
- const [repoOwner, setRepoOwner] = useState(settings.repoOwner)
- const [repoName, setRepoName] = useState(settings.repoName)
- const [repoBranch, setRepoBranch] = useState(settings.repoBranch)
- const [saved, setSaved] = useState(false)
- const fileRef = useRef<HTMLInputElement>(null)
- const env = getEnvConfig()
- const production = env.PRODUCTION_MODE
- const envAuth = hasEnvAuth()
+  const addToast = useStore(s => s.addToast)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'error'>('checking')
+  const env = getEnvConfig()
 
- function save() {
- Storage.saveSettings({ ...settings, repoOwner, repoName, repoBranch })
- addToast(production ? 'Locked in production mode' : 'Repository settings saved', production ? 'warning' : 'success')
- if (!production) {
- setSaved(true)
- setTimeout(() => setSaved(false), 2500)
- }
- }
+  useEffect(() => {
+    checkDBConnection().then(ok => setDbStatus(ok ? 'connected' : 'error'))
+  }, [])
 
- function handleExport() {
- const json = exportBackup()
- const blob = new Blob([json], { type: 'application/json' })
- const url = URL.createObjectURL(blob)
- const a = document.createElement('a')
- a.href = url; a.download = `ru-admin-backup-${new Date().toISOString().slice(0, 10)}.json`
- a.click()
- URL.revokeObjectURL(url)
- addToast('Backup exported!', 'success')
- }
+  function handleExport() {
+    const json = exportBackup()
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `ru-admin-backup-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    addToast('Backup exported!', 'success')
+  }
 
- function handleFileImport(e: React.ChangeEvent<HTMLInputElement>) {
- const file = e.target.files?.[0]
- if (!file) return
- const reader = new FileReader()
- reader.onload = () => {
- const result = importBackup(reader.result as string)
- if (result.ok) {
- addToast(result.message, 'success')
- const s = Storage.getSettings()
- setRepoOwner(s.repoOwner)
- setRepoName(s.repoName)
- setRepoBranch(s.repoBranch)
- } else {
- addToast(result.message, 'error')
- }
- }
- reader.readAsText(file)
- e.target.value = ''
- }
+  function handleFileImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = importBackup(reader.result as string)
+      addToast(result.message, result.ok ? 'success' : 'error')
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
 
- return (
- <motion.div
- initial={{ opacity: 0, y: 8 }}
- animate={{ opacity: 1, y: 0 }}
- transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
- className="mx-auto max-w-2xl"
- >
- <div className="mb-5">
- <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Settings</h2>
- <p className="mt-0.5 text-xs dark:text-zinc-600">Configuration, credentials, and data management</p>
- </div>
+  const prod = isProductionEnv()
+  const authOk = hasEnvAuth()
 
- {production && (
- <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
- <LockIcon size={16} className="mt-0.5 shrink-0 dark:text-amber-400" />
- <div className="min-w-0 text-xs leading-relaxed text-amber-300/80">
- <strong className="text-amber-300">Production Mode Active</strong> — All settings locked and read from environment variables.
- Edit your <code className="rounded dark:bg-amber-500/10 px-1 dark:text-amber-400">.env</code> file to change configuration.
- </div>
- </div>
- )}
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      className="mx-auto max-w-2xl"
+    >
+      <div className="mb-5">
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Settings</h2>
+        <p className="mt-0.5 text-xs dark:text-zinc-600">Configuration and data management</p>
+      </div>
 
- <div className="mb-4 rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
- <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
- <UserIcon size={14} className="dark:text-zinc-400" />
- <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Login Credentials</h3>
- </div>
- <div className="p-4">
- <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
- <div>
- <label className="mb-1 block text-[10px] font-medium dark:text-zinc-600">Username</label>
- <div className="flex items-center gap-2">
- <input value={settings.username} readOnly
- className="w-full cursor-default rounded-lg border dark:border-zinc-800 dark:bg-zinc-900/50 px-3 py-2 text-xs dark:text-zinc-500 opacity-70 outline-none" />
- <span className="flex shrink-0 items-center gap-1 rounded-md dark:bg-zinc-800 px-1.5 py-1 text-[9px] font-medium dark:text-zinc-500">
- <LockIcon size={9} /> from .env
- </span>
- </div>
- </div>
- <div>
- <label className="mb-1 block text-[10px] font-medium dark:text-zinc-600">Password</label>
- <div className="flex items-center gap-2">
- <input type="password" value={settings.password.replace(/./g, '•')} readOnly
- className="w-full cursor-default rounded-lg border dark:border-zinc-800 dark:bg-zinc-900/50 px-3 py-2 text-xs dark:text-zinc-500 opacity-70 outline-none" />
- <span className="flex shrink-0 items-center gap-1 rounded-md dark:bg-zinc-800 px-1.5 py-1 text-[9px] font-medium dark:text-zinc-500">
- <LockIcon size={9} /> from .env
- </span>
- </div>
- </div>
- <div className="sm:col-span-2">
- <label className="mb-1 block text-[10px] font-medium dark:text-zinc-600">Verification Code</label>
- <div className="flex items-center gap-2">
- <input value={settings.verifyCode} readOnly
- className="w-full max-w-xs cursor-default rounded-lg border dark:border-zinc-800 dark:bg-zinc-900/50 px-3 py-2 text-xs dark:text-zinc-500 opacity-70 outline-none" />
- <span className="flex shrink-0 items-center gap-1 rounded-md dark:bg-zinc-800 px-1.5 py-1 text-[9px] font-medium dark:text-zinc-500">
- <LockIcon size={9} /> from .env
- </span>
- </div>
- <div className="mt-1 text-[10px] dark:text-zinc-700">Required to publish PRs — always read from environment</div>
- </div>
- </div>
- </div>
- </div>
+      {/* Production mode banner */}
+      {prod && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+          <AlertTriangleIcon size={14} className="text-amber-500 shrink-0" />
+          <p className="text-[10px] text-amber-600 dark:text-amber-400">
+            Production mode — all settings are managed through environment variables.
+          </p>
+        </div>
+      )}
 
- <div className="mb-4 rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
- <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
- <FolderIcon size={14} className="dark:text-zinc-400" />
- <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">GitHub Repository</h3>
- </div>
- <div className="p-4">
- <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
- <div>
- <label className="mb-1 block text-[10px] font-medium dark:text-zinc-600">Owner</label>
- <input value={repoOwner} onChange={e => setRepoOwner(e.target.value)}
- placeholder="VoidX3D" readOnly={production}
- className="w-full rounded-lg border dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2 text-xs dark:text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
- </div>
- <div>
- <label className="mb-1 block text-[10px] font-medium dark:text-zinc-600">Repository</label>
- <input value={repoName} onChange={e => setRepoName(e.target.value)}
- placeholder="RU_Club_Website" readOnly={production}
- className="w-full rounded-lg border dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2 text-xs dark:text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
- </div>
- <div>
- <label className="mb-1 block text-[10px] font-medium dark:text-zinc-600">Branch</label>
- <input value={repoBranch} onChange={e => setRepoBranch(e.target.value)}
- placeholder="main" readOnly={production}
- className="w-full max-w-[200px] rounded-lg border dark:border-zinc-800 dark:bg-zinc-900 px-3 py-2 text-xs dark:text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
- </div>
- </div>
- </div>
- </div>
+      {/* DB Status */}
+      <div className="mb-4 rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+        <div className="flex items-center justify-between border-b dark:border-zinc-800/50 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <DatabaseIcon size={14} className="dark:text-zinc-400" />
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Database Connection</h3>
+          </div>
+          <button onClick={() => { setDbStatus('checking'); checkDBConnection().then(ok => setDbStatus(ok ? 'connected' : 'error')) }}
+            className="flex items-center gap-1 rounded-md dark:bg-zinc-800 px-2 py-1 text-[9px] dark:text-zinc-500 hover:text-zinc-300"
+          >
+            <RefreshIcon size={10} /> Test
+          </button>
+        </div>
+        <div className="p-4">
+          <div className="flex items-center gap-3">
+            <div className={`flex h-8 w-8 items-center justify-center rounded-full ${
+              dbStatus === 'connected' ? 'bg-emerald-500/10' : dbStatus === 'error' ? 'bg-red-500/10' : 'bg-zinc-800'
+            }`}>
+              {dbStatus === 'connected' ? (
+                <CheckCircleIcon size={16} className="text-emerald-400" />
+              ) : dbStatus === 'error' ? (
+                <AlertCircleIcon size={16} className="text-red-400" />
+              ) : (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-600 border-t-transparent" />
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-medium dark:text-zinc-300">
+                {dbStatus === 'connected' ? 'Supabase Connected' : dbStatus === 'error' ? 'Connection Error' : 'Checking...'}
+              </p>
+              <p className="text-[10px] dark:text-zinc-600 mt-0.5">
+                {dbStatus === 'connected' ? 'All CRUD operations available' : dbStatus === 'error' ? 'Check your .env configuration' : 'Verifying connection...'}
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-md dark:bg-zinc-800 px-2 py-1 text-[9px] font-mono dark:text-zinc-500">
+              {env.SUPABASE_URL ? `${env.SUPABASE_URL.slice(0, 30)}...` : 'Not set'}
+            </span>
+          </div>
+        </div>
+      </div>
 
- <div className="mb-4 rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30" style={{
- borderColor: env.GITHUB_TOKEN ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
- }}>
- <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
- {env.GITHUB_TOKEN
- ? <CheckCircleIcon size={14} className="dark:text-emerald-400" />
- : <AlertTriangleIcon size={14} className="dark:text-red-400" />
- }
- <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">GitHub Token</h3>
- </div>
- <div className="p-4">
- {env.GITHUB_TOKEN ? (
- <div className="space-y-3">
- <div className="flex items-center gap-2 text-xs dark:text-zinc-500">
- <span className="rounded-md dark:bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium dark:text-emerald-400">Configured</span>
- <span>Token is set via environment variable</span>
- </div>
- <div className="flex items-start gap-2 rounded-lg border border-amber-500/15 bg-amber-500/5 p-3">
- <AlertTriangleIcon size={13} className="mt-0.5 shrink-0 dark:text-amber-400" />
- <div className="text-[10px] leading-relaxed text-amber-300/70">
- <strong className="text-amber-300">Security note:</strong> VITE_ prefixed variables are embedded in the client bundle. Anyone using the admin panel can extract this token via DevTools. Use a fine-grained PAT with minimal scopes.
- </div>
- </div>
- </div>
- ) : (
- <div className="text-xs dark:text-zinc-500">
- Add <code className="rounded dark:bg-zinc-800 px-1 py-0.5 text-[10px] dark:text-zinc-400">VITE_GITHUB_TOKEN=your_pat</code> to your <code className="rounded dark:bg-zinc-800 px-1 py-0.5 text-[10px] dark:text-zinc-400">.env</code> file to enable publishing.
- </div>
- )}
- </div>
- </div>
+      {/* Admin Login */}
+      <div className="mb-4 rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+        <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+          <UserIcon size={14} className="dark:text-zinc-400" />
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Authentication</h3>
+        </div>
+        <div className="p-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between rounded-lg border dark:border-zinc-800/30 dark:bg-zinc-900/20 px-3 py-2.5">
+              <div className="flex items-center gap-2">
+                <LockIcon size={12} className="dark:text-zinc-600" />
+                <span className="text-xs dark:text-zinc-400">Admin username</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium dark:text-zinc-300">
+                  {env.ADMIN_USERNAME || <span className="text-red-400">Not set</span>}
+                </span>
+                <span className="rounded dark:bg-zinc-800 px-1.5 py-0.5 text-[9px] dark:text-zinc-600">env</span>
+              </div>
+            </div>
 
- <div className="mb-4 rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
- <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
- <DownloadIcon size={14} className="dark:text-zinc-400" />
- <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Data Management</h3>
- </div>
- <div className="p-4">
- <div className="flex flex-wrap items-center gap-3">
- <button className="flex items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 py-2 text-xs font-medium dark:text-zinc-400 dark:hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={handleExport}>
- <DownloadIcon size={13} /> Export Backup
- </button>
- <button className="flex items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 py-2 text-xs font-medium dark:text-zinc-400 dark:hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => fileRef.current?.click()}>
- <UploadIcon size={13} /> Import Backup
- </button>
- <input ref={fileRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileImport} />
- <span className="text-[10px] dark:text-zinc-700">All drafts and settings as JSON</span>
- </div>
- </div>
- </div>
+            <div className="flex items-center justify-between rounded-lg border dark:border-zinc-800/30 dark:bg-zinc-900/20 px-3 py-2.5">
+              <div className="flex items-center gap-2">
+                <LockIcon size={12} className="dark:text-zinc-600" />
+                <span className="text-xs dark:text-zinc-400">Admin password</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium dark:text-zinc-300">
+                  {env.ADMIN_PASSWORD ? '••••••••' : <span className="text-red-400">Not set</span>}
+                </span>
+                <span className="rounded dark:bg-zinc-800 px-1.5 py-0.5 text-[9px] dark:text-zinc-600">env</span>
+              </div>
+            </div>
 
- {env.GITHUB_TOKEN && (
- <BranchManagement repoOwner={repoOwner} repoName={repoName} token={env.GITHUB_TOKEN} />
- )}
+            {env.MASTER_KEY && (
+              <div className="flex items-center justify-between rounded-lg border dark:border-amber-800/30 dark:bg-amber-500/5 px-3 py-2.5">
+                <div className="flex items-center gap-2">
+                  <KeyIcon size={12} className="text-amber-500" />
+                  <span className="text-xs dark:text-amber-400">Master key active</span>
+                </div>
+                <span className="rounded dark:bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-medium dark:text-amber-500">override</span>
+              </div>
+            )}
 
- {!production && (
- <button
- className="inline-flex h-9 items-center gap-2 rounded-lg bg-blue-500 px-4 text-xs font-semibold text-zinc-900 dark:text-white transition-colors hover:bg-blue-400"
- onClick={save}
- >
- {saved ? <CheckCircleIcon size={14} /> : <SaveIcon size={14} />}
- {saved ? 'Saved!' : 'Save Repository Settings'}
- </button>
- )}
- </motion.div>
- )
-}
+            {!authOk && !env.MASTER_KEY && (
+              <div className="flex items-center gap-2 rounded-lg border border-red-900/30 bg-red-500/5 px-3 py-2">
+                <AlertCircleIcon size={12} className="text-red-400 shrink-0" />
+                <p className="text-[10px] text-red-400">No authentication configured. Set VITE_ADMIN_USERNAME and VITE_ADMIN_PASSWORD in .env</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
-function BranchManagement({ repoOwner, repoName, token }: { repoOwner: string; repoName: string; token: string }) {
- const addToast = useStore(s => s.addToast)
- const [branches, setBranches] = useState<BranchStatus[]>([])
- const [loading, setLoading] = useState(true)
- const [deleting, setDeleting] = useState<string | null>(null)
- const [cleaning, setCleaning] = useState(false)
+      {/* Supabase Config */}
+      <div className="mb-4 rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+        <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+          <DatabaseIcon size={14} className="dark:text-zinc-400" />
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Supabase Configuration</h3>
+        </div>
+        <div className="p-4 space-y-3">
+          {[
+            { label: 'Project URL', value: env.SUPABASE_URL ? `${env.SUPABASE_URL.slice(0, 35)}...` : null },
+            { label: 'Anon Key', value: env.SUPABASE_ANON_KEY ? `${env.SUPABASE_ANON_KEY.slice(0, 20)}...` : null },
+            { label: 'Service Key', value: env.SUPABASE_SERVICE_KEY ? '••••••••' : null },
+          ].map((item, i) => (
+            <div key={i} className="flex items-center justify-between rounded-lg border dark:border-zinc-800/30 dark:bg-zinc-900/20 px-3 py-2">
+              <span className="text-[10px] dark:text-zinc-500">{item.label}</span>
+              <span className={`text-[10px] font-mono ${item.value ? 'dark:text-zinc-400' : 'text-red-400'}`}>
+                {item.value || 'Not set'}
+              </span>
+            </div>
+          ))}
+          <p className="text-[10px] dark:text-zinc-700 mt-2">
+            Service key enables direct CRUD operations bypassing RLS. Required for admin panel to function.
+          </p>
+        </div>
+      </div>
 
- useEffect(() => {
- if (repoOwner && repoName && token) loadBranches()
- }, [repoOwner, repoName])
+      <div className="mb-4 rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+        <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+          <FileTextIcon size={14} className="dark:text-zinc-400" />
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Backup & Restore</h3>
+        </div>
+        <div className="p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <button className="flex items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 py-2 text-xs font-medium dark:text-zinc-400 dark:hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={handleExport}>
+              <DownloadIcon size={13} /> Export Backup
+            </button>
+            <button className="flex items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 py-2 text-xs font-medium dark:text-zinc-400 dark:hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => fileRef.current?.click()}>
+              <UploadIcon size={13} /> Import Backup
+            </button>
+            <input ref={fileRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileImport} />
+            <span className="text-[10px] dark:text-zinc-700">Drafts, session, and settings as JSON</span>
+          </div>
+        </div>
+      </div>
 
- async function loadBranches() {
- setLoading(true)
- try {
- const result = await analyzeBranches(token, repoOwner, repoName, 'main')
- setBranches(result)
- } catch {
- addToast('Could not load branches', 'error')
- }
- setLoading(false)
- }
-
- async function handleDelete(name: string) {
- setDeleting(name)
- try {
- await deleteBranch(token, repoOwner, repoName, name)
- addToast(`Deleted branch "${name}"`, 'success')
- setBranches(p => p.filter(b => b.name !== name))
- } catch (e) {
- addToast(`Failed to delete "${name}"`, 'error')
- }
- setDeleting(null)
- }
-
- async function handleCleanup() {
- setCleaning(true)
- try {
- const result = await cleanupStaleBranches(token, repoOwner, repoName, 'main')
- if (result.deleted.length > 0) {
- addToast(`Cleaned up ${result.deleted.length} merged branch${result.deleted.length !== 1 ? 'es' : ''}`, 'success')
- loadBranches()
- } else {
- addToast('No merged branches to clean up', 'info')
- }
- } catch {
- addToast('Cleanup failed', 'error')
- }
- setCleaning(false)
- }
-
- const mergedCount = branches.filter(b => b.state === 'merged').length
- const staleCount = branches.filter(b => b.state === 'stale').length
-
- return (
- <div className="mb-4 rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
- <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
- <GitPullRequestIcon size={14} className="dark:text-zinc-400" />
- <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Branch Management</h3>
- </div>
- <div className="p-4">
- <div className="mb-3 flex items-center justify-between">
- <span className="text-xs dark:text-zinc-500">
- {loading ? 'Loading...' : `${branches.length} admin branch${branches.length !== 1 ? 'es' : ''}`}
- </span>
- <div className="flex items-center gap-1">
- <button className="flex items-center gap-1 rounded-lg border dark:border-zinc-800 px-2 py-1 text-[10px] font-medium dark:text-zinc-300 dark:hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-700" onClick={loadBranches} disabled={loading}>
- <RefreshIcon size={11} /> Refresh
- </button>
- {mergedCount > 0 && (
- <button className="flex items-center gap-1 rounded-lg border dark:border-red-800/50 px-2 py-1 text-[10px] font-medium dark:text-red-400 dark:hover:bg-red-100 dark:bg-red-500/10" onClick={handleCleanup} disabled={cleaning}>
- <TrashIcon size={11} /> Cleanup {mergedCount}
- </button>
- )}
- </div>
- </div>
-
- {loading ? (
- <div className="space-y-2">
- {[1,2,3].map(i => <div key={i} className="h-4 animate-pulse rounded dark:bg-zinc-800/50" style={{ width: `${60 + i * 10}%` }} />)}
- </div>
- ) : branches.length === 0 ? (
- <div className="py-4 text-center text-xs dark:text-zinc-700">No admin-update branches found</div>
- ) : (
- <div className="space-y-1">
- {branches.map(b => {
- const stateStyle = b.state === 'merged' ? 'bg-purple-100 dark:bg-purple-100 dark:bg-purple-500/10 text-purple-600 dark:text-purple-600 dark:text-purple-400'
- : b.state === 'stale' ? 'bg-red-100 dark:bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400'
- : b.state === 'active' && b.prNumber ? 'bg-emerald-100 dark:bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-600 dark:text-emerald-400'
- : 'bg-amber-100 dark:bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-600 dark:text-amber-400'
- return (
- <div key={b.name} className="flex items-center gap-2 rounded-lg dark:bg-zinc-900/50 px-3 py-2 text-xs font-mono">
- <span className="min-w-0 flex-1 truncate dark:text-zinc-400">{b.name}</span>
- <span className={`rounded px-1.5 py-0.5 text-[9px] font-medium ${stateStyle}`}>
- {b.state === 'active' && b.prNumber ? `PR #${b.prNumber}` : b.state}
- </span>
- <span className="text-[10px] dark:text-zinc-700">{b.daysOld}d</span>
- {(b.state === 'stale' || b.state === 'merged') && (
- <button className="rounded p-1 dark:text-zinc-700 dark:hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 dark:text-red-400"
- onClick={() => handleDelete(b.name)} disabled={deleting === b.name}>
- {deleting === b.name ? <span className="text-[10px]">...</span> : <XIcon size={11} />}
- </button>
- )}
- </div>
- )
- })}
- </div>
- )}
- </div>
- </div>
- )
+      <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30 px-4 py-4 text-center">
+        <p className="text-[10px] dark:text-zinc-700">
+          RU Club Motherland Admin Panel v1 &middot; Built by Sincere Bhattarai &mdash; VoidX3D
+        </p>
+      </div>
+    </motion.div>
+  )
 }
