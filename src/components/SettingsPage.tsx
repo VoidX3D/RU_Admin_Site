@@ -1,13 +1,23 @@
-import { useState, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
-import { Storage } from '../utils/storage'
+import { getEnvConfig, isProductionEnv, hasEnvAuth } from '../utils/env'
+import { checkDBConnection } from '../utils/supabase'
 import { exportBackup, importBackup } from '../utils/backup'
-import { DownloadIcon, UploadIcon, CheckCircleIcon, DatabaseIcon, UserIcon, LockIcon, FileTextIcon } from './Icons'
+import {
+  DownloadIcon, UploadIcon, CheckCircleIcon, DatabaseIcon, UserIcon, LockIcon,
+  FileTextIcon, KeyIcon, AlertCircleIcon, AlertTriangleIcon, RefreshIcon,
+} from './Icons'
 
 export function SettingsPage() {
   const addToast = useStore(s => s.addToast)
   const fileRef = useRef<HTMLInputElement>(null)
+  const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'error'>('checking')
+  const env = getEnvConfig()
+
+  useEffect(() => {
+    checkDBConnection().then(ok => setDbStatus(ok ? 'connected' : 'error'))
+  }, [])
 
   function handleExport() {
     const json = exportBackup()
@@ -26,15 +36,14 @@ export function SettingsPage() {
     const reader = new FileReader()
     reader.onload = () => {
       const result = importBackup(reader.result as string)
-      if (result.ok) {
-        addToast(result.message, 'success')
-      } else {
-        addToast(result.message, 'error')
-      }
+      addToast(result.message, result.ok ? 'success' : 'error')
     }
     reader.readAsText(file)
     e.target.value = ''
   }
+
+  const prod = isProductionEnv()
+  const authOk = hasEnvAuth()
 
   return (
     <motion.div
@@ -45,68 +54,145 @@ export function SettingsPage() {
     >
       <div className="mb-5">
         <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Settings</h2>
-        <p className="mt-0.5 text-xs dark:text-zinc-600">Database configuration and data management</p>
+        <p className="mt-0.5 text-xs dark:text-zinc-600">Configuration and data management</p>
       </div>
 
+      {/* Production mode banner */}
+      {prod && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+          <AlertTriangleIcon size={14} className="text-amber-500 shrink-0" />
+          <p className="text-[10px] text-amber-600 dark:text-amber-400">
+            Production mode — all settings are managed through environment variables.
+          </p>
+        </div>
+      )}
+
+      {/* DB Status */}
+      <div className="mb-4 rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+        <div className="flex items-center justify-between border-b dark:border-zinc-800/50 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <DatabaseIcon size={14} className="dark:text-zinc-400" />
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Database Connection</h3>
+          </div>
+          <button onClick={() => { setDbStatus('checking'); checkDBConnection().then(ok => setDbStatus(ok ? 'connected' : 'error')) }}
+            className="flex items-center gap-1 rounded-md dark:bg-zinc-800 px-2 py-1 text-[9px] dark:text-zinc-500 hover:text-zinc-300"
+          >
+            <RefreshIcon size={10} /> Test
+          </button>
+        </div>
+        <div className="p-4">
+          <div className="flex items-center gap-3">
+            <div className={`flex h-8 w-8 items-center justify-center rounded-full ${
+              dbStatus === 'connected' ? 'bg-emerald-500/10' : dbStatus === 'error' ? 'bg-red-500/10' : 'bg-zinc-800'
+            }`}>
+              {dbStatus === 'connected' ? (
+                <CheckCircleIcon size={16} className="text-emerald-400" />
+              ) : dbStatus === 'error' ? (
+                <AlertCircleIcon size={16} className="text-red-400" />
+              ) : (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-600 border-t-transparent" />
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-medium dark:text-zinc-300">
+                {dbStatus === 'connected' ? 'Supabase Connected' : dbStatus === 'error' ? 'Connection Error' : 'Checking...'}
+              </p>
+              <p className="text-[10px] dark:text-zinc-600 mt-0.5">
+                {dbStatus === 'connected' ? 'All CRUD operations available' : dbStatus === 'error' ? 'Check your .env configuration' : 'Verifying connection...'}
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-md dark:bg-zinc-800 px-2 py-1 text-[9px] font-mono dark:text-zinc-500">
+              {env.SUPABASE_URL ? `${env.SUPABASE_URL.slice(0, 30)}...` : 'Not set'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Admin Login */}
       <div className="mb-4 rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
         <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
           <UserIcon size={14} className="dark:text-zinc-400" />
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Admin Login</h3>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Authentication</h3>
         </div>
         <div className="p-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-[10px] font-medium dark:text-zinc-600">Username</label>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between rounded-lg border dark:border-zinc-800/30 dark:bg-zinc-900/20 px-3 py-2.5">
               <div className="flex items-center gap-2">
-                <input value={Storage.getSettings().username} readOnly
-                  className="w-full cursor-default rounded-lg border dark:border-zinc-800 dark:bg-zinc-900/50 px-3 py-2 text-xs dark:text-zinc-500 opacity-70 outline-none" />
-                <span className="flex shrink-0 items-center gap-1 rounded-md dark:bg-zinc-800 px-1.5 py-1 text-[9px] font-medium dark:text-zinc-500">
-                  <LockIcon size={9} /> from .env
+                <LockIcon size={12} className="dark:text-zinc-600" />
+                <span className="text-xs dark:text-zinc-400">Admin username</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium dark:text-zinc-300">
+                  {env.ADMIN_USERNAME || <span className="text-red-400">Not set</span>}
                 </span>
+                <span className="rounded dark:bg-zinc-800 px-1.5 py-0.5 text-[9px] dark:text-zinc-600">env</span>
               </div>
             </div>
-            <div>
-              <label className="mb-1 block text-[10px] font-medium dark:text-zinc-600">Password</label>
+
+            <div className="flex items-center justify-between rounded-lg border dark:border-zinc-800/30 dark:bg-zinc-900/20 px-3 py-2.5">
               <div className="flex items-center gap-2">
-                <input type="password" value={Storage.getSettings().password.replace(/./g, '•')} readOnly
-                  className="w-full cursor-default rounded-lg border dark:border-zinc-800 dark:bg-zinc-900/50 px-3 py-2 text-xs dark:text-zinc-500 opacity-70 outline-none" />
-                <span className="flex shrink-0 items-center gap-1 rounded-md dark:bg-zinc-800 px-1.5 py-1 text-[9px] font-medium dark:text-zinc-500">
-                  <LockIcon size={9} /> from .env
+                <LockIcon size={12} className="dark:text-zinc-600" />
+                <span className="text-xs dark:text-zinc-400">Admin password</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium dark:text-zinc-300">
+                  {env.ADMIN_PASSWORD ? '••••••••' : <span className="text-red-400">Not set</span>}
                 </span>
+                <span className="rounded dark:bg-zinc-800 px-1.5 py-0.5 text-[9px] dark:text-zinc-600">env</span>
               </div>
             </div>
+
+            {env.MASTER_KEY && (
+              <div className="flex items-center justify-between rounded-lg border dark:border-amber-800/30 dark:bg-amber-500/5 px-3 py-2.5">
+                <div className="flex items-center gap-2">
+                  <KeyIcon size={12} className="text-amber-500" />
+                  <span className="text-xs dark:text-amber-400">Master key active</span>
+                </div>
+                <span className="rounded dark:bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-medium dark:text-amber-500">override</span>
+              </div>
+            )}
+
+            {!authOk && !env.MASTER_KEY && (
+              <div className="flex items-center gap-2 rounded-lg border border-red-900/30 bg-red-500/5 px-3 py-2">
+                <AlertCircleIcon size={12} className="text-red-400 shrink-0" />
+                <p className="text-[10px] text-red-400">No authentication configured. Set VITE_ADMIN_USERNAME and VITE_ADMIN_PASSWORD in .env</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
+      {/* Supabase Config */}
       <div className="mb-4 rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
         <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
           <DatabaseIcon size={14} className="dark:text-zinc-400" />
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Supabase Database</h3>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Supabase Configuration</h3>
         </div>
-        <div className="p-4">
-          <div className="rounded-lg border dark:border-zinc-800/30 dark:bg-zinc-900/20 p-3">
-            <div className="flex items-start gap-2">
-              <CheckCircleIcon size={14} className="mt-0.5 shrink-0 dark:text-emerald-400" />
-              <div>
-                <p className="text-xs font-medium dark:text-zinc-300">Connected via Environment Variables</p>
-                <p className="mt-1 text-[10px] dark:text-zinc-600">
-                  Supabase URL and Anon Key are configured in your <code className="rounded dark:bg-zinc-800 px-1 dark:text-zinc-400">.env</code> file.
-                  All data is published directly to the database.
-                </p>
-              </div>
+        <div className="p-4 space-y-3">
+          {[
+            { label: 'Project URL', value: env.SUPABASE_URL ? `${env.SUPABASE_URL.slice(0, 35)}...` : null },
+            { label: 'Anon Key', value: env.SUPABASE_ANON_KEY ? `${env.SUPABASE_ANON_KEY.slice(0, 20)}...` : null },
+            { label: 'Service Key', value: env.SUPABASE_SERVICE_KEY ? '••••••••' : null },
+          ].map((item, i) => (
+            <div key={i} className="flex items-center justify-between rounded-lg border dark:border-zinc-800/30 dark:bg-zinc-900/20 px-3 py-2">
+              <span className="text-[10px] dark:text-zinc-500">{item.label}</span>
+              <span className={`text-[10px] font-mono ${item.value ? 'dark:text-zinc-400' : 'text-red-400'}`}>
+                {item.value || 'Not set'}
+              </span>
             </div>
-          </div>
-          <div className="mt-3 text-[10px] dark:text-zinc-700">
-            <p>No GitHub token or PR workflow needed. Changes are immediate.</p>
-          </div>
+          ))}
+          <p className="text-[10px] dark:text-zinc-700 mt-2">
+            Service key enables direct CRUD operations bypassing RLS. Required for admin panel to function.
+          </p>
         </div>
       </div>
 
       <div className="mb-4 rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
         <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
           <FileTextIcon size={14} className="dark:text-zinc-400" />
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Data Management</h3>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Backup & Restore</h3>
         </div>
         <div className="p-4">
           <div className="flex flex-wrap items-center gap-3">
@@ -117,9 +203,15 @@ export function SettingsPage() {
               <UploadIcon size={13} /> Import Backup
             </button>
             <input ref={fileRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileImport} />
-            <span className="text-[10px] dark:text-zinc-700">All drafts and settings as JSON</span>
+            <span className="text-[10px] dark:text-zinc-700">Drafts, session, and settings as JSON</span>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30 px-4 py-4 text-center">
+        <p className="text-[10px] dark:text-zinc-700">
+          RU Club Motherland Admin Panel v1 &middot; Built by Sincere Bhattarai &mdash; VoidX3D
+        </p>
       </div>
     </motion.div>
   )

@@ -7,6 +7,9 @@ interface EnvConfig {
   GITHUB_REPO: string
   GITHUB_BRANCH: string
   GITHUB_TOKEN?: string
+  SUPABASE_URL: string
+  SUPABASE_ANON_KEY: string
+  SUPABASE_SERVICE_KEY: string
   PRODUCTION_MODE: boolean
 }
 
@@ -18,6 +21,9 @@ const DEFAULTS: EnvConfig = {
   GITHUB_OWNER: 'VoidX3D',
   GITHUB_REPO: 'RU_Club_Website',
   GITHUB_BRANCH: 'main',
+  SUPABASE_URL: '',
+  SUPABASE_ANON_KEY: '',
+  SUPABASE_SERVICE_KEY: '',
   PRODUCTION_MODE: false,
 }
 
@@ -36,6 +42,9 @@ export function getEnvConfig(): EnvConfig {
     GITHUB_REPO: getEnvVar('GITHUB_REPO') || DEFAULTS.GITHUB_REPO,
     GITHUB_BRANCH: getEnvVar('GITHUB_BRANCH') || DEFAULTS.GITHUB_BRANCH,
     GITHUB_TOKEN: getEnvVar('GITHUB_TOKEN'),
+    SUPABASE_URL: getEnvVar('SUPABASE_URL') || DEFAULTS.SUPABASE_URL,
+    SUPABASE_ANON_KEY: getEnvVar('SUPABASE_ANON_KEY') || DEFAULTS.SUPABASE_ANON_KEY,
+    SUPABASE_SERVICE_KEY: getEnvVar('SUPABASE_SERVICE_KEY') || DEFAULTS.SUPABASE_SERVICE_KEY,
     PRODUCTION_MODE: production,
   }
 }
@@ -47,4 +56,9 @@ export function isProductionEnv(): boolean {
 export function hasEnvAuth(): boolean {
   const env = getEnvConfig()
   return !!(env.ADMIN_USERNAME && env.ADMIN_PASSWORD)
+}
+
+export function hasEnvSupabase(): boolean {
+  const env = getEnvConfig()
+  return !!(env.SUPABASE_URL && env.SUPABASE_ANON_KEY && env.SUPABASE_SERVICE_KEY)
 }

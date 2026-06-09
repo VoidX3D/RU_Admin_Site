@@ -1,21 +1,36 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, lazy, Suspense } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useStore } from './store'
 import { Storage } from './utils/storage'
 import { initAdminAnalytics, trackAdminPage } from './utils/analytics'
-import { Login } from './components/Login'
-import { Layout } from './components/Layout'
-import { Dashboard } from './components/Dashboard'
-import { MissionsPage } from './components/MissionsPage'
-import { AnnouncementsPage } from './components/AnnouncementsPage'
-import { MembersPage } from './components/MembersPage'
-import { ContactSubmissions } from './components/ContactSubmissions'
-import { StatsEditorPage } from './components/StatsEditorPage'
-import { PartnersEditorPage } from './components/PartnersEditorPage'
-import { SettingsPage } from './components/SettingsPage'
-import { HelpPage } from './components/HelpPage'
-import { Toast } from './components/Toast'
-import { ErrorBoundary } from './components/ErrorBoundary'
+
+const Login = lazy(() => import('./components/Login').then(m => ({ default: m.Login })))
+const Layout = lazy(() => import('./components/Layout').then(m => ({ default: m.Layout })))
+const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })))
+const MissionsPage = lazy(() => import('./components/MissionsPage').then(m => ({ default: m.MissionsPage })))
+const AnnouncementsPage = lazy(() => import('./components/AnnouncementsPage').then(m => ({ default: m.AnnouncementsPage })))
+const MembersPage = lazy(() => import('./components/MembersPage').then(m => ({ default: m.MembersPage })))
+const ContactSubmissions = lazy(() => import('./components/ContactSubmissions').then(m => ({ default: m.ContactSubmissions })))
+const StatsEditorPage = lazy(() => import('./components/StatsEditorPage').then(m => ({ default: m.StatsEditorPage })))
+const PartnersEditorPage = lazy(() => import('./components/PartnersEditorPage').then(m => ({ default: m.PartnersEditorPage })))
+const SettingsPage = lazy(() => import('./components/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const HelpPage = lazy(() => import('./components/HelpPage').then(m => ({ default: m.HelpPage })))
+const Toast = lazy(() => import('./components/Toast').then(m => ({ default: m.Toast })))
+const ErrorBoundary = lazy(() => import('./components/ErrorBoundary').then(m => ({ default: m.ErrorBoundary })))
+
+function PageLoader() {
+  return (
+    <div className="flex h-40 items-center justify-center">
+      <div className="flex flex-col items-center gap-2">
+        <svg className="h-6 w-6 animate-spin text-emerald-500" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" strokeWidth="3" stroke="currentColor" className="opacity-20" />
+          <path d="M12 2a10 10 0 0 1 10 10" strokeWidth="3" stroke="currentColor" strokeLinecap="round" />
+        </svg>
+        <p className="text-[10px] text-zinc-500">Loading...</p>
+      </div>
+    </div>
+  )
+}
 
 const pageVariants = {
   initial: { opacity: 0, y: 8 },
@@ -104,23 +119,27 @@ export default function App() {
   }
 
   return (
-    <ErrorBoundary>
-      <Toast />
-      {view === 'login' ? <Login /> : (
-        <Layout>
-          <AnimatePresence mode="wait">
-              <motion.div
-                key={view}
-                variants={pageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-              >
-                {PAGES[view] || <Dashboard />}
-              </motion.div>
-          </AnimatePresence>
-        </Layout>
-      )}
-    </ErrorBoundary>
+    <Suspense fallback={<PageLoader />}>
+      <ErrorBoundary>
+        <Toast />
+        {view === 'login' ? <Login /> : (
+          <Layout>
+            <AnimatePresence mode="wait">
+              <Suspense fallback={<PageLoader />}>
+                <motion.div
+                  key={view}
+                  variants={pageVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                >
+                  {PAGES[view] || <Dashboard />}
+                </motion.div>
+              </Suspense>
+            </AnimatePresence>
+          </Layout>
+        )}
+      </ErrorBoundary>
+    </Suspense>
   )
 }
