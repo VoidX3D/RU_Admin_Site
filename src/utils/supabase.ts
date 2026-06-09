@@ -271,7 +271,11 @@ export async function saveStats(items: { value: string; label: string; sort_orde
 
 export async function fetchPartners() {
   const { data } = await supabase.from('partners').select('*').order('sort_order')
-  return data || []
+  if (!data) return []
+  return data.map((p: { src: string; alt: string; name: string; sort_order: number; id?: number }) => ({
+    ...p,
+    src: storageUrl(p.src),
+  }))
 }
 
 export async function savePartners(items: { src: string; alt: string; name: string; sort_order: number }[]) {
