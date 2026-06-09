@@ -4,9 +4,10 @@ import { useStore, type View } from '../store'
 import { Storage } from '../utils/storage'
 import {
   TargetIcon, MegaphoneIcon, UsersIcon,
-  SettingsIcon, HelpCircleIcon, FileTextIcon,
-  MenuIcon, XIcon, LogOutIcon, RefreshIcon, GitPullRequestIcon,
-  HomeIcon, ClockIcon, SunIcon, MoonIcon,
+  SettingsIcon, HelpCircleIcon, MailIcon,
+  MenuIcon, XIcon, LogOutIcon, RefreshIcon,
+  HomeIcon, SunIcon, MoonIcon, DatabaseIcon,
+  BarChartIcon, GlobeIcon,
 } from './Icons'
 
 const NAV: { id: View; icon: ReactNode; label: string }[] = [
@@ -14,7 +15,9 @@ const NAV: { id: View; icon: ReactNode; label: string }[] = [
   { id: 'missions',      icon: <TargetIcon size={18} />,       label: 'Missions'      },
   { id: 'announcements', icon: <MegaphoneIcon size={18} />,    label: 'Announcements' },
   { id: 'members',       icon: <UsersIcon size={18} />,        label: 'Members'       },
-  { id: 'history',       icon: <ClockIcon size={18} />,        label: 'History'       },
+  { id: 'stats',         icon: <BarChartIcon size={18} />,      label: 'Site Stats'    },
+  { id: 'partners',      icon: <GlobeIcon size={18} />,        label: 'Partners'      },
+  { id: 'contact',       icon: <MailIcon size={18} />,         label: 'Contact'       },
   { id: 'settings',      icon: <SettingsIcon size={18} />,     label: 'Settings'      },
   { id: 'help',          icon: <HelpCircleIcon size={18} />,   label: 'Help'          },
 ]
@@ -24,10 +27,11 @@ const PAGE_TITLES: Record<string, string> = {
   missions: 'Missions',
   announcements: 'Announcements',
   members: 'Members',
-  history: 'Publish History',
+  stats: 'Site Statistics',
+  partners: 'Partner Organizations',
+  contact: 'Contact Submissions',
   settings: 'Settings',
   help: 'Help & Guide',
-  draftDiff: 'Draft Review',
 }
 
 const sidebarVariants = {
@@ -39,7 +43,6 @@ export function Layout({ children }: { children: ReactNode }) {
   const view = useStore(s => s.view)
   const setView = useStore(s => s.setView)
   const setUser = useStore(s => s.setUser)
-  const setPrOpen = useStore(s => s.setPrOpen)
   const toggleTheme = useStore(s => s.toggleTheme)
   const triggerRefresh = useStore(s => s.triggerRefresh)
   const addToast = useStore(s => s.addToast)
@@ -57,7 +60,6 @@ export function Layout({ children }: { children: ReactNode }) {
       const s = Storage.getSession()
       if (!s || (Date.now() - lastActivity > INACTIVITY_TIMEOUT)) {
         Storage.clearSession()
-        Storage.clearToken()
         setUser(null)
         setView('login')
         addToast('Session expired due to inactivity', 'info')
@@ -75,7 +77,6 @@ export function Layout({ children }: { children: ReactNode }) {
 
   function logout() {
     Storage.clearSession()
-    Storage.clearToken()
     setUser(null)
     setView('login')
   }
@@ -115,17 +116,6 @@ export function Layout({ children }: { children: ReactNode }) {
             {item.label}
           </button>
         ))}
-
-        <div className="mb-1 mt-6 px-2 text-[10px] font-semibold uppercase tracking-widest dark:text-zinc-600">Actions</div>
-        <button
-          className="mb-0.5 flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm font-medium dark:text-emerald-400 transition-colors hover:bg-emerald-500/10"
-          onClick={() => { setPrOpen(true); setSidebarOpen(false) }}
-        >
-          <span className="flex w-4 shrink-0 items-center justify-center dark:text-emerald-400">
-            <GitPullRequestIcon size={18} />
-          </span>
-          Publish Changes
-        </button>
       </nav>
 
       <div className="border-t dark:border-zinc-800/50 px-3 py-3">
@@ -161,7 +151,6 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen dark:bg-zinc-950">
-      {/* Toggleable sidebar overlay — mobile & desktop */}
       <AnimatePresence>
         {sidebarOpen && (
           <>
@@ -199,22 +188,15 @@ export function Layout({ children }: { children: ReactNode }) {
           </h1>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 rounded-md dark:bg-zinc-900 px-2 py-1">
-              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+              <DatabaseIcon size={11} className="text-emerald-500" />
               <span className="text-[10px] font-medium text-zinc-500">Live</span>
             </div>
             <button
               className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
               onClick={() => { triggerRefresh(); addToast('Refreshing data...', 'info') }}
-              title="Sync data from GitHub"
+              title="Refresh data"
             >
               <RefreshIcon size={14} />
-            </button>
-            <button
-              className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white transition-colors hover:bg-emerald-600"
-              onClick={() => setPrOpen(true)}
-            >
-              <GitPullRequestIcon size={13} />
-              <span className="hidden sm:inline">Publish</span>
             </button>
           </div>
         </header>

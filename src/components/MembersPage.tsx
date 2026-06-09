@@ -1,21 +1,29 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
-import { Storage } from '../utils/storage'
-import { fetchMembers, saveMembers } from '../utils/supabase'
+import { fetchMembers, saveMembers, uploadBase64Image } from '../utils/supabase'
 import type { Member } from '../types'
-import { UsersIcon, PlusIcon, XIcon, RefreshIcon, SaveIcon, DatabaseIcon } from './Icons'
+import { UsersIcon, PlusIcon, XIcon, RefreshIcon, ImageIcon } from './Icons'
 
 type Tab = 'teachers' | 'core' | 'general'
+
+interface MemberFull {
+  name: string
+  class?: string
+  role: string
+  image?: string
+  member_type?: string
+}
 
 export function MembersPage() {
   const addToast = useStore(s => s.addToast)
   const refreshTrigger = useStore(s => s.refreshTrigger)
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [tab, setTab] = useState<Tab>('core')
-  const [teachers, setTeachers] = useState<Member[]>([])
-  const [core, setCore] = useState<Member[]>([])
-  const [general, setGeneral] = useState<Member[]>([])
+  const [teachers, setTeachers] = useState<MemberFull[]>([])
+  const [core, setCore] = useState<MemberFull[]>([])
+  const [general, setGeneral] = useState<MemberFull[]>([])
 
   useEffect(() => { load() }, [refreshTrigger])
 
@@ -24,20 +32,23 @@ export function MembersPage() {
     try {
       const d = await fetchMembers()
       if (d) {
-        setTeachers(d.teachers || []); setCore(d.core || []); setGeneral(d.general || [])
+        setTeachers((d.teachers || []).map(m => ({ name: m.name, class: m.class, role: m.role, image: (m as unknown as Record<string, string>).image, member_type: (m as unknown as Record<string, string>).member_type })))
+        setCore((d.core || []).map(m => ({ name: m.name, class: m.class, role: m.role, image: (m as unknown as Record<string, string>).image, member_type: (m as unknown as Record<string, string>).member_type })))
+        setGeneral((d.general || []).map(m => ({ name: m.name, class: m.class, role: m.role, image: (m as unknown as Record<string, string>).image, member_type: (m as unknown as Record<string, string>).member_type })))
       }
     } catch { /* ignore */ }
     setLoading(false)
   }
 
   function addMember() {
-    if (tab === 'teachers') setTeachers(p => [...p, { name: '', class: '', role: 'Advisor', memberType: 'patron', groupName: 'teachers' } as Member])
-    else if (tab === 'core') setCore(p => [...p, { name: '', class: '', role: 'Coordinator', memberType: 'coord', groupName: 'core' } as Member])
-    else setGeneral(p => [...p, { name: '', class: '', role: 'General Member', memberType: 'member', groupName: 'general' } as Member])
+    const base: MemberFull = { name: '', class: '', role: '', image: '', member_type: '' }
+    if (tab === 'teachers') setTeachers(p => [...p, { ...base, role: 'Advisor', member_type: 'patron' }])
+    else if (tab === 'core') setCore(p => [...p, { ...base, role: 'Coordinator', member_type: 'coord' }])
+    else setGeneral(p => [...p, { ...base, role: 'General Member', member_type: 'member' }])
   }
 
-  function upd(idx: number, field: keyof Member, val: string) {
-    const fn = (arr: Member[], set: (v: Member[]) => void) => set(arr.map((m, i) => i === idx ? { ...m, [field]: val } : m))
+  function upd(idx: number, field: keyof MemberFull, val: string) {
+    const fn = (arr: MemberFull[], set: (v: MemberFull[]) => void) => set(arr.map((m, i) => i === idx ? { ...m, [field]: val } : m))
     if (tab === 'teachers') fn(teachers, setTeachers)
     else if (tab === 'core') fn(core, setCore)
     else fn(general, setGeneral)
@@ -49,14 +60,42 @@ export function MembersPage() {
     else setGeneral(p => p.filter((_, i) => i !== idx))
   }
 
-  function saveDraft() {
-    const data = {
-      teachers: teachers.filter(t => t.name.trim()).map(m => ({ ...m, memberType: 'patron', groupName: 'teachers' })),
-      core: core.filter(c => c.name.trim()).map(m => ({ ...m, memberType: 'coord', groupName: 'core' })),
-      general: general.filter(g => g.name.trim()).map(m => ({ ...m, memberType: 'member', groupName: 'general' })),
+  async function handleImageUpload(idx: number) {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.onchange = async () => {
+      const file = input.files?.[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = async () => {
+        const dataUrl = reader.result as string
+        const filename = `members/${Date.now()}_${file.name}`
+        const result = await uploadBase64Image('public', filename, dataUrl)
+        if (result.url) {
+          upd(idx, 'image', result.url)
+          addToast('Image uploaded', 'success')
+        } else {
+          addToast('Upload failed', 'error')
+        }
+      }
+      reader.readAsDataURL(file)
     }
-    Storage.saveDraft('members', 'members', data as unknown as Record<string, unknown>)
-    addToast('Members draft saved!', 'success')
+    input.click()
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    const filtered = {
+      teachers: teachers.filter(t => t.name.trim()),
+      core: core.filter(c => c.name.trim()),
+      general: general.filter(g => g.name.trim()),
+    }
+    const { error } = await saveMembers(filtered as unknown as Record<string, unknown>)
+    if (error) { addToast('Save failed: ' + error.message, 'error'); setSaving(false); return }
+    addToast('Members saved to database!', 'success')
+    setSaving(false)
+    load()
   }
 
   const current = tab === 'teachers' ? teachers : tab === 'core' ? core : general
@@ -88,27 +127,18 @@ export function MembersPage() {
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Members</h2>
-          <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-600">Edit teachers, core team, and general members</p>
+          <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-600">Full member management with images &mdash; changes are live</p>
         </div>
         <div className="flex items-center gap-2">
           <button className="flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 px-3 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200" onClick={load}>
             <RefreshIcon size={13} /> Refresh
           </button>
-          <button className="flex h-8 items-center gap-1.5 rounded-lg bg-amber-500 px-3 text-xs font-semibold text-white hover:bg-amber-400" onClick={saveDraft}>
-            <SaveIcon size={13} /> Save Draft
-          </button>
-          <button className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white hover:bg-emerald-400" onClick={async () => {
-            const filtered = {
-              teachers: teachers.filter(t => t.name.trim()).map(m => ({ ...m, memberType: 'patron', groupName: 'teachers' })),
-              core: core.filter(c => c.name.trim()).map(m => ({ ...m, memberType: 'coord', groupName: 'core' })),
-              general: general.filter(g => g.name.trim()).map(m => ({ ...m, memberType: 'member', groupName: 'general' })),
-            }
-            const { error } = await saveMembers(filtered as unknown as Record<string, unknown>)
-            if (error) { addToast('Publish failed: ' + error.message, 'error'); return }
-            Storage.deleteDraft('members', 'members')
-            addToast('Members published to database!', 'success')
-          }}>
-            <DatabaseIcon size={13} /> Publish
+          <button
+            className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? 'Saving...' : 'Save to Database'}
           </button>
         </div>
       </div>
@@ -133,14 +163,14 @@ export function MembersPage() {
             key={t.key}
             className={`flex-1 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
               tab === t.key
-                ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-200'
-                : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-300'
+                ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
+                : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
             }`}
             onClick={() => setTab(t.key)}
           >
             {t.label}
             <span className={`ml-1.5 rounded px-1.5 py-0.5 text-[9px] ${
-              tab === t.key ? 'bg-zinc-700 text-zinc-600 dark:text-zinc-400' : 'bg-zinc-200/50 dark:bg-zinc-800/50 text-zinc-400 dark:text-zinc-600'
+              tab === t.key ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-zinc-200/50 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-500'
             }`}>{counts[t.key]}</span>
           </button>
         ))}
@@ -155,7 +185,7 @@ export function MembersPage() {
             </span>
             <span className="rounded-md bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">{current.length}</span>
           </div>
-          <button className="flex items-center gap-1 rounded-lg bg-emerald-500 px-2.5 py-1.5 text-[10px] font-semibold text-white hover:bg-emerald-500 dark:hover:bg-emerald-400" onClick={addMember}>
+          <button className="flex items-center gap-1 rounded-lg bg-emerald-500 px-2.5 py-1.5 text-[10px] font-semibold text-white hover:bg-emerald-400" onClick={addMember}>
             <PlusIcon size={12} /> Add Member
           </button>
         </div>
@@ -170,33 +200,72 @@ export function MembersPage() {
           ) : (
             <div className="space-y-2">
               {current.map((m, i) => (
-                <div key={i} className="flex flex-col gap-3 rounded-lg border border-zinc-200 dark:border-zinc-800/50 bg-zinc-50 dark:bg-zinc-900/50 p-3 sm:flex-row sm:items-center">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                    {m.name.charAt(0).toUpperCase() || '?'}
-                  </div>
-                  <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    <div>
-                      <label className="mb-1 block text-[10px] font-medium text-zinc-400 dark:text-zinc-600">Name</label>
-                      <input value={m.name} onChange={e => upd(i, 'name', e.target.value)} placeholder="Full name"
-                        className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
+                <motion.div
+                  key={i}
+                  className="flex flex-col gap-3 rounded-lg border border-zinc-200 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/50 p-3"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.02 }}
+                >
+                  <div className="flex items-start gap-3">
+                    {/* Avatar / Image */}
+                    <div
+                      className="relative flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border dark:border-zinc-800 bg-gradient-to-br from-emerald-500/20 to-emerald-500/5"
+                      onClick={() => handleImageUpload(i)}
+                    >
+                      {m.image ? (
+                        <img src={m.image} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                          {m.name.charAt(0).toUpperCase() || '?'}
+                        </span>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors hover:bg-black/30">
+                        <ImageIcon size={12} className="text-white opacity-0 transition-opacity hover:opacity-100" />
+                      </div>
                     </div>
-                    {tab !== 'teachers' && (
+
+                    <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
                       <div>
-                        <label className="mb-1 block text-[10px] font-medium text-zinc-400 dark:text-zinc-600">Class</label>
-                        <input value={m.class || ''} onChange={e => upd(i, 'class', e.target.value)} placeholder="8A"
+                        <label className="mb-1 block text-[10px] font-medium text-zinc-400 dark:text-zinc-600">Name</label>
+                        <input value={m.name} onChange={e => upd(i, 'name', e.target.value)} placeholder="Full name"
                           className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
                       </div>
-                    )}
-                    <div>
-                      <label className="mb-1 block text-[10px] font-medium text-zinc-400 dark:text-zinc-600">Role</label>
-                      <input value={m.role} onChange={e => upd(i, 'role', e.target.value)} placeholder="Role"
-                        className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
+                      <div>
+                        <label className="mb-1 block text-[10px] font-medium text-zinc-400 dark:text-zinc-600">Role</label>
+                        <input value={m.role} onChange={e => upd(i, 'role', e.target.value)} placeholder="Role"
+                          className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
+                      </div>
+                      {tab !== 'teachers' && (
+                        <div>
+                          <label className="mb-1 block text-[10px] font-medium text-zinc-400 dark:text-zinc-600">Class</label>
+                          <input value={m.class || ''} onChange={e => upd(i, 'class', e.target.value)} placeholder="8A"
+                            className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
+                        </div>
+                      )}
+                      <div>
+                        <label className="mb-1 block text-[10px] font-medium text-zinc-400 dark:text-zinc-600">Type</label>
+                        <select value={m.member_type || ''} onChange={e => upd(i, 'member_type', e.target.value)}
+                          className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:border-emerald-500/30">
+                          <option value="patron">Patron</option>
+                          <option value="advisor">Advisor</option>
+                          <option value="coord">Coordinator</option>
+                          <option value="member">Member</option>
+                        </select>
+                      </div>
                     </div>
+
+                    <button className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 dark:text-zinc-600 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 mt-5" onClick={() => remove(i)}>
+                      <XIcon size={14} />
+                    </button>
                   </div>
-                  <button className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 dark:text-zinc-700 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 dark:text-red-400" onClick={() => remove(i)}>
-                    <XIcon size={14} />
-                  </button>
-                </div>
+
+                  {/* Image URL field */}
+                  <div className="flex items-center gap-2">
+                    <input value={m.image || ''} onChange={e => upd(i, 'image', e.target.value)} placeholder="Image URL (or click avatar to upload)"
+                      className="flex-1 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-[10px] text-zinc-500 dark:text-zinc-500 outline-none focus:border-emerald-500/30 font-mono" />
+                  </div>
+                </motion.div>
               ))}
             </div>
           )}

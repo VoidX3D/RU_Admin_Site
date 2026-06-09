@@ -9,12 +9,12 @@ import { Dashboard } from './components/Dashboard'
 import { MissionsPage } from './components/MissionsPage'
 import { AnnouncementsPage } from './components/AnnouncementsPage'
 import { MembersPage } from './components/MembersPage'
+import { ContactSubmissions } from './components/ContactSubmissions'
+import { StatsEditorPage } from './components/StatsEditorPage'
+import { PartnersEditorPage } from './components/PartnersEditorPage'
 import { SettingsPage } from './components/SettingsPage'
 import { HelpPage } from './components/HelpPage'
-import { HistoryPage } from './components/HistoryPage'
-import { DraftDiffPage } from './components/DraftDiffPage'
 import { Toast } from './components/Toast'
-import { PRDialog } from './components/PRDialog'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
 const pageVariants = {
@@ -28,26 +28,23 @@ const PAGES: Record<string, React.ReactNode> = {
   missions: <MissionsPage />,
   announcements: <AnnouncementsPage />,
   members: <MembersPage />,
+  contact: <ContactSubmissions />,
+  stats: <StatsEditorPage />,
+  partners: <PartnersEditorPage />,
   settings: <SettingsPage />,
   help: <HelpPage />,
-  history: <HistoryPage />,
-  draftDiff: <DraftDiffPage />,
 }
 
 export default function App() {
   const view = useStore(s => s.view)
   const setUser = useStore(s => s.setUser)
   const setView = useStore(s => s.setView)
-  const prOpen = useStore(s => s.prOpen)
-  const setPrOpen = useStore(s => s.setPrOpen)
   const theme = useStore(s => s.theme)
   const setPendingAction = useStore(s => s.setPendingAction)
   const [appLoading, setAppLoading] = useState(true)
 
   const viewRef = useRef(view)
   viewRef.current = view
-  const prRef = useRef(prOpen)
-  prRef.current = prOpen
 
   useEffect(() => {
     initAdminAnalytics()
@@ -73,24 +70,6 @@ export default function App() {
     function onKey(e: KeyboardEvent) {
       const el = e.target as HTMLElement
       const isInput = el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable
-
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'p' || e.key === 'P')) {
-        e.preventDefault()
-        if (viewRef.current !== 'login') setPrOpen(true)
-        return
-      }
-
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 's' || e.key === 'S')) {
-        e.preventDefault()
-        setView('settings')
-        return
-      }
-
-      if (e.key === 'Escape') {
-        if (prRef.current) { setPrOpen(false); return }
-        return
-      }
-
       if (isInput) return
 
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
@@ -101,6 +80,7 @@ export default function App() {
           case 'm': e.preventDefault(); setView('missions'); break
           case 'a': e.preventDefault(); setView('announcements'); break
           case 'u': e.preventDefault(); setView('members'); break
+          case 'c': e.preventDefault(); setView('contact'); break
         }
       }
     }
@@ -141,7 +121,6 @@ export default function App() {
           </AnimatePresence>
         </Layout>
       )}
-      {view !== 'login' && <PRDialog open={prOpen} onClose={() => setPrOpen(false)} />}
     </ErrorBoundary>
   )
 }

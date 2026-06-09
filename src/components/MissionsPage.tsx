@@ -1,26 +1,24 @@
-import { useEffect, useState, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import { useStore } from '../store'
-import { Storage } from '../utils/storage'
-import { fetchMissions, fetchMissionDetail, saveMission, uploadBase64Image } from '../utils/supabase'
-import type { MissionEntry, StatRow, PendingImage, Draft, MissionTimeline } from '../types'
+import { fetchMissions, fetchMissionDetail, saveMission, deleteMission, uploadBase64Image } from '../utils/supabase'
+import type { MissionEntry, PendingImage, MissionTimeline } from '../types'
 import {
-  ArrowLeftIcon, PlusIcon, ImageIcon, TargetIcon, RefreshIcon, SaveIcon, TrashIcon, EditIcon, CheckIcon, SearchIcon, DatabaseIcon,
+  ArrowLeftIcon, PlusIcon, ImageIcon, TargetIcon, RefreshIcon, TrashIcon, EditIcon, SearchIcon,
 } from './Icons'
-import { Field, Textarea, Toggle, ImageUpload, StatsEditor, PartnersEditor } from './form'
+import { Field, Textarea, Toggle, ImageUpload, StatsEditor, PartnersEditor, GoalsEditor, TimelineEditor, ParticipantsEditor, BudgetEditor } from './form'
 
 type Mode = 'list' | 'form'
 
 export function MissionsPage() {
- const setView = useStore(s => s.setView)
- const addToast = useStore(s => s.addToast)
- const refreshTrigger = useStore(s => s.refreshTrigger)
- const [mode, setMode] = useState<Mode>('list')
- const [missions, setMissions] = useState<MissionEntry[]>([])
- const [drafts, setDrafts] = useState<Draft[]>([])
- const [loading, setLoading] = useState(true)
- const [errors, setErrors] = useState<Record<string, string>>({})
- const [search, setSearch] = useState('')
+  const setView = useStore(s => s.setView)
+  const addToast = useStore(s => s.addToast)
+  const refreshTrigger = useStore(s => s.refreshTrigger)
+  const [mode, setMode] = useState<Mode>('list')
+  const [missions, setMissions] = useState<MissionEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [search, setSearch] = useState('')
 
   const [fId, setFId] = useState('')
   const [fTitle, setFTitle] = useState('')
@@ -29,473 +27,394 @@ export function MissionsPage() {
   const [fDesc, setFDesc] = useState('')
   const [fDetail, setFDetail] = useState('')
   const [fShow, setFShow] = useState(true)
-  const [fStatus, setFStatus] = useState('completed')
-  const [fCategory, setFCategory] = useState('')
-  const [fLocation, setFLocation] = useState('')
-  const [fDuration, setFDuration] = useState('')
-  const [fImpact, setFImpact] = useState('')
-  const [fCoordinator, setFCoordinator] = useState('')
-  const [fStats, setFStats] = useState<StatRow[]>([])
+  const [fStats, setFStats] = useState<{ key: string; value: string }[]>([])
   const [fPartners, setFPartners] = useState<string[]>([])
   const [fGoals, setFGoals] = useState<string[]>([])
   const [fTimeline, setFTimeline] = useState<MissionTimeline[]>([])
   const [fParticipants, setFParticipants] = useState<{ group_name: string; participant_count: string }[]>([])
   const [fBudget, setFBudget] = useState<{ item: string; amount: string }[]>([])
   const [fImages, setFImages] = useState<PendingImage[]>([])
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [saving, setSaving] = useState(false)
 
-  function doSave() {
-  Storage.saveDraft('mission', fId, {
-  id: fId, title: fTitle, tag: fTag, date: fDate,
-  description: fDesc, detail: fDetail,
-  stats: fStats.filter(s => s.key || s.value),
-  partners: fPartners.filter(p => p.trim()),
-  show: fShow, status: fStatus, category: fCategory,
-  location_name: fLocation, duration: fDuration,
-  impact: fImpact, coordinator: fCoordinator,
-  goals: fGoals, timeline: fTimeline,
-  participants: fParticipants, budget: fBudget,
-  images: fImages, imageCount: fImages.length,
-  })
-  setSaveStatus('saved')
-  }
+  useEffect(() => { loadMissions() }, [refreshTrigger])
 
   useEffect(() => {
-  if (mode !== 'form' || !fId) return
-  setSaveStatus('saving')
-  doSave()
-  }, [fId, fTitle, fTag, fDate, fDesc, fDetail, fShow, fStatus, fCategory, fLocation, fDuration, fImpact, fCoordinator, fStats, fPartners, fGoals, fTimeline, fParticipants, fBudget, fImages, mode])
+    if (mode !== 'list') return
+    const id = setInterval(() => loadMissions(), 30000)
+    return () => clearInterval(id)
+  }, [mode])
 
- const doSaveRef = useRef(doSave)
- doSaveRef.current = doSave
- useEffect(() => {
- function onKey(e: KeyboardEvent) {
- if ((e.ctrlKey || e.metaKey) && e.key === 's') {
- e.preventDefault()
- doSaveRef.current()
- addToast('Draft saved!', 'success')
- }
- }
- window.addEventListener('keydown', onKey)
- return () => window.removeEventListener('keydown', onKey)
- }, [])
-
- useEffect(() => { loadMissions(); setDrafts(Storage.listDrafts().filter(d => d.type === 'mission')) }, [refreshTrigger])
-
- const pendingDraftId = useStore(s => s.pendingDraftId)
- const setPendingDraftId = useStore(s => s.setPendingDraftId)
- useEffect(() => {
- if (mode === 'list' && !loading && pendingDraftId) {
- setPendingDraftId(null)
- startEdit(pendingDraftId)
- }
- }, [pendingDraftId, mode, loading])
-
- const pendingAction = useStore(s => s.pendingAction)
- const setPendingAction = useStore(s => s.setPendingAction)
- useEffect(() => {
- if (mode === 'list' && !loading && pendingAction === 'newMission') {
- setPendingAction(null)
- startNew()
- }
- }, [pendingAction, mode, loading])
-
- useEffect(() => {
- if (mode !== 'list') return
- const id = setInterval(() => loadMissions(), 30000)
- return () => clearInterval(id)
- }, [mode])
-
- function cleanupStaleDrafts(live: MissionEntry[]) {
- const ids = new Set(live.map(m => m.id))
- const stale = Storage.listDrafts().filter(d => d.type === 'mission' && ids.has(d.id))
- for (const d of stale) {
- const liveEntry = live.find(m => m.id === d.id)
- if (!liveEntry) continue
- const changed = (
- (d.title as string) !== liveEntry.title ||
- (d.tag !== undefined && d.tag !== liveEntry.tag) ||
- (d.date !== undefined && d.date !== liveEntry.date) ||
- (d.show !== undefined && d.show !== liveEntry.show) ||
- (d.description !== undefined && d.description !== (liveEntry.description || ''))
- )
- if (!changed) Storage.deleteDraft('mission', d.id)
- }
- }
+  const pendingAction = useStore(s => s.pendingAction)
+  const setPendingAction = useStore(s => s.setPendingAction)
+  useEffect(() => {
+    if (mode === 'list' && !loading && pendingAction === 'newMission') {
+      setPendingAction(null)
+      startNew()
+    }
+  }, [pendingAction, mode, loading])
 
   async function loadMissions() {
-  setLoading(true)
-  try {
-  const live = await fetchMissions()
-  setMissions(live || [])
-  cleanupStaleDrafts(live || [])
-  } catch {
-  setMissions([])
-  addToast('Failed to load missions', 'error')
-  }
-  setLoading(false)
+    setLoading(true)
+    try {
+      const live = await fetchMissions()
+      setMissions(live || [])
+    } catch {
+      setMissions([])
+      addToast('Failed to load missions', 'error')
+    }
+    setLoading(false)
   }
 
   function startNew() {
-  const n = String(missions.length + 1).padStart(2, '0')
-  setFId('mission-' + n); setFTitle(''); setFTag('Mission #' + n)
-  setFDate(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' }))
-  setFDesc(''); setFDetail(''); setFShow(true)
-  setFStatus('planned'); setFCategory(''); setFLocation('')
-  setFDuration(''); setFImpact(''); setFCoordinator('')
-  setFStats([]); setFPartners([]); setFGoals([])
-  setFTimeline([]); setFParticipants([]); setFBudget([])
-  setFImages([]); setErrors({})
-  setMode('form')
+    const n = String(missions.length + 1).padStart(2, '0')
+    setFId('mission-' + n); setFTitle(''); setFTag('Mission #' + n)
+    setFDate(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' }))
+    setFDesc(''); setFDetail(''); setFShow(true)
+    setFStats([]); setFPartners([]); setFGoals([])
+    setFTimeline([]); setFParticipants([]); setFBudget([])
+    setFImages([]); setErrors({})
+    setMode('form')
   }
 
- async function startEdit(id: string) {
- const m = missions.find(x => x.id === id || x.slug === id)
- const draft = Storage.getDraft('mission', id)
- if (!m && !draft) return
+  async function startEdit(id: string) {
+    const m = missions.find(x => x.id === id || x.slug === id)
+    if (!m) return
 
- setFId(id)
- if (m) {
- setFTitle(m.title); setFTag(m.tag || '')
- setFDate(m.date || ''); setFDesc(m.description || '')
- setFShow(m.show !== false)
- } else {
- setFTitle(''); setFTag('')
- setFDate(''); setFDesc('')
- setFShow(true)
- }
-  setFDetail(''); setFStats([]); setFPartners([]); setFImages([]); setErrors({})
-  setFStatus('completed'); setFCategory(''); setFLocation('')
-  setFDuration(''); setFImpact(''); setFCoordinator('')
-  setFGoals([]); setFTimeline([]); setFParticipants([]); setFBudget([])
+    setFId(id); setFTitle(m.title); setFTag(m.tag || '')
+    setFDate(m.date || ''); setFDesc(m.description || '')
+    setFShow(m.show !== false)
+    setFDetail(''); setFStats([]); setFPartners([]); setFImages([])
+    setFGoals([]); setFTimeline([]); setFParticipants([]); setFBudget([])
+    setErrors({})
 
-  if (draft) {
-  setFTitle((draft.title as string) || (m?.title || ''))
-  setFTag((draft.tag as string) || (m?.tag || ''))
-  setFDate((draft.date as string) || (m?.date || ''))
-  setFDesc((draft.description as string) || (m?.description || ''))
-  setFShow(draft.show !== false)
-  setFDetail((draft.detail as string) || '')
-  setFStatus((draft.status as string) || 'completed')
-  setFCategory((draft.category as string) || '')
-  setFLocation((draft.location_name as string) || '')
-  setFDuration((draft.duration as string) || '')
-  setFImpact((draft.impact as string) || '')
-  setFCoordinator((draft.coordinator as string) || '')
-  setFStats((draft.stats as StatRow[]) || [])
-  setFPartners((draft.partners as string[]) || [])
-  setFGoals((draft.goals as string[]) || [])
-  setFTimeline((draft.timeline as MissionTimeline[]) || [])
-  setFParticipants((draft.participants as { group_name: string; participant_count: string }[]) || [])
-  setFBudget((draft.budget as { item: string; amount: string }[]) || [])
-  setFImages((draft.images as PendingImage[]) || [])
-  setMode('form'); return
+    const missionId = m?.id
+    if (!missionId) { setMode('form'); return }
+
+    try {
+      const info = await fetchMissionDetail(missionId)
+      if (info) {
+        setFDetail(info.detail || '')
+        setFStats(Object.entries(info.stats || {}).map(([k, v]) => ({ key: k, value: String(v) })))
+        setFPartners(info.partners || [])
+        setFGoals(info.goals || [])
+        setFTimeline(info.timeline || [])
+        setFParticipants(info.participants || [])
+        setFBudget(info.budget || [])
+        const imgs: PendingImage[] = (info.images || []).map((img: unknown) => {
+          const url = typeof img === 'string' ? img : (img as { url: string; alt?: string }).url
+          return { dataUrl: url, name: url.split('/').pop() || 'image', remote: true }
+        })
+        setFImages(imgs)
+      }
+    } catch { /* ignore */ }
+    setMode('form')
   }
 
-  const missionId = m?.id
-  if (!missionId) return
-  try {
-  const info = await fetchMissionDetail(missionId)
-  if (info) {
-  setFDetail(info.detail || '')
-  setFStats(Object.entries(info.stats || {}).map(([k, v]) => ({ key: k, value: String(v) })))
-  setFPartners(info.partners || [])
-  const imgs: PendingImage[] = (info.images || []).map((url: string) => ({
-  dataUrl: url, name: url.split('/').pop() || 'image', remote: true,
-  }))
-  setFImages(imgs)
+  function validate(): boolean {
+    const errs: Record<string, string> = {}
+    if (!fTitle.trim()) errs.title = 'Title is required'
+    if (!fDesc.trim()) errs.description = 'Description is required'
+    if (!fId.trim()) errs.id = 'ID is required'
+    setErrors(errs)
+    return Object.keys(errs).length === 0
   }
-  } catch { /* ignore */ }
-  setMode('form')
- }
 
- function validate(): boolean {
- const errs: Record<string, string> = {}
- if (!fTitle.trim()) errs.title = 'Title is required'
- if (!fDesc.trim()) errs.description = 'Description is required'
- if (!fId.trim()) errs.id = 'ID is required'
- setErrors(errs)
- return Object.keys(errs).length === 0
- }
+  async function handleSave() {
+    if (!validate()) { addToast('Please fix form errors', 'error'); return }
+    setSaving(true)
 
- function saveDraft() {
- if (!validate()) { addToast('Please fix form errors', 'error'); return }
- const localImgs = fImages.filter(i => !i.remote)
- Storage.saveDraft('mission', fId, {
- id: fId, title: fTitle, tag: fTag, date: fDate,
- description: fDesc, detail: fDetail,
- stats: fStats.filter(s => s.key || s.value),
- partners: fPartners.filter(p => p.trim()),
- show: fShow, images: localImgs, imageCount: fImages.length,
- })
- addToast('Mission draft saved!', 'success')
- setDrafts(Storage.listDrafts().filter(d => d.type === 'mission'))
- }
+    try {
+      const imageUrls: string[] = []
+      for (let i = 0; i < fImages.length; i++) {
+        if (fImages[i].remote && fImages[i].dataUrl.startsWith('http')) {
+          imageUrls.push(fImages[i].dataUrl)
+        } else if (fImages[i].dataUrl.startsWith('data:')) {
+          const filename = `mission/${fId}/img-${String(i + 1).padStart(2, '0')}.jpg`
+          const result = await uploadBase64Image('public', filename, fImages[i].dataUrl)
+          if (result.url) imageUrls.push(result.url)
+        }
+      }
 
- if (mode === 'form') {
- return (
- <motion.div
- initial={{ opacity: 0, y: 8 }}
- animate={{ opacity: 1, y: 0 }}
- transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
- >
- <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
- <div className="flex items-center gap-3">
- <button className="flex h-8 w-8 items-center justify-center rounded-lg border dark:border-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>
- <ArrowLeftIcon size={16} />
- </button>
- <div>
-  <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">{fId ? 'Edit Mission' : 'Create Mission'}</h2>
- <div className="text-xs dark:text-zinc-600">{fId}</div>
- </div>
- </div>
- <div className="flex items-center gap-2">
- <span className="flex items-center gap-1.5 text-[10px] dark:text-zinc-600">
- {saveStatus === 'saving' && <>Saving...</>}
- {saveStatus === 'saved' && <><CheckIcon size={10} className="dark:text-emerald-400" /> Saved</>}
- </span>
- <button className="rounded-lg border dark:border-zinc-800 px-3 py-1.5 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>
- Cancel
- </button>
-          <button className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400" onClick={saveDraft}>
-            <SaveIcon size={13} /> Save Draft
-          </button>
-          <button className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-400" onClick={async () => {
-            if (!validate()) { addToast('Please fix form errors', 'error'); return }
-            const images = fImages.filter(i => i.dataUrl.startsWith('data:'))
-            const imageUrls: string[] = []
-            for (let i = 0; i < fImages.length; i++) {
-              if (fImages[i].remote && fImages[i].dataUrl.startsWith('http')) imageUrls.push(fImages[i].dataUrl)
-              else if (fImages[i].dataUrl.startsWith('data:')) {
-                const filename = `mission/${fId}/img-${String(i + 1).padStart(2, '0')}.jpg`
-                const result = await uploadBase64Image('public', filename, fImages[i].dataUrl)
-                if (result.url) imageUrls.push(result.url)
-              }
-            }
-            const statsArr = fStats.filter(s => s.key).map(s => ({ label: s.key, value: s.value }))
-            const { error } = await saveMission(fId, {
-              slug: fId, title: fTitle, tag: fTag, date: fDate,
-              description: fDesc, detail: fDetail, show: fShow,
-              image_count: fImages.length, featured: imageUrls[0] || null,
-              images: imageUrls, stats: statsArr,
-              partners: fPartners.filter(p => p.trim()),
-            })
-            if (error) { addToast('Publish failed: ' + error.message, 'error'); return }
-            Storage.deleteDraft('mission', fId)
-            addToast('Mission published to database!', 'success')
-            setMode('list')
-            loadMissions()
-          }}>
-            <DatabaseIcon size={13} /> Publish
-          </button>
+      const statsArr = fStats.filter(s => s.key).map(s => ({ label: s.key, value: s.value }))
+      const { error } = await saveMission(fId, {
+        slug: fId, title: fTitle, tag: fTag, date: fDate,
+        description: fDesc, detail: fDetail, show: fShow,
+        image_count: fImages.length, featured: imageUrls[0] || null,
+        images: imageUrls, stats: statsArr,
+        partners: fPartners.filter(p => p.trim()),
+        goals: fGoals.filter(g => g.trim()),
+        timeline: fTimeline.filter(t => t.title.trim()),
+        participants: fParticipants.filter(p => p.group_name.trim()),
+        budget: fBudget.filter(b => b.item.trim()),
+      })
+      if (error) { addToast('Save failed: ' + error.message, 'error'); return }
+
+      addToast('Mission saved to database!', 'success')
+      setMode('list')
+      loadMissions()
+    } catch (e) {
+      addToast('Save failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
+    }
+    setSaving(false)
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Delete this mission permanently?')) return
+    const { error } = await deleteMission(id)
+    if (error) { addToast('Delete failed: ' + error.message, 'error'); return }
+    addToast('Mission deleted', 'success')
+    loadMissions()
+  }
+
+  if (mode === 'form') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <button className="flex h-8 w-8 items-center justify-center rounded-lg border dark:border-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>
+              <ArrowLeftIcon size={16} />
+            </button>
+            <div>
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">{fId ? 'Edit Mission' : 'Create Mission'}</h2>
+              <div className="text-xs dark:text-zinc-600">{fId}</div>
+            </div>
           </div>
+          <div className="flex items-center gap-2">
+            <button className="rounded-lg border dark:border-zinc-800 px-3 py-1.5 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>
+              Cancel
+            </button>
+            <button
+              className="rounded-lg bg-emerald-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? 'Saving...' : 'Save to Database'}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {/* Basic Information */}
+          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+              <TargetIcon size={14} className="dark:text-blue-400" />
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Basic Information</h3>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Mission ID" value={fId} onChange={() => {}} readOnly error={errors.id} />
+                <Field label="Tag / Badge" value={fTag} onChange={setFTag} placeholder="Mission #XX" hint="Appears as a badge on the card" />
+                <div className="sm:col-span-2">
+                  <Field label="Title *" value={fTitle} onChange={setFTitle} placeholder="Enter mission title"
+                    error={errors.title} maxLength={100} hint="A clear, descriptive title for your mission" />
+                </div>
+                <Field label="Date" value={fDate} onChange={setFDate} placeholder="May 2025" hint="Month and year" />
+                <div className="sm:col-span-2">
+                  <Field label="Short Description *" value={fDesc} onChange={setFDesc} placeholder="One sentence summary"
+                    error={errors.description} maxLength={200} hint="Appears on the mission card" />
+                </div>
+                <div className="sm:col-span-2">
+                  <Textarea label="Full Story" value={fDetail} onChange={setFDetail} placeholder="Write the complete mission story, details, impact, and outcomes..." rows={8} />
+                </div>
+              </div>
+            </div>
           </div>
 
- <div className="space-y-4">
- <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
- <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
- <TargetIcon size={14} className="dark:text-blue-400" />
- <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Basic Information</h3>
- </div>
- <div className="p-4">
- <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
- <Field label="Mission ID" value={fId} onChange={() => {}} readOnly error={errors.id} />
- <Field label="Tag / Badge" value={fTag} onChange={setFTag} placeholder="Mission #XX" hint="Appears as a badge on the card" />
- <div className="sm:col-span-2">
- <Field label="Title *" value={fTitle} onChange={setFTitle} placeholder="Enter mission title"
- error={errors.title} maxLength={100}
- hint="A clear, descriptive title for your mission" />
- </div>
- <Field label="Date" value={fDate} onChange={setFDate} placeholder="May 2025" hint="Month and year" />
- <div className="sm:col-span-2">
- <Field label="Short Description *" value={fDesc} onChange={setFDesc} placeholder="One sentence summary"
- error={errors.description} maxLength={200} hint="Appears on the mission card" />
- </div>
- <div className="sm:col-span-2">
- <Textarea label="Full Story" value={fDetail} onChange={setFDetail} placeholder="Write the complete mission story, details, impact, and outcomes..." rows={8} />
- </div>
- </div>
- </div>
- </div>
+          {/* Statistics */}
+          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-emerald-400"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Statistics</h3>
+            </div>
+            <div className="p-4">
+              <StatsEditor stats={fStats} onChange={setFStats} keyPlaceholder="Label (e.g. volunteers)" valuePlaceholder="Value (e.g. 25+)" />
+            </div>
+          </div>
 
- <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
- <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
- <PlusIcon size={14} className="dark:text-emerald-400" />
- <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Statistics</h3>
- </div>
- <div className="p-4">
- <StatsEditor stats={fStats} onChange={setFStats} keyPlaceholder="Label (e.g. volunteers)" valuePlaceholder="Value (e.g. 25+)" />
- </div>
- </div>
+          {/* Partners */}
+          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-purple-400"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Partners</h3>
+            </div>
+            <div className="p-4">
+              <PartnersEditor partners={fPartners} onChange={setFPartners} />
+            </div>
+          </div>
 
- <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
- <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
- <PlusIcon size={14} className="dark:text-purple-400" />
- <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Partners</h3>
- </div>
- <div className="p-4">
- <PartnersEditor partners={fPartners} onChange={setFPartners} />
- </div>
- </div>
+          {/* Goals */}
+          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber-400"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Goals</h3>
+            </div>
+            <div className="p-4">
+              <GoalsEditor goals={fGoals} onChange={setFGoals} />
+            </div>
+          </div>
 
- <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
- <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
- <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-zinc-500"><path d="M2 12L9 19L22 6"/></svg>
- <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Visibility</h3>
- </div>
- <div className="p-4">
- <Toggle label="Show on site" checked={fShow} onChange={setFShow}
- onLabel="Visible to visitors" offLabel="Hidden from visitors" />
- </div>
- </div>
+          {/* Timeline */}
+          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-400"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Timeline</h3>
+            </div>
+            <div className="p-4">
+              <TimelineEditor timeline={fTimeline} onChange={setFTimeline} />
+            </div>
+          </div>
 
- <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
- <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
- <ImageIcon size={14} className="dark:text-blue-400" />
- <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Images ({fImages.length})</h3>
- </div>
- <div className="p-4">
- <ImageUpload images={fImages} onChange={setFImages} />
- <div className="mt-2 text-[10px] dark:text-zinc-700">Drag to reorder. First image is used as the featured cover image.</div>
- </div>
- </div>
- </div>
- </motion.div>
- )
- }
+          {/* Participants */}
+          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-pink-400"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Participants</h3>
+            </div>
+            <div className="p-4">
+              <ParticipantsEditor participants={fParticipants} onChange={setFParticipants} />
+            </div>
+          </div>
 
- const allDrafts = Storage.listDrafts().filter(d => d.type === 'mission')
- const filtered = missions.filter(m =>
- !search || m.title.toLowerCase().includes(search.toLowerCase()) || m.id.toLowerCase().includes(search.toLowerCase())
- )
+          {/* Budget */}
+          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-emerald-400"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Budget</h3>
+            </div>
+            <div className="p-4">
+              <BudgetEditor budget={fBudget} onChange={setFBudget} />
+            </div>
+          </div>
 
- return (
- <motion.div
- initial={{ opacity: 0, y: 8 }}
- animate={{ opacity: 1, y: 0 }}
- transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
- >
- <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
- <div>
-  <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Missions</h2>
- <p className="mt-0.5 text-xs dark:text-zinc-600">Create and manage mission posts with unlimited images</p>
- </div>
- <div className="flex items-center gap-2">
- <button className="flex h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={loadMissions}>
- <RefreshIcon size={13} /> Refresh
- </button>
- <button className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white dark:hover:bg-emerald-400" onClick={startNew}>
- <PlusIcon size={13} /> New Mission
- </button>
- </div>
- </div>
+          {/* Visibility */}
+          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-zinc-500"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Visibility</h3>
+            </div>
+            <div className="p-4">
+              <Toggle label="Show on site" checked={fShow} onChange={setFShow}
+                onLabel="Visible to visitors" offLabel="Hidden from visitors" />
+            </div>
+          </div>
 
- <div className="mb-4 flex items-center gap-2 rounded-lg border dark:border-zinc-800/50 dark:bg-zinc-900/30 px-3 py-2">
- <SearchIcon size={14} className="dark:text-zinc-600" />
- <input
- value={search}
- onChange={e => setSearch(e.target.value)}
- placeholder="Search missions..."
- className="flex-1 bg-transparent text-sm dark:text-zinc-700 outline-none placeholder:text-zinc-400"
- />
- </div>
+          {/* Images */}
+          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+              <ImageIcon size={14} className="dark:text-blue-400" />
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Images ({fImages.length})</h3>
+            </div>
+            <div className="p-4">
+              <ImageUpload images={fImages} onChange={setFImages} />
+              <div className="mt-2 text-[10px] dark:text-zinc-700">Drag to reorder. First image is used as the featured cover image.</div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
 
- <div className="overflow-hidden rounded-xl border dark:border-zinc-800/50">
- <div className="overflow-x-auto">
- <table className="w-full text-left text-sm">
- <thead>
- <tr className="border-b dark:border-zinc-800/50 dark:bg-zinc-900/50">
- <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Mission</th>
- <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Tag</th>
- <th className="hidden px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:table-cell">Date</th>
- <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Status</th>
- <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Actions</th>
- </tr>
- </thead>
- <tbody className="divide-y divide-zinc-800/30">
- {loading ? (
- [...Array(5)].map((_, i) => (
- <tr key={i}>
- <td colSpan={5} className="px-4 py-3">
- <div className="h-4 w-full animate-pulse rounded dark:bg-zinc-800/50" />
- </td>
- </tr>
- ))
- ) : filtered.length === 0 && allDrafts.length === 0 ? (
- <tr>
- <td colSpan={5} className="px-4 py-10 text-center">
- <TargetIcon size={24} className="mx-auto dark:text-zinc-700" />
- <div className="mt-2 text-sm font-medium text-zinc-500">No missions yet</div>
- <div className="text-xs dark:text-zinc-700">Click "New Mission" to create one</div>
- </td>
- </tr>
- ) : (
- (() => {
- const draftMap = new Map(allDrafts.map(d => [d.id, d]))
- const merged = filtered.map(m => {
- const draft = draftMap.get(m.id) || draftMap.get(m.slug || '')
- return { live: m, draft, hasDraft: !!draft }
- })
- const draftOnly = allDrafts.filter(d => !missions.find(m => (m.id || m.slug) === d.id))
- const rows: { id: string; title: string; tag: string; date: string; imageCount: number; active: boolean; hasDraft: boolean; isDraftOnly: boolean; deleteDraft?: () => void }[] = []
- for (const m of merged) {
- const d = m.draft
- const title = (d?.title as string) || m.live.title
- const tag = (d?.tag as string) || m.live.tag || '—'
- const date = (d?.date as string) || m.live.date || '—'
- const active = d ? d.show !== false : m.live.show !== false
- const liveTag = m.live.tag || '—'
- const liveDate = m.live.date || '—'
- const changed = d && (
- title !== m.live.title || tag !== liveTag || date !== liveDate ||
- active !== (m.live.show !== false) ||
- (d.description as string) !== (m.live.description || '')
- )
- rows.push({ id: m.live.id, title, tag, date, imageCount: 0, active, hasDraft: m.hasDraft && !!changed, isDraftOnly: false })
- }
- for (const d of draftOnly) {
- rows.push({
- id: d.id, title: d.title as string, tag: '—', date: (d.date as string) || '—',
- imageCount: 0, active: d.show !== false, hasDraft: true, isDraftOnly: true,
- deleteDraft: () => { Storage.deleteDraft('mission', d.id); setDrafts(Storage.listDrafts().filter(dd => dd.type === 'mission')); addToast('Draft deleted', 'info') },
- })
- }
- return rows.map(r => (
- <tr key={r.id} className={`transition-colors hover:bg-zinc-200 dark:bg-zinc-800/20 ${r.hasDraft ? 'bg-amber-500/5' : ''}`}>
- <td className="px-4 py-3">
- <div className="font-medium dark:text-zinc-300">{r.title}</div>
- {r.hasDraft && <div className="text-[10px] dark:text-amber-400">Draft</div>}
- </td>
- <td className="px-4 py-3">
- <span className="inline-block rounded-md dark:bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium dark:text-emerald-400">{r.tag}</span>
- </td>
- <td className="hidden px-4 py-3 dark:text-zinc-600 sm:table-cell">{r.date}</td>
- <td className="px-4 py-3">
- <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${ r.active ? 'bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-600' }`}>
- {r.active && <div className="h-1 w-1 rounded-full bg-emerald-500" />}
- {r.active ? 'Active' : 'Hidden'}
- </span>
- </td>
- <td className="px-4 py-3">
- {r.isDraftOnly ? (
- <div className="flex items-center gap-1">
- <button className="rounded-lg px-2 py-1 text-[10px] font-medium dark:text-zinc-300 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700" onClick={() => { setPendingDraftId(r.id); setView('draftDiff') }}>Open</button>
- <button className="rounded-lg p-1 dark:text-zinc-700 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 dark:text-red-400" onClick={r.deleteDraft}><TrashIcon size={12} /></button>
- </div>
- ) : (
- <button className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-medium dark:text-zinc-300 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700" onClick={() => startEdit(r.id)}>
- <EditIcon size={12} /> Edit
- </button>
- )}
- </td>
- </tr>
- ))
- })()
- )}
- </tbody>
- </table>
- </div>
- </div>
- </motion.div>
- )
+  const filtered = missions.filter(m =>
+    !search || m.title.toLowerCase().includes(search.toLowerCase()) || m.id.toLowerCase().includes(search.toLowerCase())
+  )
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Missions</h2>
+          <p className="mt-0.5 text-xs dark:text-zinc-600">Create and manage mission posts with all data</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="flex h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={loadMissions}>
+            <RefreshIcon size={13} /> Refresh
+          </button>
+          <button className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white dark:hover:bg-emerald-400" onClick={startNew}>
+            <PlusIcon size={13} /> New Mission
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-4 flex items-center gap-2 rounded-lg border dark:border-zinc-800/50 dark:bg-zinc-900/30 px-3 py-2">
+        <SearchIcon size={14} className="dark:text-zinc-600" />
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search missions..."
+          className="flex-1 bg-transparent text-sm dark:text-zinc-300 outline-none placeholder:text-zinc-400"
+        />
+      </div>
+
+      <div className="overflow-hidden rounded-xl border dark:border-zinc-800/50">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b dark:border-zinc-800/50 dark:bg-zinc-900/50">
+                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Mission</th>
+                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Tag</th>
+                <th className="hidden px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:table-cell">Date</th>
+                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Status</th>
+                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800/30">
+              {loading ? (
+                [...Array(5)].map((_, i) => (
+                  <tr key={i}>
+                    <td colSpan={5} className="px-4 py-3">
+                      <div className="h-4 w-full animate-pulse rounded dark:bg-zinc-800/50" />
+                    </td>
+                  </tr>
+                ))
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center">
+                    <TargetIcon size={24} className="mx-auto dark:text-zinc-700" />
+                    <div className="mt-2 text-sm font-medium text-zinc-500">No missions yet</div>
+                    <div className="text-xs dark:text-zinc-700">Click "New Mission" to create one</div>
+                  </td>
+                </tr>
+              ) : (
+                filtered.map(m => (
+                  <tr key={m.id} className="transition-colors hover:bg-zinc-200 dark:bg-zinc-800/20">
+                    <td className="px-4 py-3">
+                      <div className="font-medium dark:text-zinc-300">{m.title}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="inline-block rounded-md dark:bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium dark:text-emerald-400">{m.tag || '—'}</span>
+                    </td>
+                    <td className="hidden px-4 py-3 dark:text-zinc-600 sm:table-cell">{m.date || '—'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${ m.show !== false ? 'bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-600' }`}>
+                        {m.show !== false && <div className="h-1 w-1 rounded-full bg-emerald-500" />}
+                        {m.show !== false ? 'Active' : 'Hidden'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <button className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-medium dark:text-zinc-300 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700" onClick={() => startEdit(m.id)}>
+                          <EditIcon size={12} /> Edit
+                        </button>
+                        <button className="rounded-lg p-1 dark:text-zinc-700 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600" onClick={() => handleDelete(m.id)}>
+                          <TrashIcon size={12} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </motion.div>
+  )
 }

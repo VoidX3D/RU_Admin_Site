@@ -46,7 +46,7 @@ export async function fetchMissionDetail(id: string) {
     })),
     goals: (goals.data || []).map((g: { goal: string }) => g.goal),
     timeline: (timeline.data || []).map((t: { title: string; date?: string; description?: string }) => t),
-    participants: (participants.data || []).map((p: { group_name: string; participant_count: string }) => ({ group_name: p.group_name, participant_count: p.participant_count })),
+    participants: (participants.data || []).map((p: { group_name: string; participant_count: string }) => p),
     budget: (budget.data || []).map((b: { item: string; amount?: string }) => b),
   }
 }
@@ -135,6 +135,10 @@ export async function saveMission(id: string, payload: Record<string, unknown>) 
 }
 
 export async function deleteMission(id: string) {
+  const tables = ['mission_stats', 'mission_partners', 'mission_images', 'mission_goals', 'mission_timeline', 'mission_participants', 'mission_budget']
+  for (const table of tables) {
+    await supabase.from(table as never).delete().eq('mission_id', id)
+  }
   const { error } = await supabase.from('missions').delete().eq('id', id)
   return { error }
 }
@@ -148,15 +152,55 @@ export async function fetchAnnouncements() {
 
 export async function fetchAnnouncementDetail(id: string) {
   const { data } = await supabase.from('announcements').select('*').eq('id', id).single()
-  return data
+  if (!data) return null
+
+  const [tagsRes, galleryRes] = await Promise.all([
+    supabase.from('announcement_tags').select('tag').eq('announcement_id', id).order('sort_order'),
+    supabase.from('announcement_gallery').select('url, alt').eq('announcement_id', id).order('sort_order'),
+  ])
+
+  return {
+    ...data,
+    tags: (tagsRes.data || []).map((t: { tag: string }) => t.tag),
+    gallery: (galleryRes.data || []).map((g: { url: string; alt: string }) => ({
+      url: storageUrl(`announcements/${g.url}`),
+      alt: g.alt,
+    })),
+  }
 }
 
 export async function saveAnnouncement(id: string, payload: Record<string, unknown>) {
-  const { error } = await supabase.from('announcements').upsert({ id, ...payload })
-  return { error }
+  const { tags, gallery, ...fields } = payload
+
+  const { error } = await supabase.from('announcements').upsert({ id, ...fields })
+  if (error) return { error }
+
+  if (tags !== undefined) {
+    await supabase.from('announcement_tags').delete().eq('announcement_id', id)
+    if (Array.isArray(tags) && tags.length > 0) {
+      await supabase.from('announcement_tags').insert(
+        (tags as string[]).map((tag, i) => ({ announcement_id: id, tag, sort_order: i }))
+      )
+    }
+  }
+
+  if (gallery !== undefined) {
+    await supabase.from('announcement_gallery').delete().eq('announcement_id', id)
+    if (Array.isArray(gallery) && gallery.length > 0) {
+      await supabase.from('announcement_gallery').insert(
+        (gallery as string[]).map((url, i) => ({
+          announcement_id: id, url: url.split('/').pop() || `img-${i}.jpg`, alt: '', sort_order: i,
+        }))
+      )
+    }
+  }
+
+  return { error: null }
 }
 
 export async function deleteAnnouncement(id: string) {
+  await supabase.from('announcement_tags').delete().eq('announcement_id', id)
+  await supabase.from('announcement_gallery').delete().eq('announcement_id', id)
   const { error } = await supabase.from('announcements').delete().eq('id', id)
   return { error }
 }
@@ -166,40 +210,41 @@ export async function deleteAnnouncement(id: string) {
 export async function fetchMembers() {
   const { data } = await supabase.from('members').select('*').order('sort_order')
   if (!data) return null
-  const teachers = data.filter((m: { group_name: string }) => m.group_name === 'teachers')
-  const core = data.filter((m: { group_name: string }) => m.group_name === 'core')
-  const general = data.filter((m: { group_name: string }) => m.group_name === 'general')
   return {
-    teachers,
-    core,
-    general,
+    teachers: data.filter((m: { group_name: string }) => m.group_name === 'teachers'),
+    core: data.filter((m: { group_name: string }) => m.group_name === 'core'),
+    general: data.filter((m: { group_name: string }) => m.group_name === 'general'),
     stats: {
-      teachers: teachers.length,
-      core: core.length,
-      general: general.length,
+      teachers: data.filter((m: { group_name: string }) => m.group_name === 'teachers').length,
+      core: data.filter((m: { group_name: string }) => m.group_name === 'core').length,
+      general: data.filter((m: { group_name: string }) => m.group_name === 'general').length,
       total: data.length,
     },
   }
 }
 
 export async function saveMembers(payload: Record<string, unknown>) {
-  const { teachers, core, general, stats, ...rest } = payload as Record<string, unknown> & { teachers: { name: string; class?: string; role: string; memberType?: string; groupName?: string; id?: number }[]; core: { name: string; class?: string; role: string; memberType?: string; groupName?: string; id?: number }[]; general: { name: string; class?: string; role: string; memberType?: string; groupName?: string; id?: number }[] }
+  const { teachers, core, general } = payload as Record<string, unknown> & {
+    teachers: { name: string; class?: string; role: string; image?: string; member_type?: string }[]
+    core: { name: string; class?: string; role: string; image?: string; member_type?: string }[]
+    general: { name: string; class?: string; role: string; image?: string; member_type?: string }[]
+  }
 
   const { error: delErr } = await supabase.from('members').delete().neq('id', 0)
   if (delErr) return { error: delErr }
 
   const allMembers = [
     ...teachers.map((m, i) => ({
-      name: m.name, class: m.class || null, role: m.role,
-      member_type: m.memberType || 'patron', group_name: 'teachers', sort_order: i,
+      name: m.name, class: m.class || null, role: m.role, image: m.image || null,
+      member_type: m.member_type || 'patron', group_name: 'teachers', sort_order: i,
     })),
     ...core.map((m, i) => ({
-      name: m.name, class: m.class || null, role: m.role,
-      member_type: m.memberType || 'coord', group_name: 'core', sort_order: i,
+      name: m.name, class: m.class || null, role: m.role, image: m.image || null,
+      member_type: m.member_type || 'coord', group_name: 'core', sort_order: i,
     })),
     ...general.map((m, i) => ({
-      name: m.name, class: m.class || null, role: m.role,
-      member_type: m.memberType || 'member', group_name: 'general', sort_order: i,
+      name: m.name, class: m.class || null, role: m.role, image: m.image || null,
+      member_type: m.member_type || 'member', group_name: 'general', sort_order: i,
     })),
   ].filter(m => m.name.trim())
 
@@ -210,86 +255,7 @@ export async function saveMembers(payload: Record<string, unknown>) {
   return { error: null }
 }
 
-// Hero Content
-
-export async function fetchHeroContent() {
-  const { data } = await supabase.from('hero_content').select('*').single()
-  return data
-}
-
-export async function saveHeroContent(payload: Record<string, unknown>) {
-  const { error } = await supabase.from('hero_content').upsert({ id: 1, ...payload })
-  return { error }
-}
-
-// Intro Content
-
-export async function fetchIntroContent() {
-  const [contentRes, paragraphsRes] = await Promise.all([
-    supabase.from('intro_content').select('*').single(),
-    supabase.from('intro_paragraphs').select('*').order('sort_order'),
-  ])
-  return {
-    ...(contentRes.data || {}),
-    paragraphs: (paragraphsRes.data || []).map((p: { content: string }) => p.content),
-  }
-}
-
-export async function saveIntroContent(payload: Record<string, unknown>) {
-  const { paragraphs, ...contentFields } = payload
-  const { error } = await supabase.from('intro_content').upsert({ id: 1, ...contentFields })
-  if (error) return { error }
-
-  if (paragraphs !== undefined) {
-    await supabase.from('intro_paragraphs').delete().eq('intro_id', 1)
-    if (Array.isArray(paragraphs) && paragraphs.length > 0) {
-      await supabase.from('intro_paragraphs').insert(
-        (paragraphs as string[]).map((p, i) => ({ intro_id: 1, content: p, sort_order: i }))
-      )
-    }
-  }
-  return { error: null }
-}
-
-// Feature Cards
-
-export async function fetchFeatureCards() {
-  const { data } = await supabase.from('feature_cards').select('*').order('sort_order')
-  return data || []
-}
-
-export async function saveFeatureCards(items: { title: string; description: string; icon: string; sort_order: number }[]) {
-  const { error: delErr } = await supabase.from('feature_cards').delete().neq('id', 0)
-  if (delErr) return { error: delErr }
-  const { error } = await supabase.from('feature_cards').insert(items)
-  return { error }
-}
-
-// CTA Content
-
-export async function fetchCTAContent() {
-  const { data } = await supabase.from('cta_content').select('*').single()
-  return data
-}
-
-export async function saveCTAContent(payload: Record<string, unknown>) {
-  const { error } = await supabase.from('cta_content').upsert({ id: 1, ...payload })
-  return { error }
-}
-
-// Mission Section
-
-export async function fetchMissionSectionContent() {
-  const { data } = await supabase.from('mission_section').select('*').single()
-  return data
-}
-
-export async function saveMissionSectionContent(payload: Record<string, unknown>) {
-  const { error } = await supabase.from('mission_section').upsert({ id: 1, ...payload })
-  return { error }
-}
-
-// Stats & Partners
+// Stats & Partners (global)
 
 export async function fetchStats() {
   const { data } = await supabase.from('stats').select('*').order('sort_order')
@@ -315,12 +281,24 @@ export async function savePartners(items: { src: string; alt: string; name: stri
   return { error }
 }
 
-// Images — upload to Supabase Storage (ruclub bucket, static/assets/ prefix)
+// Contact Submissions
+
+export async function fetchContactSubmissions() {
+  const { data } = await supabase.from('contact_submissions').select('*').order('created_at', { ascending: false })
+  return data || []
+}
+
+export async function deleteContactSubmission(id: number) {
+  const { error } = await supabase.from('contact_submissions').delete().eq('id', id)
+  return { error }
+}
+
+// Images — upload to Supabase Storage
 
 const STORAGE_BUCKET = 'ruclub'
 const STORAGE_PREFIX = 'static/assets/'
 
-export async function uploadImage(bucket: string, path: string, file: File) {
+export async function uploadImage(_bucket: string, path: string, file: File) {
   const storagePath = path.startsWith(STORAGE_PREFIX) ? path : `${STORAGE_PREFIX}${path}`
   const { data, error } = await supabase.storage.from(STORAGE_BUCKET).upload(storagePath, file, { upsert: true })
   if (error) return { error }
@@ -328,11 +306,9 @@ export async function uploadImage(bucket: string, path: string, file: File) {
   return { url: publicUrl }
 }
 
-export async function uploadBase64Image(bucket: string, path: string, dataUrl: string) {
+export async function uploadBase64Image(_bucket: string, path: string, dataUrl: string) {
   const res = await fetch(dataUrl)
   const blob = await res.blob()
   const file = new File([blob], path.split('/').pop() || 'image', { type: blob.type })
-  return uploadImage(bucket, path, file)
+  return uploadImage(_bucket, path, file)
 }
-
-export { supabase as default }

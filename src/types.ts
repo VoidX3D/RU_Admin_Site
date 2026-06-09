@@ -4,7 +4,7 @@ export interface MissionEntry {
 }
 export interface MissionInfo {
   id: string; title: string; slug: string; tag?: string; date?: string;
-  description: string; detail?: string; images: string[];
+  description: string; detail?: string; images: { url: string; alt?: string }[];
   stats?: { label: string; value: string }[];
   partners?: string[]; show?: boolean;
   goals?: string[]; timeline?: MissionTimeline[];
@@ -23,14 +23,11 @@ export interface AnnouncementFull {
   tags?: string[]; date: string; day?: string; deadline?: string;
   time?: string; location?: string; issuedBy?: string;
   summary: string; description: string; importance?: string;
-  instructions?: string; image?: string; active?: boolean; gallery?: string[];
+  instructions?: string; image?: string; active?: boolean;
+  gallery?: { url: string; alt?: string }[];
 }
-export interface Member { name: string; class?: string; role: string; memberType?: string; groupName?: string; }
+export interface Member { name: string; class?: string; role: string; }
 export interface MembersData { teachers: Member[]; core: Member[]; general: Member[]; stats: { teachers: number; core: number; general: number; total: number; }; }
-export interface Draft { type: 'mission' | 'announcement' | 'members'; id: string; title: string; updated: number; date?: string; imageCount?: number; image?: unknown; stats?: { label: string; value: string }[]; partners?: string[]; show?: boolean; description?: string; detail?: string; tag?: string; goals?: string[]; timeline?: MissionTimeline[]; participants?: { group_name: string; participant_count: string }[]; budget?: { item: string; amount?: string }[]; [k: string]: unknown; }
 export interface PendingImage { dataUrl: string; name: string; size?: number; remote?: boolean; }
-export interface Settings {
-  username: string; password: string; verifyCode: string;
-  repoOwner: string; repoName: string; repoBranch: string;
-}
+export interface Settings { username: string; password: string; verifyCode: string; }
 export interface StatRow { key: string; value: string; }
