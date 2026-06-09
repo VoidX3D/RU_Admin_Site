@@ -1,17 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY || ''
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: { storageKey: 'sb-ruclub-admin-anon' },
+const key = supabaseServiceKey || supabaseAnonKey
+
+export const supabaseAdmin = createClient(supabaseUrl, key, {
+  auth: { storageKey: 'sb-ruclub-admin' },
 })
-export const supabaseAdmin = supabaseServiceKey
-  ? createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { storageKey: 'sb-ruclub-admin-service' },
-    })
-  : supabase
+
+export const supabase = supabaseAdmin
 
 const STORAGE_BUCKET = 'ruclub'
 const STORAGE_PREFIX = 'static/assets/'
