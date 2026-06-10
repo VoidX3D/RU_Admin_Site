@@ -200,7 +200,7 @@ export function MembersPage() {
         <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800/50 px-4 py-3">
           <div className="flex items-center gap-2">
             <UsersIcon size={14} className="text-blue-600 dark:text-blue-400" />
-            <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+            <span className="text-xs font-semibold text-zinc-700 dark:text-white">
               {tab === 'core' ? 'Core Team' : tab === 'teachers' ? 'Teachers' : 'General Members'}
             </span>
             <span className="rounded-md bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">{current.length}</span>
@@ -249,24 +249,24 @@ export function MembersPage() {
                       <div>
                         <label className="mb-1 block text-[10px] font-medium text-zinc-400 dark:text-zinc-600">Name</label>
                         <input value={m.name} onChange={e => upd(i, 'name', e.target.value)} placeholder="Full name"
-                          className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
+                          className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-700 dark:text-white outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
                       </div>
                       <div>
                         <label className="mb-1 block text-[10px] font-medium text-zinc-400 dark:text-zinc-600">Role</label>
                         <input value={m.role} onChange={e => upd(i, 'role', e.target.value)} placeholder="Role"
-                          className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
+                          className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-700 dark:text-white outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
                       </div>
                       {tab !== 'teachers' && (
                         <div>
                           <label className="mb-1 block text-[10px] font-medium text-zinc-400 dark:text-zinc-600">Class</label>
                           <input value={m.class || ''} onChange={e => upd(i, 'class', e.target.value)} placeholder="8A"
-                            className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
+                            className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-700 dark:text-white outline-none focus:border-emerald-500/30 focus:ring-1 focus:ring-emerald-500/10" />
                         </div>
                       )}
                       <div>
                         <label className="mb-1 block text-[10px] font-medium text-zinc-400 dark:text-zinc-600">Type</label>
                         <select value={m.member_type || ''} onChange={e => upd(i, 'member_type', e.target.value)}
-                          className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:border-emerald-500/30">
+                          className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-700 dark:text-white outline-none focus:border-emerald-500/30">
                           <option value="patron">Patron</option>
                           <option value="advisor">Advisor</option>
                           <option value="coord">Coordinator</option>

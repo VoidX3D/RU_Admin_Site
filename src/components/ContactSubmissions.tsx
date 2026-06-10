@@ -80,7 +80,7 @@ export function ContactSubmissions() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search submissions..."
-          className="flex-1 bg-transparent text-sm dark:text-zinc-300 outline-none placeholder:text-zinc-400"
+          className="flex-1 bg-transparent text-sm dark:text-white outline-none placeholder:text-zinc-400"
         />
         <span className="text-[10px] text-zinc-500">{submissions.length} total</span>
       </div>
@@ -124,10 +124,10 @@ export function ContactSubmissions() {
                         onClick={() => setSelected(s)}
                       >
                         <td className="px-4 py-3">
-                          <div className="font-medium dark:text-zinc-300">{s.name}</div>
+                          <div className="font-medium dark:text-white">{s.name}</div>
                           <div className="text-[10px] dark:text-zinc-600">{s.email}</div>
                         </td>
-                        <td className="px-4 py-3 dark:text-zinc-400">{s.subject}</td>
+                        <td className="px-4 py-3 dark:text-white">{s.subject}</td>
                         <td className="hidden px-4 py-3 text-[10px] dark:text-zinc-600 sm:table-cell">
                           {new Date(s.created_at).toLocaleDateString()}
                         </td>
@@ -168,7 +168,7 @@ export function ContactSubmissions() {
               <div className="space-y-4 p-4">
                 <div>
                   <label className="mb-1 block text-[10px] font-medium text-zinc-500">Name</label>
-                  <p className="text-sm font-medium dark:text-zinc-300">{selected.name}</p>
+                  <p className="text-sm font-medium dark:text-white">{selected.name}</p>
                 </div>
                 <div>
                   <label className="mb-1 block text-[10px] font-medium text-zinc-500">Email</label>
@@ -176,11 +176,11 @@ export function ContactSubmissions() {
                 </div>
                 <div>
                   <label className="mb-1 block text-[10px] font-medium text-zinc-500">Subject</label>
-                  <p className="text-sm dark:text-zinc-300">{selected.subject}</p>
+                  <p className="text-sm dark:text-white">{selected.subject}</p>
                 </div>
                 <div>
                   <label className="mb-1 block text-[10px] font-medium text-zinc-500">Message</label>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed dark:text-zinc-400">{selected.message}</p>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed dark:text-white">{selected.message}</p>
                 </div>
                 <div>
                   <label className="mb-1 block text-[10px] font-medium text-zinc-500">Submitted</label>

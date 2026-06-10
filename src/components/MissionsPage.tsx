@@ -10,7 +10,7 @@ import type { ContextAction } from './ContextMenu'
 import {
   ArrowLeftIcon, PlusIcon, ImageIcon, TargetIcon, RefreshIcon, TrashIcon, EditIcon, SearchIcon, EyeIcon, EyeOffIcon,
 } from './Icons'
-import { Field, Textarea, Toggle, ImageUpload, StatsEditor, PartnersEditor, GoalsEditor, TimelineEditor, ParticipantsEditor, BudgetEditor } from './form'
+import { Field, Textarea, Toggle, ImageUpload, StatsEditor, PartnersEditor, GoalsEditor, TimelineEditor, ParticipantsEditor, BudgetEditor, RichTextEditor } from './form'
 
 function formatText(text: string): string {
   return text.split(/\n\s*\n/).filter(Boolean).map(p => p.trim()).join('\n\n')
@@ -231,19 +231,7 @@ export function MissionsPage() {
                     error={errors.description} maxLength={200} hint="Appears on the mission card" />
                 </div>
                 <div className="sm:col-span-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-medium uppercase tracking-wider dark:text-zinc-400">Full Story</label>
-                    {fDetail && (
-                      <button
-                        className="flex items-center gap-1 rounded-lg border dark:border-zinc-800 px-2.5 py-1 text-[10px] font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
-                        onClick={() => setPreview({ title: fTitle || 'Mission Story', content: fDetail })}
-                      >
-                        <EyeIcon size={12} /> Preview
-                      </button>
-                    )}
-                  </div>
-                  <Textarea label="" value={fDetail} onChange={setFDetail} placeholder="Write the complete mission story, details, impact, and outcomes..." rows={8} />
-                  <p className="mt-1.5 text-[10px] dark:text-zinc-700">Use blank lines between paragraphs. This text supports multi-paragraph formatting.</p>
+                  <RichTextEditor label="Full Story" value={fDetail} onChange={setFDetail} placeholder="Write the complete mission story, details, impact, and outcomes..." />
                 </div>
               </div>
             </div>
@@ -341,10 +329,8 @@ export function MissionsPage() {
         </div>
 
         <Modal open={!!preview} onClose={() => setPreview(null)} title={preview?.title || 'Preview'} wide>
-          <div className="max-h-[60vh] overflow-y-auto space-y-4 text-sm leading-relaxed dark:text-zinc-300">
-            {preview && formatText(preview.content).split('\n\n').map((para, i) => (
-              <p key={i}>{para}</p>
-            ))}
+          <div className="max-h-[60vh] overflow-y-auto text-sm leading-relaxed dark:text-white prose prose-sm dark:prose-invert max-w-none">
+            {preview && <div dangerouslySetInnerHTML={{ __html: preview.content }} />}
           </div>
         </Modal>
       </motion.div>
@@ -382,7 +368,7 @@ export function MissionsPage() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search missions..."
-          className="flex-1 bg-transparent text-sm dark:text-zinc-300 outline-none placeholder:text-zinc-400 py-2"
+          className="flex-1 bg-transparent text-sm dark:text-white outline-none placeholder:text-zinc-400 py-2"
         />
       </div>
 
@@ -420,7 +406,7 @@ export function MissionsPage() {
                   <tr key={m.id} className="transition-colors hover:bg-zinc-200 dark:bg-zinc-800/20"
                     onContextMenu={e => { e.preventDefault(); setCtx({ open: true, x: e.clientX, y: e.clientY, mission: m }) }}>
                     <td className="px-4 py-3">
-                      <div className="font-medium dark:text-zinc-300">{m.title}</div>
+                      <div className="font-medium dark:text-white">{m.title}</div>
                     </td>
                     <td className="px-4 py-3">
                       <span className="inline-block rounded-md dark:bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium dark:text-emerald-400">{m.tag || '—'}</span>
@@ -434,7 +420,7 @@ export function MissionsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[10px] font-medium dark:text-zinc-300 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700 min-h-[36px] sm:min-h-0" onClick={() => startEdit(m.id)}>
+                        <button className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[10px] font-medium dark:text-white hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700 min-h-[36px] sm:min-h-0" onClick={() => startEdit(m.id)}>
                           <EditIcon size={12} /> Edit
                         </button>
                         <button className="rounded-lg p-2 dark:text-zinc-700 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 min-h-[36px] min-w-[36px] sm:min-h-0 sm:min-w-0 sm:p-1" onClick={() => handleDelete(m.id)}>
