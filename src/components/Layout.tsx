@@ -120,12 +120,14 @@ export function Layout({ children }: { children: ReactNode }) {
 
       <div className="border-t dark:border-zinc-800/50 px-3 py-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md dark:bg-zinc-800">
-            <span className="text-[10px] font-bold dark:text-zinc-400">A</span>
+          <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full ring-2 ring-emerald-500/30">
+            <img src="https://github.com/VoidX3D.png" alt="VoidX3D" className="h-full w-full object-cover" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-xs font-medium dark:text-zinc-300">Administrator</div>
-            <div className="text-[10px] dark:text-zinc-600">Admin Access</div>
+            <div className="truncate text-xs font-medium dark:text-zinc-300">RU Administration</div>
+            <div className="text-[10px] dark:text-zinc-600">
+              <a href="https://github.com/VoidX3D" target="_blank" rel="noopener noreferrer" className="underline decoration-dotted underline-offset-2 hover:text-zinc-400">@VoidX3D</a>
+            </div>
           </div>
           <button
             className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-amber-400 sm:min-h-0 sm:min-w-0 sm:h-7 sm:w-7"

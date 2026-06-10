@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { getEnvConfig, isProductionEnv } from '../utils/env'
-import { checkDBConnection } from '../utils/supabase'
+import { checkDBConnection, fetchMissions, fetchMissionDetail, saveMission, fetchAnnouncements, fetchAnnouncementDetail, saveAnnouncement } from '../utils/supabase'
+import { formatText } from '../utils/helpers'
 import { exportBackup, importBackup } from '../utils/backup'
 import {
   DownloadIcon, UploadIcon, CheckCircleIcon, AlertCircleIcon, DatabaseIcon, UserIcon,
@@ -74,7 +75,7 @@ export function SettingsPage() {
             <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Database Connection</h3>
           </div>
           <button onClick={() => { setDbStatus('checking'); checkDBConnection().then(ok => setDbStatus(ok ? 'connected' : 'error')) }}
-            className="flex items-center gap-1 rounded-md dark:bg-zinc-800 px-2 py-1 text-[9px] dark:text-zinc-500 hover:text-zinc-300"
+            className="flex items-center gap-1 rounded-md dark:bg-zinc-800 min-h-[44px] sm:min-h-0 px-3 py-2 sm:px-2 sm:py-1 text-[9px] dark:text-zinc-500 hover:text-zinc-300"
           >
             <RefreshIcon size={10} /> Test
           </button>
@@ -163,6 +164,67 @@ export function SettingsPage() {
             <input ref={fileRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileImport} />
             <span className="text-[10px] dark:text-zinc-700">Drafts, session, and settings as JSON</span>
           </div>
+        </div>
+      </div>
+
+      {/* Data Migration */}
+      <div className="mb-4 rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+        <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+          <FileTextIcon size={14} className="dark:text-zinc-400" />
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Data Migration</h3>
+        </div>
+        <div className="p-4">
+          <p className="text-[10px] dark:text-zinc-600 mb-3">Reformat all existing mission and announcement text with proper paragraph breaks.</p>
+          <button
+            className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50"
+            onClick={async () => {
+              const btn = document.activeElement as HTMLButtonElement
+              btn.disabled = true
+              btn.textContent = 'Reformatting...'
+              let updated = 0
+              try {
+                const missions = await fetchMissions()
+                for (const m of missions) {
+                  const info = await fetchMissionDetail(m.id)
+                  if (!info?.detail) continue
+                  const cleaned = formatText(info.detail)
+                  if (cleaned !== info.detail) {
+                    await saveMission(m.id, { ...info, detail: cleaned })
+                    updated++
+                  }
+                }
+                const anns = await fetchAnnouncements()
+                for (const a of anns) {
+                  const info = await fetchAnnouncementDetail(a.id)
+                  if (!info) continue
+                  const fields: Record<string, string> = {}
+                  if (info.description) {
+                    const cleaned = formatText(info.description)
+                    if (cleaned !== info.description) fields.description = cleaned
+                  }
+                  if (info.importance) {
+                    const cleaned = formatText(info.importance)
+                    if (cleaned !== info.importance) fields.importance = cleaned
+                  }
+                  if (info.instructions) {
+                    const cleaned = formatText(info.instructions)
+                    if (cleaned !== info.instructions) fields.instructions = cleaned
+                  }
+                  if (Object.keys(fields).length > 0) {
+                    await saveAnnouncement(a.id, { ...info, ...fields })
+                    updated++
+                  }
+                }
+                addToast(`Reformatted ${updated} items`, 'success')
+              } catch {
+                addToast('Migration failed', 'error')
+              }
+              btn.disabled = false
+              btn.textContent = 'Reformat All Text'
+            }}
+          >
+            <FileTextIcon size={12} /> Reformat All Text
+          </button>
         </div>
       </div>
 

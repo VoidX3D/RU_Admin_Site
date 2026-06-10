@@ -138,10 +138,10 @@ export function PartnersEditorPage() {
           <p className="mt-0.5 text-xs dark:text-zinc-600">Logos displayed on homepage &mdash; {partners.length} partner{partners.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={load}>
+          <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={load}>
             <RefreshIcon size={13} /> Refresh
           </button>
-          <button className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50" onClick={handleSave} disabled={saving}>
+          <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50" onClick={handleSave} disabled={saving}>
             <SaveIcon size={13} /> {saving ? 'Saving...' : 'Save to DB'}
           </button>
         </div>
@@ -157,7 +157,7 @@ export function PartnersEditorPage() {
           <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">
             {partners.length} Row{partners.length !== 1 ? 's' : ''}
           </h3>
-          <button className="flex items-center gap-1 rounded-lg bg-emerald-500 px-2.5 py-1.5 text-[10px] font-semibold text-white hover:bg-emerald-400" onClick={add}>
+          <button className="flex items-center gap-1 rounded-lg bg-emerald-500 min-h-[44px] sm:min-h-0 px-3 py-2 sm:px-2.5 sm:py-1.5 text-[10px] font-semibold text-white hover:bg-emerald-400" onClick={add}>
             <PlusIcon size={12} /> Add Partner
           </button>
         </div>
@@ -236,7 +236,7 @@ export function PartnersEditorPage() {
                         <input value={p.src} onChange={e => update(i, 'src', e.target.value)} placeholder="URL or click preview to upload"
                           className="flex-1 rounded-lg border dark:border-zinc-800 dark:bg-zinc-900/50 px-3 py-2 text-xs dark:text-white outline-none placeholder:text-zinc-400 focus:border-emerald-500/50 font-mono" />
                         <button onClick={() => handleImageUpload(i)}
-                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border dark:border-zinc-800 dark:bg-zinc-900/50 text-zinc-500 hover:text-emerald-500 hover:border-emerald-500/50">
+                          className="flex min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg border dark:border-zinc-800 dark:bg-zinc-900/50 text-zinc-500 hover:text-emerald-500 hover:border-emerald-500/50">
                           <ImageIcon size={14} />
                         </button>
                       </div>

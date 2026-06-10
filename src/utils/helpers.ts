@@ -35,3 +35,7 @@ export function debounce<T extends (...args: unknown[]) => void>(fn: T, ms: numb
     timer = setTimeout(() => fn(...args), ms)
   }) as T
 }
+
+export function formatText(text: string): string {
+  return text.split(/\n\s*\n/).filter(Boolean).map(p => p.trim()).join('\n\n')
+}

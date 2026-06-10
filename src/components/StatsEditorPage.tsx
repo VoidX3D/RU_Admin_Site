@@ -108,10 +108,10 @@ export function StatsEditorPage() {
           <p className="mt-0.5 text-xs dark:text-zinc-600">Big number (value) + description (label) — shown on homepage &amp; footer</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={load}>
+          <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={load}>
             <RefreshIcon size={13} /> Refresh
           </button>
-          <button className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50" onClick={handleSave} disabled={saving}>
+          <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50" onClick={handleSave} disabled={saving}>
             <SaveIcon size={13} /> {saving ? 'Saving...' : 'Save to DB'}
           </button>
         </div>
@@ -127,7 +127,7 @@ export function StatsEditorPage() {
           <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">
             {stats.length} Row{stats.length !== 1 ? 's' : ''}
           </h3>
-          <button className="flex items-center gap-1 rounded-lg bg-emerald-500 px-2.5 py-1.5 text-[10px] font-semibold text-white hover:bg-emerald-400" onClick={add}>
+          <button className="flex items-center gap-1 rounded-lg bg-emerald-500 min-h-[44px] sm:min-h-0 px-3 py-2 sm:px-2.5 sm:py-1.5 text-[10px] font-semibold text-white hover:bg-emerald-400" onClick={add}>
             <PlusIcon size={12} /> Add Stat
           </button>
         </div>

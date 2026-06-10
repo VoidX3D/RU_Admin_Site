@@ -150,11 +150,11 @@ export function MembersPage() {
           <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-600">Full member management with images &mdash; changes are live</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 px-3 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200" onClick={load}>
+          <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 px-3 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200" onClick={load}>
             <RefreshIcon size={13} /> Refresh
           </button>
           <button
-            className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50"
+            className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50"
             onClick={handleSave}
             disabled={saving}
           >
@@ -205,7 +205,7 @@ export function MembersPage() {
             </span>
             <span className="rounded-md bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">{current.length}</span>
           </div>
-          <button className="flex items-center gap-1 rounded-lg bg-emerald-500 px-2.5 py-1.5 text-[10px] font-semibold text-white hover:bg-emerald-400" onClick={addMember}>
+          <button className="flex items-center gap-1 rounded-lg bg-emerald-500 min-h-[44px] sm:min-h-0 px-3 py-2 sm:px-2.5 sm:py-1.5 text-[10px] font-semibold text-white hover:bg-emerald-400" onClick={addMember}>
             <PlusIcon size={12} /> Add Member
           </button>
         </div>
@@ -275,7 +275,7 @@ export function MembersPage() {
                       </div>
                     </div>
 
-                    <button className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 dark:text-zinc-600 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 self-center sm:self-start sm:mt-5" onClick={() => remove(i)}>
+                    <button className="flex min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 dark:text-zinc-600 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 self-center sm:self-start sm:mt-5" onClick={() => remove(i)}>
                       <XIcon size={14} />
                     </button>
                   </div>

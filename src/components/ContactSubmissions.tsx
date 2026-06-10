@@ -63,7 +63,7 @@ export function ContactSubmissions() {
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Contact Submissions</h2>
           <p className="mt-0.5 text-xs dark:text-zinc-600">Messages from the contact form</p>
         </div>
-        <button className="flex h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={load}>
+        <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={load}>
           <RefreshIcon size={13} /> Refresh
         </button>
       </div>
