@@ -1,7 +1,5 @@
-import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
-import { marked } from 'marked'
-
-marked.setOptions({ breaks: true, gfm: true })
+import { useRef, useState, useCallback, useEffect } from 'react'
+import { renderMarkdown } from '../../utils/markdown'
 
 type ViewMode = 'edit' | 'split' | 'preview'
 
@@ -15,7 +13,6 @@ interface RichTextEditorProps {
 
 export function RichTextEditor({ value, onChange, label, placeholder, minHeight = '200px' }: RichTextEditorProps) {
   const taRef = useRef<HTMLTextAreaElement>(null)
-  const previewRef = useRef<HTMLDivElement>(null)
   const mdTimer = useRef<ReturnType<typeof setTimeout>>()
   const [focused, setFocused] = useState(false)
   const [view, setView] = useState<ViewMode>('split')
@@ -23,29 +20,27 @@ export function RichTextEditor({ value, onChange, label, placeholder, minHeight 
   const [wordCount, setWordCount] = useState(0)
   const [charCount, setCharCount] = useState(0)
 
-  const renderMd = useCallback(async (md: string) => {
-    if (!md.trim()) { setRendered('<p style="color:#a1a1aa"><i>Nothing to preview — start typing...</i></p>'); return }
-    try {
-      setRendered(await marked.parse(md))
-    } catch { setRendered('<p style="color:#ef4444">Failed to render preview</p>') }
-  }, [])
-
   useEffect(() => {
     clearTimeout(mdTimer.current)
-    mdTimer.current = setTimeout(() => renderMd(value), 150)
+    mdTimer.current = setTimeout(() => {
+      if (view !== 'edit') setRendered(renderMarkdown(value))
+    }, 100)
     const words = value.trim() ? value.trim().split(/\s+/).length : 0
     setWordCount(words)
     setCharCount(value.length)
     return () => clearTimeout(mdTimer.current)
-  }, [value, renderMd])
+  }, [value, view])
+
+  useEffect(() => {
+    if (view !== 'edit') setRendered(renderMarkdown(value))
+  }, [])
 
   const insert = useCallback((before: string, after = '') => {
     const ta = taRef.current
     if (!ta) return
     const start = ta.selectionStart, end = ta.selectionEnd
     const sel = value.substring(start, end)
-    const next = value.substring(0, start) + before + sel + after + value.substring(end)
-    onChange(next)
+    onChange(value.substring(0, start) + before + sel + after + value.substring(end))
     requestAnimationFrame(() => {
       ta.focus()
       const pos = start + before.length
@@ -57,49 +52,66 @@ export function RichTextEditor({ value, onChange, label, placeholder, minHeight 
     const ta = taRef.current
     if (!ta) return
     const start = ta.selectionStart
-    const line = value.substring(0, start).split('\n').pop() || ''
-    const rest = value.substring(start)
-    const restLines = rest.split('\n')
-    const next = value.substring(0, start - line.length) + prefix + line + '\n' + restLines.slice(1).join('\n')
-    onChange(next)
-    requestAnimationFrame(() => { ta.focus() })
+    const lineStart = value.lastIndexOf('\n', start - 1) + 1
+    const lineEnd = value.indexOf('\n', start)
+    const line = value.substring(lineStart, lineEnd > -1 ? lineEnd : value.length)
+    onChange(value.substring(0, lineStart) + prefix + line + '\n' + value.substring(lineStart + line.length))
+    requestAnimationFrame(() => ta.focus())
   }, [value, onChange])
 
-  const wrapSelection = useCallback((before: string, after: string) => {
-    insert(before, after)
-  }, [insert])
-
-  const bold = useCallback(() => wrapSelection('**', '**'), [wrapSelection])
-  const italic = useCallback(() => wrapSelection('*', '*'), [wrapSelection])
-  const boldItalic = useCallback(() => wrapSelection('***', '***'), [wrapSelection])
-  const strike = useCallback(() => wrapSelection('~~', '~~'), [wrapSelection])
-  const code = useCallback(() => wrapSelection('`', '`'), [wrapSelection])
-  const link = useCallback(() => {
+  const insertAtCursor = useCallback((text: string, selectOffset = 0) => {
     const ta = taRef.current
     if (!ta) return
+    const start = ta.selectionStart
+    onChange(value.substring(0, start) + text + value.substring(ta.selectionEnd))
+    requestAnimationFrame(() => {
+      ta.focus()
+      const pos = start + text.length - selectOffset
+      ta.setSelectionRange(pos - selectOffset, pos)
+    })
+  }, [value, onChange])
+
+  const bold = useCallback(() => insert('**', '**'), [insert])
+  const italic = useCallback(() => insert('*', '*'), [insert])
+  const bi = useCallback(() => insert('***', '***'), [insert])
+  const strike = useCallback(() => insert('~~', '~~'), [insert])
+  const code = useCallback(() => insert('`', '`'), [insert])
+  const link = useCallback(() => {
+    const ta = taRef.current; if (!ta) return
     const sel = value.substring(ta.selectionStart, ta.selectionEnd)
-    const url = prompt('URL:', 'https://') || ''
-    if (!url) return
-    const text = sel || 'link'
-    insert(`[${text}](${url})`)
-    if (!sel) {
-      setTimeout(() => {
-        const pos = ta.value.indexOf('link]')
-        if (pos > -1) ta.setSelectionRange(pos, pos + 4)
-      })
-    }
+    const url = prompt('URL:', 'https://') || ''; if (!url) return
+    insert(`[${sel || 'link'}](${url})`)
   }, [value, insert])
   const img = useCallback(() => {
-    const url = prompt('Image URL:', 'https://') || ''
-    if (!url) return
-    insert(`![Image](${url})\n`)
-  }, [insert])
+    const url = prompt('Image URL:', 'https://') || ''; if (!url) return
+    insertAtCursor(`![Image](${url})\n`)
+  }, [insertAtCursor])
+
+  const table = useCallback(() => {
+    const cols = prompt('Columns:', '3') || '3'
+    const rows = prompt('Rows:', '3') || '3'
+    const c = parseInt(cols) || 3, r = parseInt(rows) || 3
+    let tbl = '\n'
+    tbl += '| ' + Array.from({ length: c }, () => 'Header').join(' | ') + ' |\n'
+    tbl += '| ' + Array.from({ length: c }, () => '---').join(' | ') + ' |\n'
+    for (let i = 0; i < r - 1; i++) {
+      tbl += '| ' + Array.from({ length: c }, () => ' ').join(' | ') + ' |\n'
+    }
+    insertAtCursor(tbl)
+  }, [insertAtCursor])
+
+  const mathInline = useCallback(() => insert('$', '$'), [insert])
+  const mathBlock = useCallback(() => insertAtCursor('\n$$\n\n$$\n', 4), [insertAtCursor])
+
+  const taskList = useCallback(() => insertBlock('- [ ] '), [insertBlock])
+  const ordered = useCallback(() => insertBlock('1. '), [insertBlock])
+  const bullet = useCallback(() => insertBlock('- '), [insertBlock])
+  const quote = useCallback(() => insertBlock('> '), [insertBlock])
   const heading2 = useCallback(() => insertBlock('## '), [insertBlock])
   const heading3 = useCallback(() => insertBlock('### '), [insertBlock])
-  const bullet = useCallback(() => insertBlock('- '), [insertBlock])
-  const ordered = useCallback(() => insertBlock('1. '), [insertBlock])
-  const quote = useCallback(() => insertBlock('> '), [insertBlock])
-  const hr = useCallback(() => insert('\n---\n'), [insert])
+  const hr = useCallback(() => insertAtCursor('\n---\n'), [insertAtCursor])
+  const codeBlock = useCallback(() => insertAtCursor('\n```\n\n```\n', 4), [insertAtCursor])
+  const details = useCallback(() => insertAtCursor('\n<details><summary>Click</summary>\n\n</details>\n', 0), [insertAtCursor])
 
   const handleKey = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Tab') { e.preventDefault(); insert('  ') }
@@ -124,31 +136,41 @@ export function RichTextEditor({ value, onChange, label, placeholder, minHeight 
     <div className="space-y-1">
       <div className="flex items-center justify-between">
         <label htmlFor={id} className="block text-[11px] font-medium text-zinc-500">{label}</label>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-zinc-400 tabular-nums">{wordCount}w &middot; {charCount}c</span>
-        </div>
+        <span className="text-[10px] text-zinc-400 tabular-nums">{wordCount}w · {charCount}c</span>
       </div>
 
       <div className={`overflow-hidden rounded-lg border transition-colors ${focused ? 'border-emerald-500/50' : 'border-zinc-200 dark:border-zinc-700'}`}>
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-0.5 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50 px-2 py-1">
-          <TbBtn onClick={bold} title="Bold (Ctrl+B)"><b>B</b></TbBtn>
-          <TbBtn onClick={italic} title="Italic (Ctrl+I)"><i>I</i></TbBtn>
-          <TbBtn onClick={boldItalic} title="Bold+Italic"><b><i>BI</i></b></TbBtn>
-          <TbBtn onClick={strike} title="Strikethrough (Ctrl+D)"><s>S</s></TbBtn>
+          {/* Text formatting */}
+          <TbBtn onClick={bold} title="Bold Ctrl+B"><b>B</b></TbBtn>
+          <TbBtn onClick={italic} title="Italic Ctrl+I"><i>I</i></TbBtn>
+          <TbBtn onClick={bi} title="Bold+Italic"><b><i>BI</i></b></TbBtn>
+          <TbBtn onClick={strike} title="Strikethrough Ctrl+D"><s>S</s></TbBtn>
+          <TbBtn onClick={code} title="Inline code">&lt;/&gt;</TbBtn>
           <D />
+          {/* Headings */}
           <TbBtn onClick={heading2}>H2</TbBtn>
           <TbBtn onClick={heading3}>H3</TbBtn>
           <D />
+          {/* Lists */}
           <TbBtn onClick={bullet} title="Bullet list">&#8226;</TbBtn>
           <TbBtn onClick={ordered} title="Numbered list">1.</TbBtn>
+          <TbBtn onClick={taskList} title="Task list">&#9744;</TbBtn>
           <TbBtn onClick={quote} title="Blockquote">&ldquo;</TbBtn>
           <D />
-          <TbBtn onClick={link} title="Link (Ctrl+K)">&#128279;</TbBtn>
+          {/* Insert */}
+          <TbBtn onClick={link} title="Link Ctrl+K">&#128279;</TbBtn>
           <TbBtn onClick={img} title="Image">&#128247;</TbBtn>
-          <TbBtn onClick={code} title="Inline code">&lt;/&gt;</TbBtn>
+          <TbBtn onClick={table} title="Table">&#9776;</TbBtn>
+          <TbBtn onClick={codeBlock} title="Code block">&#9001;&#9002;</TbBtn>
           <TbBtn onClick={hr} title="Horizontal rule">&mdash;</TbBtn>
           <D />
+          {/* Math */}
+          <TbBtn onClick={mathInline} title="Inline math $...$">&sum;</TbBtn>
+          <TbBtn onClick={mathBlock} title="Block math $$...$$">&int;</TbBtn>
+          <D />
+          <TbBtn onClick={details} title="Collapsible section">&#9654;</TbBtn>
           <TbBtn onClick={() => onChange('')} title="Clear">&#128465;</TbBtn>
 
           {/* View toggles */}
@@ -170,7 +192,7 @@ export function RichTextEditor({ value, onChange, label, placeholder, minHeight 
               onChange={e => onChange(e.target.value)}
               placeholder={placeholder || 'Write in Markdown...'}
               onKeyDown={handleKey}
-              className={`w-full resize-none border-0 bg-transparent px-3 py-2 text-sm font-mono dark:text-white outline-none ${view === 'split' ? 'w-1/2 border-r dark:border-zinc-700' : ''}`}
+              className={`resize-none border-0 bg-transparent px-3 py-2 text-sm font-mono dark:text-white outline-none ${view === 'split' ? 'w-1/2 border-r dark:border-zinc-700' : 'w-full'}`}
               style={{ minHeight, fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'Menlo', monospace", lineHeight: '1.6' }}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
@@ -178,7 +200,6 @@ export function RichTextEditor({ value, onChange, label, placeholder, minHeight 
           )}
           {(view === 'split' || view === 'preview') && (
             <div
-              ref={previewRef}
               className={`overflow-y-auto px-3 py-2 text-sm dark:text-white prose prose-sm dark:prose-invert max-w-none ${view === 'split' ? 'w-1/2' : 'w-full'}`}
               style={{ minHeight, maxHeight: '60vh' }}
               dangerouslySetInnerHTML={{ __html: rendered }}
@@ -199,5 +220,5 @@ function TbBtn({ onClick, title, children }: { onClick: () => void; title?: stri
 }
 
 function D() {
-  return <span className="mx-0.5 h-4 w-px bg-zinc-300 dark:bg-zinc-700" />
+  return <span className="mx-0.5 h-4 w-px bg-zinc-300 dark:bg-zinc-600" />
 }
