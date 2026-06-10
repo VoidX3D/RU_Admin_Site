@@ -4,6 +4,7 @@ import { useStore } from '../store'
 import { fetchMissions, fetchMissionDetail, saveMission, deleteMission, uploadBase64Image } from '../utils/supabase'
 import type { MissionEntry, PendingImage, MissionTimeline } from '../types'
 import { Modal } from './Modal'
+import { ConfirmModal } from './ConfirmModal'
 import { ContextMenu } from './ContextMenu'
 import type { ContextAction } from './ContextMenu'
 import {
@@ -28,6 +29,7 @@ export function MissionsPage() {
   const [search, setSearch] = useState('')
   const [preview, setPreview] = useState<{ title: string; content: string } | null>(null)
   const [ctx, setCtx] = useState<{ open: boolean; x: number; y: number; mission: MissionEntry | null }>({ open: false, x: 0, y: 0, mission: null })
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
 
   const [fId, setFId] = useState('')
   const [fTitle, setFTitle] = useState('')
@@ -165,8 +167,12 @@ export function MissionsPage() {
     setSaving(false)
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Delete this mission permanently?')) return
+  function handleDelete(id: string) {
+    setConfirmDelete(id)
+  }
+
+  async function executeDelete(id: string) {
+    setConfirmDelete(null)
     const { error } = await deleteMission(id)
     if (error) { addToast('Delete failed: ' + error.message, 'error'); return }
     addToast('Mission deleted', 'success')
@@ -459,6 +465,14 @@ export function MissionsPage() {
           },
           { icon: <TrashIcon size={12} />, label: 'Delete', onClick: () => handleDelete(ctx.mission!.id), dangerous: true },
         ] : []}
+      />
+      <ConfirmModal
+        open={!!confirmDelete}
+        title="Delete Mission"
+        message="Are you sure you want to delete this mission? This action cannot be undone. All associated data including images, stats, goals, timeline entries, and participant records will be permanently removed."
+        confirmLabel="Delete Permanently"
+        onConfirm={() => confirmDelete && executeDelete(confirmDelete)}
+        onCancel={() => setConfirmDelete(null)}
       />
     </motion.div>
   )

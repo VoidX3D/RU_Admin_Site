@@ -4,6 +4,7 @@ import { useStore } from '../store'
 import { fetchAnnouncements, fetchAnnouncementDetail, saveAnnouncement, deleteAnnouncement, uploadBase64Image } from '../utils/supabase'
 import type { AnnouncementEntry, PendingImage } from '../types'
 import { Modal } from './Modal'
+import { ConfirmModal } from './ConfirmModal'
 import { ContextMenu } from './ContextMenu'
 import type { ContextAction } from './ContextMenu'
 import {
@@ -27,6 +28,7 @@ export function AnnouncementsPage() {
   const [search, setSearch] = useState('')
   const [preview, setPreview] = useState<{ title: string; content: string } | null>(null)
   const [ctx, setCtx] = useState<{ open: boolean; x: number; y: number; ann: AnnouncementEntry | null }>({ open: false, x: 0, y: 0, ann: null })
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
 
   const [fId, setFId] = useState('')
   const [fTitle, setFTitle] = useState('')
@@ -182,8 +184,12 @@ export function AnnouncementsPage() {
     setSaving(false)
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Delete this announcement permanently?')) return
+  function handleDelete(id: string) {
+    setConfirmDelete(id)
+  }
+
+  async function executeDelete(id: string) {
+    setConfirmDelete(null)
     const { error } = await deleteAnnouncement(id)
     if (error) { addToast('Delete failed: ' + error.message, 'error'); return }
     addToast('Announcement deleted', 'success')
@@ -406,23 +412,6 @@ export function AnnouncementsPage() {
             ))}
           </div>
         </Modal>
-
-      <ContextMenu
-        open={ctx.open}
-        x={ctx.x} y={ctx.y}
-        onClose={() => setCtx(o => ({ ...o, open: false }))}
-        actions={ctx.ann ? [
-          { icon: <EditIcon size={12} />, label: 'Edit Announcement', onClick: () => startEdit(ctx.ann!.id) },
-          { icon: ctx.ann.active !== false ? <EyeOffIcon size={12} /> : <EyeIcon size={12} />,
-            label: ctx.ann.active !== false ? 'Hide from site' : 'Show on site',
-            onClick: async () => {
-              const { error } = await saveAnnouncement(ctx.ann!.id, { ...ctx.ann, active: ctx.ann!.active === false })
-              if (!error) load()
-            }
-          },
-          { icon: <TrashIcon size={12} />, label: 'Delete', onClick: () => handleDelete(ctx.ann!.id), dangerous: true },
-        ] : []}
-      />
     </motion.div>
   )
 }
@@ -525,6 +514,31 @@ export function AnnouncementsPage() {
           </table>
         </div>
       </div>
+
+      <ContextMenu
+        open={ctx.open}
+        x={ctx.x} y={ctx.y}
+        onClose={() => setCtx(o => ({ ...o, open: false }))}
+        actions={ctx.ann ? [
+          { icon: <EditIcon size={12} />, label: 'Edit Announcement', onClick: () => startEdit(ctx.ann!.id) },
+          { icon: ctx.ann.active !== false ? <EyeOffIcon size={12} /> : <EyeIcon size={12} />,
+            label: ctx.ann.active !== false ? 'Hide from site' : 'Show on site',
+            onClick: async () => {
+              const { error } = await saveAnnouncement(ctx.ann!.id, { ...ctx.ann, active: ctx.ann!.active === false })
+              if (!error) load()
+            }
+          },
+          { icon: <TrashIcon size={12} />, label: 'Delete', onClick: () => handleDelete(ctx.ann!.id), dangerous: true },
+        ] : []}
+      />
+      <ConfirmModal
+        open={!!confirmDelete}
+        title="Delete Announcement"
+        message="Are you sure you want to delete this announcement? This action cannot be undone. All associated data including images, tags, and gallery will be permanently removed."
+        confirmLabel="Delete Permanently"
+        onConfirm={() => confirmDelete && executeDelete(confirmDelete)}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </motion.div>
   )
 }

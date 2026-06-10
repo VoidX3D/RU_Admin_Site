@@ -66,10 +66,10 @@ export function ImageUpload(props: ImageUploadProps) {
  </div>
  )}
 
- {images.length > 0 && (
- <div className="mt-3 grid grid-cols-3 gap-2">
- {images.map((img, i) => (
- <div key={img._key ?? i} className="relative aspect-video overflow-hidden rounded-lg border dark:border-zinc-800 bg-white dark:bg-zinc-900">
+  {images.length > 0 && (
+  <div className="mt-3 grid grid-cols-4 gap-2">
+  {images.map((img, i) => (
+  <div key={img._key ?? i} className="relative aspect-[4/3] max-h-24 overflow-hidden rounded-lg border dark:border-zinc-800 bg-white dark:bg-zinc-900">
  <img src={img.dataUrl} alt="" className="h-full w-full object-cover" />
  <button className="absolute right-1 top-1 z-10 rounded border dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 p-0.5 dark:text-zinc-400 hover:text-red-600 dark:text-red-400" onClick={() => remove(i)}><XIcon size={14} /></button>
  {!single && (

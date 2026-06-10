@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { fetchContactSubmissions, deleteContactSubmission } from '../utils/supabase'
 import { MailIcon, RefreshIcon, TrashIcon, SearchIcon } from './Icons'
+import { ConfirmModal } from './ConfirmModal'
 
 interface ContactEntry {
   id: number
@@ -19,6 +20,7 @@ export function ContactSubmissions() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<ContactEntry | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
 
   useEffect(() => { load() }, [])
 
@@ -35,7 +37,11 @@ export function ContactSubmissions() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('Delete this submission permanently?')) return
+    setConfirmDeleteId(id)
+  }
+
+  async function executeDelete(id: number) {
+    setConfirmDeleteId(null)
     const { error } = await deleteContactSubmission(id)
     if (error) { addToast('Delete failed: ' + error.message, 'error'); return }
     addToast('Submission deleted', 'success')
@@ -185,6 +191,14 @@ export function ContactSubmissions() {
           </motion.div>
         )}
       </div>
+      <ConfirmModal
+        open={confirmDeleteId !== null}
+        title="Delete Submission"
+        message="Are you sure you want to delete this submission? This action cannot be undone."
+        confirmLabel="Delete Permanently"
+        onConfirm={() => confirmDeleteId !== null && executeDelete(confirmDeleteId)}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </motion.div>
   )
 }
