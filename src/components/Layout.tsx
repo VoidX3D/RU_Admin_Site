@@ -143,7 +143,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </button>
         </div>
         <div className="mt-2 border-t dark:border-zinc-800/30 pt-2 text-center text-[9px] dark:text-zinc-700">
-          RU Club Motherland &middot; Built by Sincere Bhattarai &mdash; VoidX3D
+          RU Club Motherland &middot; <a href="https://github.com/VoidX3D" target="_blank" rel="noopener noreferrer" className="underline hover:text-zinc-300">VoidX3D</a>
         </div>
       </div>
     </div>

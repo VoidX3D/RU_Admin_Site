@@ -168,7 +168,7 @@ export function SettingsPage() {
 
       <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30 px-4 py-4 text-center">
         <p className="text-[10px] dark:text-zinc-700">
-          RU Club Motherland Admin Panel v1 &middot; Built by Sincere Bhattarai &mdash; VoidX3D
+          RU Club Motherland Admin Panel v1 &middot; <a href="https://github.com/VoidX3D" target="_blank" rel="noopener noreferrer" className="underline hover:text-zinc-300">VoidX3D</a>
         </p>
       </div>
     </motion.div>

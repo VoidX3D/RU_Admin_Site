@@ -103,7 +103,7 @@ export function HelpPage() {
 
       <div className="mt-6 rounded-xl border dark:border-zinc-800/50 bg-gradient-to-br from-emerald-500/5 to-transparent px-4 py-6 text-center">
         <p className="text-xs leading-relaxed dark:text-zinc-600">
-          RU Club Motherland Admin Panel &middot; Built by <strong className="font-semibold dark:text-zinc-400">Sincere Bhattarai</strong>
+          RU Club Motherland Admin Panel &middot; <a href="https://github.com/VoidX3D" target="_blank" rel="noopener noreferrer" className="underline hover:text-zinc-300">VoidX3D</a>
           <br />
           <span className="text-[10px]">Direct DB editing &mdash; changes are instantly live</span>
         </p>

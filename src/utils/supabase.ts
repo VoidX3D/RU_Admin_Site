@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { Storage } from './storage'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
@@ -9,12 +10,8 @@ export const supabaseAnon = hasSupabase
   ? createClient(supabaseUrl, supabaseAnonKey, { auth: { storageKey: 'sb-ruclub-admin-anon' } })
   : (null as unknown as ReturnType<typeof createClient>)
 
-function getToken(): string | null {
-  try { return localStorage.getItem('ru_admin_token') } catch { return null }
-}
-
 async function api(action: string, params?: Record<string, unknown>): Promise<any> {
-  const token = getToken()
+  const token = Storage.getToken()
   const res = await fetch('/api/admin', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

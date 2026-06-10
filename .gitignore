@@ -14,6 +14,7 @@ dist/
 # Env
 .env
 .env.local
+.env.vercel
 
 # Dependencies
 node_modules/
@@ -24,3 +25,6 @@ node_modules/
 # Build artifacts
 *.tsbuildinfo
 *.local
+
+# API / serverless
+api/*.js
