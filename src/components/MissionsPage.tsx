@@ -3,10 +3,15 @@ import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { fetchMissions, fetchMissionDetail, saveMission, deleteMission, uploadBase64Image } from '../utils/supabase'
 import type { MissionEntry, PendingImage, MissionTimeline } from '../types'
+import { Modal } from './Modal'
 import {
-  ArrowLeftIcon, PlusIcon, ImageIcon, TargetIcon, RefreshIcon, TrashIcon, EditIcon, SearchIcon,
+  ArrowLeftIcon, PlusIcon, ImageIcon, TargetIcon, RefreshIcon, TrashIcon, EditIcon, SearchIcon, EyeIcon,
 } from './Icons'
 import { Field, Textarea, Toggle, ImageUpload, StatsEditor, PartnersEditor, GoalsEditor, TimelineEditor, ParticipantsEditor, BudgetEditor } from './form'
+
+function formatText(text: string): string {
+  return text.split(/\n\s*\n/).filter(Boolean).map(p => p.trim()).join('\n\n')
+}
 
 type Mode = 'list' | 'form'
 
@@ -19,6 +24,7 @@ export function MissionsPage() {
   const [loading, setLoading] = useState(true)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [search, setSearch] = useState('')
+  const [preview, setPreview] = useState<{ title: string; content: string } | null>(null)
 
   const [fId, setFId] = useState('')
   const [fTitle, setFTitle] = useState('')
@@ -173,7 +179,7 @@ export function MissionsPage() {
       >
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <button className="flex h-8 w-8 items-center justify-center rounded-lg border dark:border-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>
+            <button className="flex min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 sm:h-8 sm:w-8 items-center justify-center rounded-lg border dark:border-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>
               <ArrowLeftIcon size={16} />
             </button>
             <div>
@@ -182,11 +188,11 @@ export function MissionsPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="rounded-lg border dark:border-zinc-800 px-3 py-1.5 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>
+            <button className="rounded-lg border dark:border-zinc-800 min-h-[44px] sm:min-h-0 px-4 py-2 sm:px-3 sm:py-1.5 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>
               Cancel
             </button>
             <button
-              className="rounded-lg bg-emerald-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50"
+              className="rounded-lg bg-emerald-500 min-h-[44px] sm:min-h-0 px-5 py-2 sm:px-4 sm:py-1.5 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50"
               onClick={handleSave}
               disabled={saving}
             >
@@ -216,7 +222,19 @@ export function MissionsPage() {
                     error={errors.description} maxLength={200} hint="Appears on the mission card" />
                 </div>
                 <div className="sm:col-span-2">
-                  <Textarea label="Full Story" value={fDetail} onChange={setFDetail} placeholder="Write the complete mission story, details, impact, and outcomes..." rows={8} />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-medium uppercase tracking-wider dark:text-zinc-400">Full Story</label>
+                    {fDetail && (
+                      <button
+                        className="flex items-center gap-1 rounded-lg border dark:border-zinc-800 px-2.5 py-1 text-[10px] font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                        onClick={() => setPreview({ title: fTitle || 'Mission Story', content: fDetail })}
+                      >
+                        <EyeIcon size={12} /> Preview
+                      </button>
+                    )}
+                  </div>
+                  <Textarea label="" value={fDetail} onChange={setFDetail} placeholder="Write the complete mission story, details, impact, and outcomes..." rows={8} />
+                  <p className="mt-1.5 text-[10px] dark:text-zinc-700">Use blank lines between paragraphs. This text supports multi-paragraph formatting.</p>
                 </div>
               </div>
             </div>
@@ -312,6 +330,14 @@ export function MissionsPage() {
             </div>
           </div>
         </div>
+
+        <Modal open={!!preview} onClose={() => setPreview(null)} title={preview?.title || 'Preview'} wide>
+          <div className="max-h-[60vh] overflow-y-auto space-y-4 text-sm leading-relaxed dark:text-zinc-300">
+            {preview && formatText(preview.content).split('\n\n').map((para, i) => (
+              <p key={i}>{para}</p>
+            ))}
+          </div>
+        </Modal>
       </motion.div>
     )
   }
@@ -332,22 +358,22 @@ export function MissionsPage() {
           <p className="mt-0.5 text-xs dark:text-zinc-600">Create and manage mission posts with all data</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={loadMissions}>
+          <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={loadMissions}>
             <RefreshIcon size={13} /> Refresh
           </button>
-          <button className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white dark:hover:bg-emerald-400" onClick={startNew}>
+          <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white dark:hover:bg-emerald-400" onClick={startNew}>
             <PlusIcon size={13} /> New Mission
           </button>
         </div>
       </div>
 
-      <div className="mb-4 flex items-center gap-2 rounded-lg border dark:border-zinc-800/50 dark:bg-zinc-900/30 px-3 py-2">
-        <SearchIcon size={14} className="dark:text-zinc-600" />
+      <div className="mb-4 flex items-center gap-2 rounded-lg border dark:border-zinc-800/50 dark:bg-zinc-900/30 px-3 min-h-[44px] sm:min-h-0 sm:py-2">
+        <SearchIcon size={14} className="dark:text-zinc-600 shrink-0" />
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search missions..."
-          className="flex-1 bg-transparent text-sm dark:text-zinc-300 outline-none placeholder:text-zinc-400"
+          className="flex-1 bg-transparent text-sm dark:text-zinc-300 outline-none placeholder:text-zinc-400 py-2"
         />
       </div>
 
@@ -398,10 +424,10 @@ export function MissionsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-medium dark:text-zinc-300 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700" onClick={() => startEdit(m.id)}>
+                        <button className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[10px] font-medium dark:text-zinc-300 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700 min-h-[36px] sm:min-h-0" onClick={() => startEdit(m.id)}>
                           <EditIcon size={12} /> Edit
                         </button>
-                        <button className="rounded-lg p-1 dark:text-zinc-700 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600" onClick={() => handleDelete(m.id)}>
+                        <button className="rounded-lg p-2 dark:text-zinc-700 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 min-h-[36px] min-w-[36px] sm:min-h-0 sm:min-w-0 sm:p-1" onClick={() => handleDelete(m.id)}>
                           <TrashIcon size={12} />
                         </button>
                       </div>

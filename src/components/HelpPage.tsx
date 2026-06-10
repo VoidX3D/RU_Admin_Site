@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import {
   HelpCircleIcon, TargetIcon, MegaphoneIcon, UsersIcon,
-  SettingsIcon,
+  SettingsIcon, EyeIcon, FileTextIcon,
 } from './Icons'
 
 const SHORTCUTS: { label: string; desc: string }[] = [
@@ -26,6 +26,8 @@ const SECTIONS = [
     items: [
       { keys: null, desc: 'Create and edit mission posts with images, stats, goals, timeline, participants, and budget' },
       { keys: null, desc: 'All changes are saved directly to the database — instantly live' },
+      { keys: null, desc: 'Use the Preview button on the Full Story field to see how formatted text will appear' },
+      { keys: null, desc: 'Separate paragraphs with blank lines for proper formatting' },
     ],
   },
   {
@@ -34,23 +36,46 @@ const SECTIONS = [
     items: [
       { keys: null, desc: 'Create club notices with status, deadline, importance, and optional image' },
       { keys: null, desc: 'Includes visibility toggle for show/hide' },
+      { keys: null, desc: 'Preview buttons available on Description, Why It Matters, and Instructions fields' },
+      { keys: null, desc: 'Add tags to categorize announcements for easier filtering' },
     ],
   },
   {
     icon: <UsersIcon size={16} />,
     title: 'Members',
     items: [
-      { keys: null, desc: 'Manage Teachers, Core Team, and General Members' },
-      { keys: null, desc: 'Each member has Name, Class, Role fields' },
+      { keys: null, desc: 'Manage Teachers, Core Team, and General Members in separate tabs' },
+      { keys: null, desc: 'Each member has Name, Class, and Role fields' },
+    ],
+  },
+  {
+    icon: <FileTextIcon size={16} />,
+    title: 'Text Formatting',
+    items: [
+      { keys: null, desc: 'Long text fields support multi-paragraph formatting using blank lines' },
+      { keys: null, desc: 'Separate paragraphs with an empty line between them' },
+      { keys: null, desc: 'The Preview button shows how your text will look on the main website' },
+      { keys: null, desc: 'Text is automatically trimmed — no need to worry about leading/trailing spaces' },
+    ],
+  },
+  {
+    icon: <EyeIcon size={16} />,
+    title: 'Preview Feature',
+    items: [
+      { keys: null, desc: 'While editing a mission or announcement, click the "Preview" button next to any text area' },
+      { keys: null, desc: 'A modal will show your text formatted with proper paragraph breaks' },
+      { keys: null, desc: 'This preview matches how the content will appear on the public website' },
+      { keys: null, desc: 'Close the preview to continue editing — your changes are not saved until you click "Save to Database"' },
     ],
   },
   {
     icon: <SettingsIcon size={16} />,
-    title: 'Data',
+    title: 'Data & Settings',
     items: [
       { keys: null, desc: 'All data goes directly to Supabase database — no draft/publish workflow' },
-      { keys: null, desc: 'Changes are immediately visible on the website' },
-      { keys: null, desc: 'Export/Import full backup as JSON from Settings' },
+      { keys: null, desc: 'Changes are immediately visible on the website after saving' },
+      { keys: null, desc: 'Export/Import full backup as JSON from Settings page' },
+      { keys: null, desc: 'Session expires after 30 minutes of inactivity for security' },
     ],
   },
 ]
@@ -61,7 +86,8 @@ export function HelpPage() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className="mx-auto max-w-2xl"
+      className="mx-auto"
+      style={{ maxWidth: 720 }}
     >
       <div className="mb-5">
         <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Help & Guide</h2>

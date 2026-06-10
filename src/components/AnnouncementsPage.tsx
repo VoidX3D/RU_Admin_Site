@@ -3,10 +3,15 @@ import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { fetchAnnouncements, fetchAnnouncementDetail, saveAnnouncement, deleteAnnouncement, uploadBase64Image } from '../utils/supabase'
 import type { AnnouncementEntry, PendingImage } from '../types'
+import { Modal } from './Modal'
 import {
-  ArrowLeftIcon, PlusIcon, ImageIcon, MegaphoneIcon, RefreshIcon, TrashIcon, EditIcon, SearchIcon,
+  ArrowLeftIcon, PlusIcon, ImageIcon, MegaphoneIcon, RefreshIcon, TrashIcon, EditIcon, SearchIcon, EyeIcon,
 } from './Icons'
 import { Field, Textarea, Select, Toggle, ImageUpload } from './form'
+
+function formatText(text: string): string {
+  return text.split(/\n\s*\n/).filter(Boolean).map(p => p.trim()).join('\n\n')
+}
 
 type Mode = 'list' | 'form'
 
@@ -18,6 +23,7 @@ export function AnnouncementsPage() {
   const [loading, setLoading] = useState(true)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [search, setSearch] = useState('')
+  const [preview, setPreview] = useState<{ title: string; content: string } | null>(null)
 
   const [fId, setFId] = useState('')
   const [fTitle, setFTitle] = useState('')
@@ -190,7 +196,7 @@ export function AnnouncementsPage() {
       >
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <button className="flex h-8 w-8 items-center justify-center rounded-lg border dark:border-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>
+            <button className="flex min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 sm:h-8 sm:w-8 items-center justify-center rounded-lg border dark:border-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>
               <ArrowLeftIcon size={16} />
             </button>
             <div>
@@ -199,9 +205,9 @@ export function AnnouncementsPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="rounded-lg border dark:border-zinc-800 px-3 py-1.5 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>Cancel</button>
+            <button className="rounded-lg border dark:border-zinc-800 min-h-[44px] sm:min-h-0 px-4 py-2 sm:px-3 sm:py-1.5 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>Cancel</button>
             <button
-              className="rounded-lg bg-emerald-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50"
+              className="rounded-lg bg-emerald-500 min-h-[44px] sm:min-h-0 px-5 py-2 sm:px-4 sm:py-1.5 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50"
               onClick={handleSave}
               disabled={saving}
             >
@@ -243,7 +249,19 @@ export function AnnouncementsPage() {
                   <Textarea label="Summary *" value={fSummary} onChange={setFSummary} placeholder="One-sentence summary for the card" error={errors.summary} maxLength={300} rows={2} />
                 </div>
                 <div className="sm:col-span-2">
-                  <Textarea label="Full Description" value={fDesc} onChange={setFDesc} placeholder="Full announcement details, context, and information..." rows={6} />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-medium uppercase tracking-wider dark:text-zinc-400">Full Description</label>
+                    {fDesc && (
+                      <button
+                        className="flex items-center gap-1 rounded-lg border dark:border-zinc-800 px-2.5 py-1 text-[10px] font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                        onClick={() => setPreview({ title: fTitle || 'Announcement', content: fDesc })}
+                      >
+                        <EyeIcon size={12} /> Preview
+                      </button>
+                    )}
+                  </div>
+                  <Textarea label="" value={fDesc} onChange={setFDesc} placeholder="Full announcement details, context, and information..." rows={6} />
+                  <p className="mt-1.5 text-[10px] dark:text-zinc-700">Use blank lines between paragraphs.</p>
                 </div>
               </div>
             </div>
@@ -271,8 +289,34 @@ export function AnnouncementsPage() {
             </div>
             <div className="p-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Textarea label="Why It Matters" value={fImport} onChange={setFImport} placeholder="Explain the importance..." rows={4} />
-                <Textarea label="Instructions" value={fInstr} onChange={setFInstr} placeholder="How to participate, what to prepare..." rows={4} />
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-medium uppercase tracking-wider dark:text-zinc-400">Why It Matters</label>
+                    {fImport && (
+                      <button
+                        className="flex items-center gap-1 rounded-lg border dark:border-zinc-800 px-2 py-0.5 text-[9px] font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                        onClick={() => setPreview({ title: fTitle || 'Why It Matters', content: fImport })}
+                      >
+                        <EyeIcon size={10} /> Preview
+                      </button>
+                    )}
+                  </div>
+                  <Textarea label="" value={fImport} onChange={setFImport} placeholder="Explain the importance..." rows={4} />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-medium uppercase tracking-wider dark:text-zinc-400">Instructions</label>
+                    {fInstr && (
+                      <button
+                        className="flex items-center gap-1 rounded-lg border dark:border-zinc-800 px-2 py-0.5 text-[9px] font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                        onClick={() => setPreview({ title: fTitle || 'Instructions', content: fInstr })}
+                      >
+                        <EyeIcon size={10} /> Preview
+                      </button>
+                    )}
+                  </div>
+                  <Textarea label="" value={fInstr} onChange={setFInstr} placeholder="How to participate, what to prepare..." rows={4} />
+                </div>
               </div>
             </div>
           </div>
@@ -351,6 +395,14 @@ export function AnnouncementsPage() {
             </div>
           </div>
         </div>
+
+        <Modal open={!!preview} onClose={() => setPreview(null)} title={preview?.title || 'Preview'} wide>
+          <div className="max-h-[60vh] overflow-y-auto space-y-4 text-sm leading-relaxed dark:text-zinc-300">
+            {preview && formatText(preview.content).split('\n\n').map((para, i) => (
+              <p key={i}>{para}</p>
+            ))}
+          </div>
+        </Modal>
       </motion.div>
     )
   }
@@ -371,22 +423,22 @@ export function AnnouncementsPage() {
           <p className="mt-0.5 text-xs dark:text-zinc-600">Create and manage announcements with tags & gallery</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={load}>
+          <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={load}>
             <RefreshIcon size={13} /> Refresh
           </button>
-          <button className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white dark:hover:bg-emerald-400" onClick={startNew}>
+          <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white dark:hover:bg-emerald-400" onClick={startNew}>
             <PlusIcon size={13} /> New Announcement
           </button>
         </div>
       </div>
 
-      <div className="mb-4 flex items-center gap-2 rounded-lg border dark:border-zinc-800/50 dark:bg-zinc-900/30 px-3 py-2">
-        <SearchIcon size={14} className="dark:text-zinc-600" />
+      <div className="mb-4 flex items-center gap-2 rounded-lg border dark:border-zinc-800/50 dark:bg-zinc-900/30 px-3 min-h-[44px] sm:min-h-0 sm:py-2">
+        <SearchIcon size={14} className="dark:text-zinc-600 shrink-0" />
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search announcements..."
-          className="flex-1 bg-transparent text-sm dark:text-zinc-300 outline-none placeholder:text-zinc-400"
+          className="flex-1 bg-transparent text-sm dark:text-zinc-300 outline-none placeholder:text-zinc-400 py-2"
         />
       </div>
 
@@ -437,10 +489,10 @@ export function AnnouncementsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-medium dark:text-zinc-300 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700" onClick={() => startEdit(a.id)}>
+                        <button className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[10px] font-medium dark:text-zinc-300 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700 min-h-[36px] sm:min-h-0" onClick={() => startEdit(a.id)}>
                           <EditIcon size={12} /> Edit
                         </button>
-                        <button className="rounded-lg p-1 dark:text-zinc-700 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600" onClick={() => handleDelete(a.id)}>
+                        <button className="rounded-lg p-2 dark:text-zinc-700 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 min-h-[36px] min-w-[36px] sm:min-h-0 sm:min-w-0 sm:p-1" onClick={() => handleDelete(a.id)}>
                           <TrashIcon size={12} />
                         </button>
                       </div>
