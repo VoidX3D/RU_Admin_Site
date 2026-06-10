@@ -1,5 +1,9 @@
-import { useRef, useState, useCallback, useEffect } from 'react'
+import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
 import { marked } from 'marked'
+
+marked.setOptions({ breaks: true, gfm: true })
+
+type ViewMode = 'edit' | 'split' | 'preview'
 
 interface RichTextEditorProps {
   value: string
@@ -9,125 +13,178 @@ interface RichTextEditorProps {
   minHeight?: string
 }
 
-export function RichTextEditor({ value, onChange, label, placeholder, minHeight = '160px' }: RichTextEditorProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+export function RichTextEditor({ value, onChange, label, placeholder, minHeight = '200px' }: RichTextEditorProps) {
+  const taRef = useRef<HTMLTextAreaElement>(null)
+  const previewRef = useRef<HTMLDivElement>(null)
+  const mdTimer = useRef<ReturnType<typeof setTimeout>>()
   const [focused, setFocused] = useState(false)
-  const [showPreview, setShowPreview] = useState(false)
-  const [renderedHtml, setRenderedHtml] = useState('')
+  const [view, setView] = useState<ViewMode>('split')
+  const [rendered, setRendered] = useState('')
+  const [wordCount, setWordCount] = useState(0)
+  const [charCount, setCharCount] = useState(0)
 
   const renderMd = useCallback(async (md: string) => {
-    if (!md) { setRenderedHtml(''); return }
-    const html = await marked.parse(md)
-    setRenderedHtml(html)
+    if (!md.trim()) { setRendered('<p style="color:#a1a1aa"><i>Nothing to preview — start typing...</i></p>'); return }
+    try {
+      setRendered(await marked.parse(md))
+    } catch { setRendered('<p style="color:#ef4444">Failed to render preview</p>') }
   }, [])
 
   useEffect(() => {
-    if (showPreview) renderMd(value)
-  }, [showPreview, value, renderMd])
-
-  useEffect(() => {
-    renderMd(value)
-  }, [])
+    clearTimeout(mdTimer.current)
+    mdTimer.current = setTimeout(() => renderMd(value), 150)
+    const words = value.trim() ? value.trim().split(/\s+/).length : 0
+    setWordCount(words)
+    setCharCount(value.length)
+    return () => clearTimeout(mdTimer.current)
+  }, [value, renderMd])
 
   const insert = useCallback((before: string, after = '') => {
-    const ta = textareaRef.current
+    const ta = taRef.current
     if (!ta) return
-    const start = ta.selectionStart
-    const end = ta.selectionEnd
-    const selected = value.substring(start, end)
-    const newText = value.substring(0, start) + before + selected + after + value.substring(end)
-    onChange(newText)
-    setTimeout(() => {
+    const start = ta.selectionStart, end = ta.selectionEnd
+    const sel = value.substring(start, end)
+    const next = value.substring(0, start) + before + sel + after + value.substring(end)
+    onChange(next)
+    requestAnimationFrame(() => {
       ta.focus()
-      ta.setSelectionRange(start + before.length, start + before.length + selected.length)
-    }, 0)
+      const pos = start + before.length
+      ta.setSelectionRange(pos, pos + sel.length)
+    })
   }, [value, onChange])
 
   const insertBlock = useCallback((prefix: string) => {
-    const ta = textareaRef.current
+    const ta = taRef.current
     if (!ta) return
     const start = ta.selectionStart
-    const lineStart = value.lastIndexOf('\n', start - 1) + 1
-    const line = value.substring(lineStart, value.indexOf('\n', start) > -1 ? value.indexOf('\n', start) : value.length)
-    const newText = value.substring(0, lineStart) + prefix + line + '\n' + value.substring(lineStart + line.length)
-    onChange(newText)
-    setTimeout(() => ta.focus(), 0)
+    const line = value.substring(0, start).split('\n').pop() || ''
+    const rest = value.substring(start)
+    const restLines = rest.split('\n')
+    const next = value.substring(0, start - line.length) + prefix + line + '\n' + restLines.slice(1).join('\n')
+    onChange(next)
+    requestAnimationFrame(() => { ta.focus() })
   }, [value, onChange])
 
-  const insertLink = useCallback(() => {
-    const url = prompt('Enter URL:', 'https://')
-    if (!url) return
-    const ta = textareaRef.current
-    if (!ta) return
-    const selected = value.substring(ta.selectionStart, ta.selectionEnd)
-    const text = selected || 'link text'
-    insert(`[${text}](${url})`, '')
-    if (!selected) {
-      setTimeout(() => {
-        const pos = ta.value.indexOf(url)
-        if (pos > -1) ta.setSelectionRange(pos, pos + 'link text'.length)
-      }, 0)
-    }
-  }, [value, insert])
-
-  const insertImage = useCallback(() => {
-    const url = prompt('Enter image URL:', 'https://')
-    if (!url) return
-    insert(`![Image](${url})\n`, '')
+  const wrapSelection = useCallback((before: string, after: string) => {
+    insert(before, after)
   }, [insert])
 
+  const bold = useCallback(() => wrapSelection('**', '**'), [wrapSelection])
+  const italic = useCallback(() => wrapSelection('*', '*'), [wrapSelection])
+  const boldItalic = useCallback(() => wrapSelection('***', '***'), [wrapSelection])
+  const strike = useCallback(() => wrapSelection('~~', '~~'), [wrapSelection])
+  const code = useCallback(() => wrapSelection('`', '`'), [wrapSelection])
+  const link = useCallback(() => {
+    const ta = taRef.current
+    if (!ta) return
+    const sel = value.substring(ta.selectionStart, ta.selectionEnd)
+    const url = prompt('URL:', 'https://') || ''
+    if (!url) return
+    const text = sel || 'link'
+    insert(`[${text}](${url})`)
+    if (!sel) {
+      setTimeout(() => {
+        const pos = ta.value.indexOf('link]')
+        if (pos > -1) ta.setSelectionRange(pos, pos + 4)
+      })
+    }
+  }, [value, insert])
+  const img = useCallback(() => {
+    const url = prompt('Image URL:', 'https://') || ''
+    if (!url) return
+    insert(`![Image](${url})\n`)
+  }, [insert])
+  const heading2 = useCallback(() => insertBlock('## '), [insertBlock])
+  const heading3 = useCallback(() => insertBlock('### '), [insertBlock])
+  const bullet = useCallback(() => insertBlock('- '), [insertBlock])
+  const ordered = useCallback(() => insertBlock('1. '), [insertBlock])
+  const quote = useCallback(() => insertBlock('> '), [insertBlock])
+  const hr = useCallback(() => insert('\n---\n'), [insert])
+
+  const handleKey = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Tab') { e.preventDefault(); insert('  ') }
+    if (!e.ctrlKey && !e.metaKey) return
+    switch (e.key.toLowerCase()) {
+      case 'b': e.preventDefault(); bold(); break
+      case 'i': e.preventDefault(); italic(); break
+      case 'k': e.preventDefault(); link(); break
+      case 'd': e.preventDefault(); strike(); break
+    }
+  }, [bold, italic, link, strike, insert])
+
   const id = `rte-${label.toLowerCase().replace(/\s+/g, '-')}`
+
+  const viewTabs: { key: ViewMode; label: string }[] = [
+    { key: 'edit', label: 'Edit' },
+    { key: 'split', label: 'Split' },
+    { key: 'preview', label: 'Preview' },
+  ]
 
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
         <label htmlFor={id} className="block text-[11px] font-medium text-zinc-500">{label}</label>
-        <div className="flex items-center gap-1">
-          <button type="button" onClick={() => setShowPreview(!showPreview)}
-            className="rounded-md px-2 py-0.5 text-[10px] font-medium text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
-            {showPreview ? 'Edit' : 'Preview'}
-          </button>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-zinc-400 tabular-nums">{wordCount}w &middot; {charCount}c</span>
         </div>
       </div>
+
       <div className={`overflow-hidden rounded-lg border transition-colors ${focused ? 'border-emerald-500/50' : 'border-zinc-200 dark:border-zinc-700'}`}>
-        <div className="flex flex-wrap items-center gap-0.5 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50 px-2 py-1.5">
-          <TbBtn onClick={() => insert('**', '**')} title="Bold"><b>B</b></TbBtn>
-          <TbBtn onClick={() => insert('*', '*')} title="Italic"><i>I</i></TbBtn>
-          <TbBtn onClick={() => insert('***', '***')} title="Bold + Italic"><b><i>BI</i></b></TbBtn>
-          <Divider />
-          <TbBtn onClick={() => insertBlock('## ')}>H2</TbBtn>
-          <TbBtn onClick={() => insertBlock('### ')}>H3</TbBtn>
-          <Divider />
-          <TbBtn onClick={() => insertBlock('- ')} title="Bullet list">&#8226;</TbBtn>
-          <TbBtn onClick={() => insertBlock('1. ')} title="Numbered list">1.</TbBtn>
-          <Divider />
-          <TbBtn onClick={insertLink} title="Link">&#128279;</TbBtn>
-          <TbBtn onClick={insertImage} title="Image">&#128247;</TbBtn>
-          <Divider />
-          <TbBtn onClick={() => insert('> ', '')} title="Blockquote">&ldquo;</TbBtn>
-          <TbBtn onClick={() => insert('```\n', '\n```')} title="Code block">&lt;/&gt;</TbBtn>
-          <Divider />
-          <TbBtn onClick={() => insert('---\n', '')} title="Horizontal rule">&mdash;</TbBtn>
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center gap-0.5 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50 px-2 py-1">
+          <TbBtn onClick={bold} title="Bold (Ctrl+B)"><b>B</b></TbBtn>
+          <TbBtn onClick={italic} title="Italic (Ctrl+I)"><i>I</i></TbBtn>
+          <TbBtn onClick={boldItalic} title="Bold+Italic"><b><i>BI</i></b></TbBtn>
+          <TbBtn onClick={strike} title="Strikethrough (Ctrl+D)"><s>S</s></TbBtn>
+          <D />
+          <TbBtn onClick={heading2}>H2</TbBtn>
+          <TbBtn onClick={heading3}>H3</TbBtn>
+          <D />
+          <TbBtn onClick={bullet} title="Bullet list">&#8226;</TbBtn>
+          <TbBtn onClick={ordered} title="Numbered list">1.</TbBtn>
+          <TbBtn onClick={quote} title="Blockquote">&ldquo;</TbBtn>
+          <D />
+          <TbBtn onClick={link} title="Link (Ctrl+K)">&#128279;</TbBtn>
+          <TbBtn onClick={img} title="Image">&#128247;</TbBtn>
+          <TbBtn onClick={code} title="Inline code">&lt;/&gt;</TbBtn>
+          <TbBtn onClick={hr} title="Horizontal rule">&mdash;</TbBtn>
+          <D />
+          <TbBtn onClick={() => onChange('')} title="Clear">&#128465;</TbBtn>
+
+          {/* View toggles */}
+          <span className="ml-auto flex items-center gap-0.5 rounded-md border dark:border-zinc-700 bg-white dark:bg-zinc-800 p-0.5">
+            {viewTabs.map(t => (
+              <button key={t.key} type="button" onClick={() => setView(t.key)}
+                className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${view === t.key ? 'bg-emerald-500 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}>{t.label}</button>
+            ))}
+          </span>
         </div>
-        {showPreview ? (
-          <div
-            className="px-3 py-2 text-sm dark:text-white dark:bg-zinc-900/30 prose prose-sm dark:prose-invert max-w-none min-h-[160px]"
-            style={{ minHeight }}
-            dangerouslySetInnerHTML={{ __html: renderedHtml }}
-          />
-        ) : (
-          <textarea
-            id={id}
-            ref={textareaRef}
-            value={value}
-            onChange={e => onChange(e.target.value)}
-            placeholder={placeholder || 'Start writing in Markdown...'}
-            className="w-full resize-y border-0 bg-transparent px-3 py-2 text-sm font-mono dark:text-white outline-none"
-            style={{ minHeight, fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', monospace" }}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-          />
-        )}
+
+        {/* Body */}
+        <div className="flex" style={{ minHeight }}>
+          {(view === 'edit' || view === 'split') && (
+            <textarea
+              id={id}
+              ref={taRef}
+              value={value}
+              onChange={e => onChange(e.target.value)}
+              placeholder={placeholder || 'Write in Markdown...'}
+              onKeyDown={handleKey}
+              className={`w-full resize-none border-0 bg-transparent px-3 py-2 text-sm font-mono dark:text-white outline-none ${view === 'split' ? 'w-1/2 border-r dark:border-zinc-700' : ''}`}
+              style={{ minHeight, fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'Menlo', monospace", lineHeight: '1.6' }}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+            />
+          )}
+          {(view === 'split' || view === 'preview') && (
+            <div
+              ref={previewRef}
+              className={`overflow-y-auto px-3 py-2 text-sm dark:text-white prose prose-sm dark:prose-invert max-w-none ${view === 'split' ? 'w-1/2' : 'w-full'}`}
+              style={{ minHeight, maxHeight: '60vh' }}
+              dangerouslySetInnerHTML={{ __html: rendered }}
+            />
+          )}
+        </div>
       </div>
     </div>
   )
@@ -136,11 +193,11 @@ export function RichTextEditor({ value, onChange, label, placeholder, minHeight 
 function TbBtn({ onClick, title, children }: { onClick: () => void; title?: string; children: React.ReactNode }) {
   return (
     <button type="button" onClick={onClick} title={title}
-      className="flex min-h-[32px] min-w-[32px] items-center justify-center rounded-md px-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-colors"
+      className="flex min-h-[30px] min-w-[30px] items-center justify-center rounded-md px-1 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-white transition-colors"
     >{children}</button>
   )
 }
 
-function Divider() {
-  return <span className="mx-0.5 h-4 w-px bg-zinc-300 dark:border-zinc-700" />
+function D() {
+  return <span className="mx-0.5 h-4 w-px bg-zinc-300 dark:bg-zinc-700" />
 }
