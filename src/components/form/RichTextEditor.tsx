@@ -184,20 +184,18 @@ export function RichTextEditor({ value, onChange, label, placeholder, minHeight 
 
         {/* Body */}
         <div className="flex" style={{ minHeight }}>
-          {(view === 'edit' || view === 'split') && (
-            <textarea
-              id={id}
-              ref={taRef}
-              value={value}
-              onChange={e => onChange(e.target.value)}
-              placeholder={placeholder || 'Write in Markdown...'}
-              onKeyDown={handleKey}
-              className={`resize-none border-0 bg-transparent px-3 py-2 text-sm font-mono dark:text-white outline-none ${view === 'split' ? 'w-1/2 border-r dark:border-zinc-700' : 'w-full'}`}
-              style={{ minHeight, fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'Menlo', monospace", lineHeight: '1.6' }}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
-            />
-          )}
+          <textarea
+            id={id}
+            ref={taRef}
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            placeholder={placeholder || 'Write in Markdown...'}
+            onKeyDown={handleKey}
+            className={`resize-none border-0 bg-transparent px-3 py-2 text-sm font-mono dark:text-white outline-none ${view === 'edit' ? 'w-full' : view === 'split' ? 'w-1/2 border-r dark:border-zinc-700' : 'hidden'}`}
+            style={{ minHeight, fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'Menlo', monospace", lineHeight: '1.6' }}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+          />
           {(view === 'split' || view === 'preview') && (
             <div
               className={`overflow-y-auto px-3 py-2 text-sm dark:text-white md-content ${view === 'split' ? 'w-1/2' : 'w-full'}`}
