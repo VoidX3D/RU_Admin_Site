@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
-import { fetchMissions, fetchMissionDetail, saveMission, deleteMission, uploadBase64Image } from '../utils/supabase'
+import { fetchMissions, fetchMissionDetail, saveMission, deleteMission } from '../utils/supabase'
 import type { MissionEntry, PendingImage, MissionTimeline } from '../types'
 import { ConfirmModal } from './ConfirmModal'
 import { ContextMenu } from './ContextMenu'
@@ -127,28 +127,9 @@ export function MissionsPage() {
     setSaving(true)
 
     try {
-      const imageUrls: string[] = []
-      for (let i = 0; i < fImages.length; i++) {
-        if (fImages[i].remote && fImages[i].dataUrl.startsWith('http')) {
-          imageUrls.push(fImages[i].dataUrl)
-        } else if (fImages[i].dataUrl.startsWith('data:')) {
-          const filename = `mission/${fId}/img-${String(i + 1).padStart(2, '0')}.jpg`
-          const result = await uploadBase64Image('public', filename, fImages[i].dataUrl)
-          if (result.url) imageUrls.push(result.url)
-        }
-      }
-
-      const statsArr = fStats.filter(s => s.label).map(s => ({ label: s.label, value: s.value }))
       const { error } = await saveMission(fId, {
         slug: fId, title: fTitle, tag: fTag, date: fDate,
         description: fDesc, detail: fDetail, show: fShow,
-        image_count: fImages.length, featured: imageUrls[0] || null,
-        images: imageUrls, stats: statsArr,
-        partners: fPartners.filter(p => p.trim()),
-        goals: fGoals.filter(g => g.trim()),
-        timeline: fTimeline.filter(t => t.title.trim()),
-        participants: fParticipants.filter(p => p.group_name.trim()),
-        budget: fBudget.filter(b => b.item.trim()),
       })
       if (error) { addToast('Save failed: ' + error.message, 'error'); return }
 

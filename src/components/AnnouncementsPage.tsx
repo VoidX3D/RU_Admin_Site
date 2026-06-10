@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
-import { fetchAnnouncements, fetchAnnouncementDetail, saveAnnouncement, deleteAnnouncement, uploadBase64Image } from '../utils/supabase'
+import { fetchAnnouncements, fetchAnnouncementDetail, saveAnnouncement, deleteAnnouncement } from '../utils/supabase'
 import type { AnnouncementEntry, PendingImage } from '../types'
 import { ConfirmModal } from './ConfirmModal'
 import { ContextMenu } from './ContextMenu'
@@ -141,31 +141,11 @@ export function AnnouncementsPage() {
     setSaving(true)
 
     try {
-      let imageUrl = fImg?.dataUrl || null
-      if (imageUrl?.startsWith('data:')) {
-        const filename = `announcements/${fId}.jpg`
-        const result = await uploadBase64Image('public', filename, imageUrl)
-        if (result.url) imageUrl = result.url
-      }
-
-      const galleryUrls: string[] = []
-      for (let i = 0; i < fGallery.length; i++) {
-        if (fGallery[i].remote && fGallery[i].dataUrl.startsWith('http')) {
-          galleryUrls.push(fGallery[i].dataUrl)
-        } else if (fGallery[i].dataUrl.startsWith('data:')) {
-          const filename = `announcements/${fId}/gallery-${String(i + 1).padStart(2, '0')}.jpg`
-          const result = await uploadBase64Image('public', filename, fGallery[i].dataUrl)
-          if (result.url) galleryUrls.push(result.url)
-        }
-      }
-
       const { error } = await saveAnnouncement(fId, {
         title: fTitle, tag: fTag, status: fStatus, date: fDate,
         day: fDay, time: fTime, location: fLoc, issued_by: fIssued,
         summary: fSummary, description: fDesc, importance: fImport,
-        instructions: fInstr, active: fActive, deadline: fDeadline, image: imageUrl,
-        tags: fTags,
-        gallery: galleryUrls,
+        instructions: fInstr, active: fActive, deadline: fDeadline,
       })
       if (error) { addToast('Save failed: ' + error.message, 'error'); return }
 
