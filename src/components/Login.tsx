@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useStore, checkLoginRateLimit, resetLoginRateLimit } from '../store'
 import { Storage } from '../utils/storage'
-import { getEnvConfig } from '../utils/env'
-import { sha256 } from '../utils/crypto'
+import { login } from '../utils/supabase'
 
 const FLOATING_WORDS = ['RU', 'Club', 'Motherland', 'Admin', 'Sincee', 'Content']
 
@@ -153,28 +152,23 @@ export function Login() {
       return
     }
     setLoading(true); setError('')
-    const env = getEnvConfig()
 
-    // Master key overrides normal auth
-    if (env.MASTER_KEY) {
-      const [masterHash, passHash] = await Promise.all([sha256(env.MASTER_KEY), sha256(pass)])
-      if (masterHash === passHash) {
+    try {
+      const result = await login(user, pass)
+      if (result.token) {
         resetLoginRateLimit()
-        setAppUser('master')
-        Storage.saveSession('master')
+        Storage.saveSession(result.user || user)
+        Storage.saveToken(result.token)
+        setAppUser(result.user || user)
         setView('dashboard')
-        return
+      } else {
+        setError('Invalid credentials')
+        setLoading(false)
       }
+    } catch {
+      setError('Connection error. Check API availability.')
+      setLoading(false)
     }
-
-    // Compare against env vars
-    if (user !== env.ADMIN_USERNAME) { setError('Invalid credentials'); setLoading(false); return }
-    const [h1, h2] = await Promise.all([sha256(env.ADMIN_PASSWORD), sha256(pass)])
-    if (h1 !== h2) { setError('Invalid credentials'); setLoading(false); return }
-    resetLoginRateLimit()
-    setAppUser(user)
-    Storage.saveSession(user)
-    setView('dashboard')
   }
 
   return (

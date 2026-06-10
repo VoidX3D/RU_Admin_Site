@@ -83,8 +83,6 @@ export function MissionsPage() {
     setFId(id); setFTitle(m.title); setFTag(m.tag || '')
     setFDate(m.date || ''); setFDesc(m.description || '')
     setFShow(m.show !== false)
-    setFDetail(''); setFStats([]); setFPartners([]); setFImages([])
-    setFGoals([]); setFTimeline([]); setFParticipants([]); setFBudget([])
     setErrors({})
 
     const missionId = m?.id

@@ -35,7 +35,7 @@ export function Dashboard() {
   const setView = useStore(s => s.setView)
   const refreshTrigger = useStore(s => s.refreshTrigger)
 
-  const [liveStats, setLiveStats] = useState({ missions: '...', announcements: '...', members: '...' })
+  const [liveStats, setLiveStats] = useState({ missions: '0', announcements: '0', members: '0' })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

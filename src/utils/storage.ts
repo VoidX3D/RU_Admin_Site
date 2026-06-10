@@ -22,11 +22,15 @@ export const Storage = {
     if (!session) return null;
     if (Date.now() - session.time > SESSION_EXPIRY_MS) {
       remove('session');
+      remove('token');
       return null;
     }
     return session;
   },
-  clearSession() { remove('session'); },
+  clearSession() { remove('session'); remove('token'); },
+
+  saveToken(token: string) { set('token', token); },
+  getToken(): string | null { return get<string | null>('token', null); },
 
   getSettings: (): Settings => {
     return { username: '', password: '', verifyCode: '' };

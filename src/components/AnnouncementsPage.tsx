@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { fetchAnnouncements, fetchAnnouncementDetail, saveAnnouncement, deleteAnnouncement, uploadBase64Image } from '../utils/supabase'
@@ -38,6 +38,7 @@ export function AnnouncementsPage() {
   const [fImg, setFImg] = useState<PendingImage | null>(null)
   const [fGallery, setFGallery] = useState<PendingImage[]>([])
   const [saving, setSaving] = useState(false)
+  const tagInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { load() }, [refreshTrigger])
 
@@ -92,9 +93,7 @@ export function AnnouncementsPage() {
     setFId(id); setFTitle(a.title); setFTag(a.tag || 'Update')
     setFDate(a.date); setFDay(a.day || ''); setFSummary(a.summary)
     setFActive(a.active !== false)
-    setFStatus(''); setFTime(''); setFLoc(''); setFIssued('')
-    setFDesc(''); setFImport(''); setFInstr(''); setFDeadline('')
-    setFTags([]); setFImg(null); setFGallery([]); setErrors({})
+    setErrors({})
 
     const annId = a?.id
     if (!annId) { setMode('form'); return }
@@ -102,10 +101,10 @@ export function AnnouncementsPage() {
     try {
       const info = await fetchAnnouncementDetail(annId)
       if (info) {
-        setFDesc(info.description || ''); setFStatus(info.status || '')
-        setFDay(info.day || ''); setFTime(info.time || ''); setFLoc(info.location || '')
-        setFIssued(info.issued_by || ''); setFImport(info.importance || ''); setFInstr(info.instructions || '')
-        setFDeadline(info.deadline || '')
+        setFStatus(info.status || ''); setFTime(info.time || '')
+        setFLoc(info.location || ''); setFIssued(info.issued_by || '')
+        setFDesc(info.description || ''); setFImport(info.importance || '')
+        setFInstr(info.instructions || ''); setFDeadline(info.deadline || '')
         if (info.image) {
           setFImg({ dataUrl: info.image, name: info.image.split('/').pop() || 'image', remote: true })
         }
@@ -295,6 +294,7 @@ export function AnnouncementsPage() {
               </div>
               <div className="flex items-center gap-2">
                 <input
+                  ref={tagInputRef}
                   placeholder="Add a tag..."
                   className="flex-1 rounded-lg border dark:border-zinc-800 dark:bg-zinc-900/50 px-3 py-2 text-xs dark:text-white outline-none placeholder:text-zinc-400 focus:border-emerald-500/50"
                   onKeyDown={e => {
@@ -307,7 +307,7 @@ export function AnnouncementsPage() {
                 <button
                   className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-400"
                   onClick={() => {
-                    const input = document.querySelector<HTMLInputElement>('[placeholder="Add a tag..."]')
+                    const input = tagInputRef.current
                     if (input && input.value) { addTag(input.value); input.value = '' }
                   }}
                 >

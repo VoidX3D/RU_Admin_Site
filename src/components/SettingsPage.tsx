@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
-import { getEnvConfig, isProductionEnv, hasEnvAuth } from '../utils/env'
+import { getEnvConfig, isProductionEnv } from '../utils/env'
 import { checkDBConnection } from '../utils/supabase'
 import { exportBackup, importBackup } from '../utils/backup'
 import {
-  DownloadIcon, UploadIcon, CheckCircleIcon, DatabaseIcon, UserIcon, LockIcon,
-  FileTextIcon, KeyIcon, AlertCircleIcon, AlertTriangleIcon, RefreshIcon,
+  DownloadIcon, UploadIcon, CheckCircleIcon, AlertCircleIcon, DatabaseIcon, UserIcon,
+  FileTextIcon, AlertTriangleIcon, RefreshIcon,
 } from './Icons'
 
 export function SettingsPage() {
@@ -43,7 +43,6 @@ export function SettingsPage() {
   }
 
   const prod = isProductionEnv()
-  const authOk = hasEnvAuth()
 
   return (
     <motion.div
@@ -117,49 +116,12 @@ export function SettingsPage() {
           <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Authentication</h3>
         </div>
         <div className="p-4">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between rounded-lg border dark:border-zinc-800/30 dark:bg-zinc-900/20 px-3 py-2.5">
-              <div className="flex items-center gap-2">
-                <LockIcon size={12} className="dark:text-zinc-600" />
-                <span className="text-xs dark:text-zinc-400">Admin username</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium dark:text-zinc-300">
-                  {env.ADMIN_USERNAME || <span className="text-red-400">Not set</span>}
-                </span>
-                <span className="rounded dark:bg-zinc-800 px-1.5 py-0.5 text-[9px] dark:text-zinc-600">env</span>
-              </div>
+          <div className="flex items-center gap-3 rounded-lg border dark:border-emerald-800/30 dark:bg-emerald-500/5 px-3 py-2.5">
+            <CheckCircleIcon size={14} className="text-emerald-500 shrink-0" />
+            <div>
+              <p className="text-xs font-medium dark:text-emerald-300">Server-side authentication</p>
+              <p className="text-[10px] dark:text-zinc-500 mt-0.5">Credentials verified on the server via API — never exposed to the client bundle.</p>
             </div>
-
-            <div className="flex items-center justify-between rounded-lg border dark:border-zinc-800/30 dark:bg-zinc-900/20 px-3 py-2.5">
-              <div className="flex items-center gap-2">
-                <LockIcon size={12} className="dark:text-zinc-600" />
-                <span className="text-xs dark:text-zinc-400">Admin password</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium dark:text-zinc-300">
-                  {env.ADMIN_PASSWORD ? '••••••••' : <span className="text-red-400">Not set</span>}
-                </span>
-                <span className="rounded dark:bg-zinc-800 px-1.5 py-0.5 text-[9px] dark:text-zinc-600">env</span>
-              </div>
-            </div>
-
-            {env.MASTER_KEY && (
-              <div className="flex items-center justify-between rounded-lg border dark:border-amber-800/30 dark:bg-amber-500/5 px-3 py-2.5">
-                <div className="flex items-center gap-2">
-                  <KeyIcon size={12} className="text-amber-500" />
-                  <span className="text-xs dark:text-amber-400">Master key active</span>
-                </div>
-                <span className="rounded dark:bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-medium dark:text-amber-500">override</span>
-              </div>
-            )}
-
-            {!authOk && !env.MASTER_KEY && (
-              <div className="flex items-center gap-2 rounded-lg border border-red-900/30 bg-red-500/5 px-3 py-2">
-                <AlertCircleIcon size={12} className="text-red-400 shrink-0" />
-                <p className="text-[10px] text-red-400">No authentication configured. Set VITE_ADMIN_USERNAME and VITE_ADMIN_PASSWORD in .env</p>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -174,7 +136,6 @@ export function SettingsPage() {
           {[
             { label: 'Project URL', value: env.SUPABASE_URL ? `${env.SUPABASE_URL.slice(0, 35)}...` : null },
             { label: 'Anon Key', value: env.SUPABASE_ANON_KEY ? `${env.SUPABASE_ANON_KEY.slice(0, 20)}...` : null },
-            { label: 'Service Key', value: env.SUPABASE_SERVICE_KEY ? '••••••••' : null },
           ].map((item, i) => (
             <div key={i} className="flex items-center justify-between rounded-lg border dark:border-zinc-800/30 dark:bg-zinc-900/20 px-3 py-2">
               <span className="text-[10px] dark:text-zinc-500">{item.label}</span>
@@ -183,9 +144,6 @@ export function SettingsPage() {
               </span>
             </div>
           ))}
-          <p className="text-[10px] dark:text-zinc-700 mt-2">
-            Service key enables direct CRUD operations bypassing RLS. Required for admin panel to function.
-          </p>
         </div>
       </div>
 

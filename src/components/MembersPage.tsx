@@ -36,7 +36,7 @@ export function MembersPage() {
         setCore(d.core || [])
         setGeneral(d.general || [])
       }
-    } catch { /* ignore */ }
+    } catch { addToast('Failed to load members', 'error') }
     setLoading(false)
   }
 
@@ -64,9 +64,11 @@ export function MembersPage() {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'image/*'
+    input.style.display = 'none'
     input.onchange = async () => {
       const file = input.files?.[0]
       if (!file) return
+      input.remove()
       const reader = new FileReader()
       reader.onload = async () => {
         const dataUrl = reader.result as string
@@ -85,6 +87,9 @@ export function MembersPage() {
   }
 
   function stripUrl(url: string): string {
+    if (url.startsWith('http') && !url.includes('supabase')) {
+      return url
+    }
     if (url.startsWith('http')) {
       const parts = url.split('/')
       const bucketIdx = parts.findIndex(p => p === 'ruclub')
