@@ -4,8 +4,10 @@ import { useStore } from '../store'
 import { fetchMissions, fetchMissionDetail, saveMission, deleteMission, uploadBase64Image } from '../utils/supabase'
 import type { MissionEntry, PendingImage, MissionTimeline } from '../types'
 import { Modal } from './Modal'
+import { ContextMenu } from './ContextMenu'
+import type { ContextAction } from './ContextMenu'
 import {
-  ArrowLeftIcon, PlusIcon, ImageIcon, TargetIcon, RefreshIcon, TrashIcon, EditIcon, SearchIcon, EyeIcon,
+  ArrowLeftIcon, PlusIcon, ImageIcon, TargetIcon, RefreshIcon, TrashIcon, EditIcon, SearchIcon, EyeIcon, EyeOffIcon,
 } from './Icons'
 import { Field, Textarea, Toggle, ImageUpload, StatsEditor, PartnersEditor, GoalsEditor, TimelineEditor, ParticipantsEditor, BudgetEditor } from './form'
 
@@ -25,6 +27,7 @@ export function MissionsPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [search, setSearch] = useState('')
   const [preview, setPreview] = useState<{ title: string; content: string } | null>(null)
+  const [ctx, setCtx] = useState<{ open: boolean; x: number; y: number; mission: MissionEntry | null }>({ open: false, x: 0, y: 0, mission: null })
 
   const [fId, setFId] = useState('')
   const [fTitle, setFTitle] = useState('')
@@ -408,7 +411,8 @@ export function MissionsPage() {
                 </tr>
               ) : (
                 filtered.map(m => (
-                  <tr key={m.id} className="transition-colors hover:bg-zinc-200 dark:bg-zinc-800/20">
+                  <tr key={m.id} className="transition-colors hover:bg-zinc-200 dark:bg-zinc-800/20"
+                    onContextMenu={e => { e.preventDefault(); setCtx({ open: true, x: e.clientX, y: e.clientY, mission: m }) }}>
                     <td className="px-4 py-3">
                       <div className="font-medium dark:text-zinc-300">{m.title}</div>
                     </td>
@@ -439,6 +443,23 @@ export function MissionsPage() {
           </table>
         </div>
       </div>
+
+      <ContextMenu
+        open={ctx.open}
+        x={ctx.x} y={ctx.y}
+        onClose={() => setCtx(o => ({ ...o, open: false }))}
+        actions={ctx.mission ? [
+          { icon: <EditIcon size={12} />, label: 'Edit Mission', onClick: () => startEdit(ctx.mission!.id) },
+          { icon: ctx.mission.show !== false ? <EyeOffIcon size={12} /> : <EyeIcon size={12} />,
+            label: ctx.mission.show !== false ? 'Hide from site' : 'Show on site',
+            onClick: async () => {
+              const { error } = await saveMission(ctx.mission!.id, { ...ctx.mission, show: ctx.mission!.show === false })
+              if (!error) loadMissions()
+            }
+          },
+          { icon: <TrashIcon size={12} />, label: 'Delete', onClick: () => handleDelete(ctx.mission!.id), dangerous: true },
+        ] : []}
+      />
     </motion.div>
   )
 }

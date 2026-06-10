@@ -4,8 +4,10 @@ import { useStore } from '../store'
 import { fetchAnnouncements, fetchAnnouncementDetail, saveAnnouncement, deleteAnnouncement, uploadBase64Image } from '../utils/supabase'
 import type { AnnouncementEntry, PendingImage } from '../types'
 import { Modal } from './Modal'
+import { ContextMenu } from './ContextMenu'
+import type { ContextAction } from './ContextMenu'
 import {
-  ArrowLeftIcon, PlusIcon, ImageIcon, MegaphoneIcon, RefreshIcon, TrashIcon, EditIcon, SearchIcon, EyeIcon,
+  ArrowLeftIcon, PlusIcon, ImageIcon, MegaphoneIcon, RefreshIcon, TrashIcon, EditIcon, SearchIcon, EyeIcon, EyeOffIcon,
 } from './Icons'
 import { Field, Textarea, Select, Toggle, ImageUpload } from './form'
 
@@ -24,6 +26,7 @@ export function AnnouncementsPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [search, setSearch] = useState('')
   const [preview, setPreview] = useState<{ title: string; content: string } | null>(null)
+  const [ctx, setCtx] = useState<{ open: boolean; x: number; y: number; ann: AnnouncementEntry | null }>({ open: false, x: 0, y: 0, ann: null })
 
   const [fId, setFId] = useState('')
   const [fTitle, setFTitle] = useState('')
@@ -403,9 +406,26 @@ export function AnnouncementsPage() {
             ))}
           </div>
         </Modal>
-      </motion.div>
-    )
-  }
+
+      <ContextMenu
+        open={ctx.open}
+        x={ctx.x} y={ctx.y}
+        onClose={() => setCtx(o => ({ ...o, open: false }))}
+        actions={ctx.ann ? [
+          { icon: <EditIcon size={12} />, label: 'Edit Announcement', onClick: () => startEdit(ctx.ann!.id) },
+          { icon: ctx.ann.active !== false ? <EyeOffIcon size={12} /> : <EyeIcon size={12} />,
+            label: ctx.ann.active !== false ? 'Hide from site' : 'Show on site',
+            onClick: async () => {
+              const { error } = await saveAnnouncement(ctx.ann!.id, { ...ctx.ann, active: ctx.ann!.active === false })
+              if (!error) load()
+            }
+          },
+          { icon: <TrashIcon size={12} />, label: 'Delete', onClick: () => handleDelete(ctx.ann!.id), dangerous: true },
+        ] : []}
+      />
+    </motion.div>
+  )
+}
 
   const filtered = anns.filter(a =>
     !search || a.title.toLowerCase().includes(search.toLowerCase()) || a.id.toLowerCase().includes(search.toLowerCase())
@@ -473,7 +493,8 @@ export function AnnouncementsPage() {
                 </tr>
               ) : (
                 filtered.map(a => (
-                  <tr key={a.id} className="transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800/20">
+                  <tr key={a.id} className="transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800/20"
+                    onContextMenu={e => { e.preventDefault(); setCtx({ open: true, x: e.clientX, y: e.clientY, ann: a }) }}>
                     <td className="px-4 py-3">
                       <div className="font-medium dark:text-zinc-300">{a.title}</div>
                     </td>
