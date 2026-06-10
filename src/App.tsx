@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, lazy, Suspense } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { Analytics } from '@vercel/analytics/react'
 import { useStore } from './store'
 import { Storage } from './utils/storage'
 import { initAdminAnalytics, trackAdminPage } from './utils/analytics'
@@ -139,6 +140,7 @@ export default function App() {
             </AnimatePresence>
           </Layout>
         )}
+        <Analytics />
       </ErrorBoundary>
     </Suspense>
   )
