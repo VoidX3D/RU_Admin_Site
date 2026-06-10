@@ -1,5 +1,6 @@
 import { marked } from 'marked'
 import katex from 'katex'
+import DOMPurify from 'dompurify'
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -47,9 +48,33 @@ function renderMath(text: string): string {
 
 export function renderMarkdown(md: string): string {
   if (!md.trim()) return ''
-  const html = marked.parse(md, {
+  const raw = marked.parse(md, {
     breaks: true,
     gfm: true,
   }) as string
-  return renderMath(html)
+  const withMath = renderMath(raw)
+  const purified = DOMPurify.sanitize(withMath, {
+    ALLOWED_TAGS: [
+      'p', 'br', 'b', 'i', 'u', 's', 'em', 'strong', 'small', 'sub', 'sup',
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'ul', 'ol', 'li',
+      'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'colgroup', 'col',
+      'blockquote', 'pre', 'code', 'kbd', 'samp', 'var',
+      'hr', 'div', 'span', 'a', 'img',
+      'dl', 'dt', 'dd',
+      'details', 'summary',
+      'figure', 'figcaption',
+      'del', 'ins', 'mark', 'abbr', 'cite',
+    ],
+    ALLOWED_ATTR: [
+      'href', 'target', 'rel', 'title',
+      'src', 'alt', 'width', 'height',
+      'class', 'id',
+      'colspan', 'rowspan', 'scope',
+      'type', 'start',
+    ],
+    ALLOW_DATA_ATTR: false,
+    ALLOW_UNKNOWN_PROTOCOLS: false,
+  })
+  return purified
 }

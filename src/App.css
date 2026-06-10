@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap');
 @import "katex/dist/katex.min.css";
+@import "./styles/md-content.css";
 
 @tailwind base;
 @tailwind components;
@@ -38,6 +39,13 @@ body {
 .dark ::-webkit-scrollbar-thumb { background: #27272a; }
 ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
 .dark ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
+.prose table, .prose-sm table { border-collapse: collapse; width: 100%; margin: 1em 0; display: block; overflow-x: auto; }
+.prose th, .prose td, .prose-sm th, .prose-sm td { border: 1px solid #d4d4d8; padding: 0.5em 0.75em; text-align: left; vertical-align: top; }
+.prose th, .prose-sm th { background: #f4f4f5; font-weight: 600; }
+.dark .prose th, .dark .prose td, .dark .prose-sm th, .dark .prose-sm td { border-color: #3f3f46; }
+.dark .prose th, .dark .prose-sm th { background: #27272a; }
+.prose pre { overflow-x: auto; border-radius: 0.5rem; }
 
 ::selection { background: #22c55e; color: #fff; }
 

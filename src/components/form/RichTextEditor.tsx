@@ -200,7 +200,7 @@ export function RichTextEditor({ value, onChange, label, placeholder, minHeight 
           )}
           {(view === 'split' || view === 'preview') && (
             <div
-              className={`overflow-y-auto px-3 py-2 text-sm dark:text-white prose prose-sm dark:prose-invert max-w-none ${view === 'split' ? 'w-1/2' : 'w-full'}`}
+              className={`overflow-y-auto px-3 py-2 text-sm dark:text-white md-content ${view === 'split' ? 'w-1/2' : 'w-full'}`}
               style={{ minHeight, maxHeight: '60vh' }}
               dangerouslySetInnerHTML={{ __html: rendered }}
             />
