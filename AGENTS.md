@@ -1,7 +1,7 @@
 # AGENTS — Admin Panel Guide
 
 ## Overview
-RU Club Motherland Admin Panel — a **React 19 + TypeScript + Vite** SPA for managing all dynamic content on `ruclub.motherland.edu.np`. Every save writes directly to Supabase (no draft/publish workflow). Deployed at `admin.ruclub.motherland.edu.np`.
+RU Club Motherland Admin Panel — a **React 19 + TypeScript + Vite** SPA for managing all dynamic content on `ruclub.motherland.edu.np`. Every save writes directly to Supabase (no draft/publish workflow). Deployed at `ru-admin-site.vercel.app`.
 
 ## Tech Stack
 - **Framework:** React 19 + TypeScript
