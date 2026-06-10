@@ -5,7 +5,6 @@ import { fetchAnnouncements, fetchAnnouncementDetail, saveAnnouncement, deleteAn
 import type { AnnouncementEntry, PendingImage } from '../types'
 import { ConfirmModal } from './ConfirmModal'
 import { ContextMenu } from './ContextMenu'
-import type { ContextAction } from './ContextMenu'
 import {
   ArrowLeftIcon, PlusIcon, ImageIcon, MegaphoneIcon, RefreshIcon, TrashIcon, EditIcon, SearchIcon, EyeIcon, EyeOffIcon,
 } from './Icons'

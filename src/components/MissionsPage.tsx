@@ -5,11 +5,10 @@ import { fetchMissions, fetchMissionDetail, saveMission, deleteMission, uploadBa
 import type { MissionEntry, PendingImage, MissionTimeline } from '../types'
 import { ConfirmModal } from './ConfirmModal'
 import { ContextMenu } from './ContextMenu'
-import type { ContextAction } from './ContextMenu'
 import {
   ArrowLeftIcon, PlusIcon, ImageIcon, TargetIcon, RefreshIcon, TrashIcon, EditIcon, SearchIcon, EyeIcon, EyeOffIcon,
 } from './Icons'
-import { Field, Textarea, Toggle, ImageUpload, StatsEditor, PartnersEditor, GoalsEditor, TimelineEditor, ParticipantsEditor, BudgetEditor, RichTextEditor } from './form'
+import { Field, Toggle, ImageUpload, StatsEditor, PartnersEditor, GoalsEditor, TimelineEditor, ParticipantsEditor, BudgetEditor, RichTextEditor } from './form'
 
 type Mode = 'list' | 'form'
 
