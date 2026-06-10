@@ -3,7 +3,6 @@ import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { fetchMissions, fetchMissionDetail, saveMission, deleteMission, uploadBase64Image } from '../utils/supabase'
 import type { MissionEntry, PendingImage, MissionTimeline } from '../types'
-import { Modal } from './Modal'
 import { ConfirmModal } from './ConfirmModal'
 import { ContextMenu } from './ContextMenu'
 import type { ContextAction } from './ContextMenu'
@@ -11,10 +10,6 @@ import {
   ArrowLeftIcon, PlusIcon, ImageIcon, TargetIcon, RefreshIcon, TrashIcon, EditIcon, SearchIcon, EyeIcon, EyeOffIcon,
 } from './Icons'
 import { Field, Textarea, Toggle, ImageUpload, StatsEditor, PartnersEditor, GoalsEditor, TimelineEditor, ParticipantsEditor, BudgetEditor, RichTextEditor } from './form'
-
-function formatText(text: string): string {
-  return text.split(/\n\s*\n/).filter(Boolean).map(p => p.trim()).join('\n\n')
-}
 
 type Mode = 'list' | 'form'
 
@@ -27,7 +22,6 @@ export function MissionsPage() {
   const [loading, setLoading] = useState(true)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [search, setSearch] = useState('')
-  const [preview, setPreview] = useState<{ title: string; content: string } | null>(null)
   const [ctx, setCtx] = useState<{ open: boolean; x: number; y: number; mission: MissionEntry | null }>({ open: false, x: 0, y: 0, mission: null })
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
 
@@ -327,12 +321,6 @@ export function MissionsPage() {
             </div>
           </div>
         </div>
-
-        <Modal open={!!preview} onClose={() => setPreview(null)} title={preview?.title || 'Preview'} wide>
-          <div className="max-h-[60vh] overflow-y-auto text-sm leading-relaxed dark:text-white prose prose-sm dark:prose-invert max-w-none">
-            {preview && <div dangerouslySetInnerHTML={{ __html: preview.content }} />}
-          </div>
-        </Modal>
       </motion.div>
     )
   }
