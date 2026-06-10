@@ -94,8 +94,12 @@ export default function App() {
           case '2': e.preventDefault(); setPendingAction('newAnnouncement'); setView('announcements'); break
           case 'd': e.preventDefault(); setView('dashboard'); break
           case 'm': e.preventDefault(); setView('missions'); break
-          case 'a': e.preventDefault(); setView('announcements'); break
           case 'u': e.preventDefault(); setView('members'); break
+        }
+      }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+        switch (e.key.toLowerCase()) {
+          case 'a': e.preventDefault(); setView('announcements'); break
           case 'c': e.preventDefault(); setView('contact'); break
         }
       }

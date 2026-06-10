@@ -27,9 +27,9 @@ A React 19 + TypeScript + Vite SPA for managing all dynamic content on [ruclub.m
 - **Global Stats** — Key-value stat rows for homepage counters
 - **Partners** — Partner logos with name/alt and image upload
 - **Contact Submissions** — Read-only viewer with detail panel, delete capability
-- **Settings** — Login credentials, repo config, GitHub token status, backup/restore, branch management
+- **Settings** — Text reformatting, data migration tooling
 - **Theme** — Light/dark mode toggle, persists to localStorage
-- **Keyboard Shortcuts** — Ctrl+S save, Ctrl+Shift+P publish, Ctrl+1/2 new mission/announcement, etc.
+- **Keyboard Shortcuts** — Ctrl+1/2 new mission/announcement, Ctrl+D/M/A/U navigation
 
 ## Project Structure
 
