@@ -54,7 +54,7 @@ export default async function handler(req: any, res: any) {
     const result = await handleAction(action, params)
     return res.json(result)
   } catch (err: any) {
-    return res.status(500).json({ error: err.message || 'Internal error' })
+    return res.status(500).json({ error: { message: err.message || 'Internal error' } })
   }
 }
 
@@ -98,69 +98,69 @@ async function handleAction(action: string, params: any) {
       const { id, fields } = params
       const { stats, partners, images, goals, timeline, participants, budget, ...missionFields } = fields
       const { error: e1 } = await supabaseAdmin.from('missions').upsert({ id, ...missionFields })
-      if (e1) return { error: e1.message }
+      if (e1) return { error: { message: e1.message } }
       if (stats !== undefined) {
         const { error: e } = await supabaseAdmin.from('mission_stats').delete().eq('mission_id', id)
-        if (e) return { error: e.message }
+        if (e) return { error: { message: e.message } }
         if (Array.isArray(stats) && stats.length > 0) {
           const { error: e2 } = await supabaseAdmin.from('mission_stats').insert((stats as any[]).map((s, i) => ({ mission_id: id, label: s.label, value: s.value, sort_order: i })))
-          if (e2) return { error: e2.message }
+          if (e2) return { error: { message: e2.message } }
         }
       }
       if (partners !== undefined) {
         const { error: e } = await supabaseAdmin.from('mission_partners').delete().eq('mission_id', id)
-        if (e) return { error: e.message }
+        if (e) return { error: { message: e.message } }
         if (Array.isArray(partners) && partners.length > 0) {
           const { error: e2 } = await supabaseAdmin.from('mission_partners').insert((partners as string[]).map((name, i) => ({ mission_id: id, name, sort_order: i })))
-          if (e2) return { error: e2.message }
+          if (e2) return { error: { message: e2.message } }
         }
       }
       if (images !== undefined) {
         const { error: e } = await supabaseAdmin.from('mission_images').delete().eq('mission_id', id)
-        if (e) return { error: e.message }
+        if (e) return { error: { message: e.message } }
         if (Array.isArray(images) && images.length > 0) {
           const { error: e2 } = await supabaseAdmin.from('mission_images').insert((images as string[]).map((url, i) => ({
             mission_id: id, url: url.split('/').pop() || `img-${String(i + 1).padStart(2, '0')}.jpg`, alt: '', sort_order: i,
           })))
-          if (e2) return { error: e2.message }
+          if (e2) return { error: { message: e2.message } }
         }
       }
       if (goals !== undefined) {
         const { error: e } = await supabaseAdmin.from('mission_goals').delete().eq('mission_id', id)
-        if (e) return { error: e.message }
+        if (e) return { error: { message: e.message } }
         if (Array.isArray(goals) && goals.length > 0) {
           const { error: e2 } = await supabaseAdmin.from('mission_goals').insert((goals as string[]).map((g, i) => ({ mission_id: id, goal: g, sort_order: i })))
-          if (e2) return { error: e2.message }
+          if (e2) return { error: { message: e2.message } }
         }
       }
       if (timeline !== undefined) {
         const { error: e } = await supabaseAdmin.from('mission_timeline').delete().eq('mission_id', id)
-        if (e) return { error: e.message }
+        if (e) return { error: { message: e.message } }
         if (Array.isArray(timeline) && timeline.length > 0) {
           const { error: e2 } = await supabaseAdmin.from('mission_timeline').insert((timeline as any[]).map((t, i) => ({
             mission_id: id, title: t.title, date: t.date, description: t.description, sort_order: i,
           })))
-          if (e2) return { error: e2.message }
+          if (e2) return { error: { message: e2.message } }
         }
       }
       if (participants !== undefined) {
         const { error: e } = await supabaseAdmin.from('mission_participants').delete().eq('mission_id', id)
-        if (e) return { error: e.message }
+        if (e) return { error: { message: e.message } }
         if (Array.isArray(participants) && participants.length > 0) {
           const { error: e2 } = await supabaseAdmin.from('mission_participants').insert((participants as any[]).map((p, i) => ({
             mission_id: id, group_name: p.group_name, participant_count: p.participant_count, sort_order: i,
           })))
-          if (e2) return { error: e2.message }
+          if (e2) return { error: { message: e2.message } }
         }
       }
       if (budget !== undefined) {
         const { error: e } = await supabaseAdmin.from('mission_budget').delete().eq('mission_id', id)
-        if (e) return { error: e.message }
+        if (e) return { error: { message: e.message } }
         if (Array.isArray(budget) && budget.length > 0) {
           const { error: e2 } = await supabaseAdmin.from('mission_budget').insert((budget as any[]).map((b, i) => ({
             mission_id: id, item: b.item, amount: b.amount || null, sort_order: i,
           })))
-          if (e2) return { error: e2.message }
+          if (e2) return { error: { message: e2.message } }
         }
       }
       return { error: null }
@@ -204,24 +204,24 @@ async function handleAction(action: string, params: any) {
       const { id, fields } = params
       const { tags, gallery, ...dataFields } = fields
       const { error: e1 } = await supabaseAdmin.from('announcements').upsert({ id, ...dataFields })
-      if (e1) return { error: e1.message }
+      if (e1) return { error: { message: e1.message } }
       if (tags !== undefined) {
         const { error: e } = await supabaseAdmin.from('announcement_tags').delete().eq('announcement_id', id)
-        if (e) return { error: e.message }
+        if (e) return { error: { message: e.message } }
         if (Array.isArray(tags) && tags.length > 0) {
           const { error: e2 } = await supabaseAdmin.from('announcement_tags').insert((tags as string[]).map((tag, i) => ({ announcement_id: id, tag, sort_order: i })))
-          if (e2) return { error: e2.message }
+          if (e2) return { error: { message: e2.message } }
         }
       }
       if (gallery !== undefined) {
         const { error: e } = await supabaseAdmin.from('announcement_gallery').delete().eq('announcement_id', id)
-        if (e) return { error: e.message }
+        if (e) return { error: { message: e.message } }
         if (Array.isArray(gallery) && gallery.length > 0) {
           const { error: e2 } = await supabaseAdmin.from('announcement_gallery').insert((gallery as string[]).map((url, i) => {
             const isFullUrl = url.startsWith('http')
             return { announcement_id: id, url: isFullUrl ? url : url.split('/').pop() || `gallery-${i}.jpg`, alt: '', sort_order: i }
           }))
-          if (e2) return { error: e2.message }
+          if (e2) return { error: { message: e2.message } }
         }
       }
       return { error: null }
@@ -314,7 +314,7 @@ async function handleAction(action: string, params: any) {
       const file = new File([blob], imgPath.split('/').pop() || 'image', { type: blob.type })
       const storagePath = imgPath.startsWith('static/assets/') ? imgPath : `static/assets/${imgPath}`
       const { data, error } = await supabaseAdmin.storage.from('ruclub').upload(storagePath, file, { upsert: true })
-      if (error) return { error: error.message }
+      if (error) return { error: { message: error.message || 'Upload failed' } }
       const { data: { publicUrl } } = supabaseAdmin.storage.from('ruclub').getPublicUrl(storagePath)
       return { url: publicUrl, error: null }
     }
