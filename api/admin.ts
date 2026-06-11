@@ -148,8 +148,13 @@ async function handleAction(action: string, params: any) {
       }
       if (images !== undefined) {
         await supabaseAdmin.from('mission_images').delete().eq('mission_id', id)
-        if (Array.isArray(images) && images.length > 0) {
-          const { error: e2 } = await supabaseAdmin.from('mission_images').insert((images as string[]).map((url, i) => ({
+        const urls = Array.isArray(images) ? images : []
+        // If no explicit images but featured is set, sync it as a mission_image
+        if (urls.length === 0 && missionFields.featured) {
+          urls.push(missionFields.featured)
+        }
+        if (urls.length > 0) {
+          const { error: e2 } = await supabaseAdmin.from('mission_images').insert(urls.map((url, i) => ({
             mission_id: id, url: url.startsWith('http') ? url.split('/').pop()! : url.split('/').pop() || `img-${String(i + 1).padStart(2, '0')}.jpg`, alt: '', sort_order: i,
           })))
           if (e2) return { error: { message: e2.message } }
@@ -239,8 +244,12 @@ async function handleAction(action: string, params: any) {
       }
       if (gallery !== undefined) {
         await supabaseAdmin.from('announcement_gallery').delete().eq('announcement_id', id)
-        if (Array.isArray(gallery) && gallery.length > 0) {
-          const { error: e2 } = await supabaseAdmin.from('announcement_gallery').insert((gallery as string[]).map((url, i) => {
+        const urls = Array.isArray(gallery) ? [...gallery] : []
+        if (urls.length === 0 && dataFields.image) {
+          urls.push(dataFields.image)
+        }
+        if (urls.length > 0) {
+          const { error: e2 } = await supabaseAdmin.from('announcement_gallery').insert(urls.map((url, i) => {
             const isFullUrl = url.startsWith('http')
             return { announcement_id: id, url: isFullUrl ? url : url.split('/').pop() || `gallery-${i}.jpg`, alt: '', sort_order: i }
           }))
