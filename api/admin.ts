@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { createHash, createHmac, randomBytes } from 'crypto'
+import { createHmac, randomBytes } from 'crypto'
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_SERVICE_KEY || ''
@@ -9,14 +9,17 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 })
 
 const ADMIN_USER = process.env.ADMIN_USERNAME || process.env.VITE_ADMIN_USERNAME || ''
-const ADMIN_PASS_HASH = process.env.ADMIN_PASSWORD || process.env.VITE_ADMIN_PASSWORD || ''
+const ADMIN_PASS = process.env.ADMIN_PASSWORD || process.env.VITE_ADMIN_PASSWORD || ''
 const MASTER_KEY = process.env.MASTER_KEY || process.env.VITE_MASTER_KEY || ''
-const TOKEN_SECRET = process.env.TOKEN_SECRET || process.env.VITE_TOKEN_SECRET || randomBytes(32).toString('hex')
+const JWT_SECRET = process.env.SUPABASE_JWT_SECRET || process.env.VITE_SUPABASE_JWT_SECRET || randomBytes(32).toString('hex')
+
+function b64url(s: string) { return Buffer.from(s).toString('base64url') }
+function fromB64url(s: string) { return Buffer.from(s, 'base64url').toString() }
 
 function signToken(user: string) {
-  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url')
-  const payload = Buffer.from(JSON.stringify({ user, exp: Date.now() + 43200000 })).toString('base64url')
-  const sig = createHmac('sha256', TOKEN_SECRET).update(`${header}.${payload}`).digest('base64url')
+  const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+  const payload = b64url(JSON.stringify({ user, exp: Date.now() + 43200000 }))
+  const sig = createHmac('sha256', JWT_SECRET).update(`${header}.${payload}`).digest('base64url')
   return `${header}.${payload}.${sig}`
 }
 
@@ -24,14 +27,18 @@ function verifyToken(token: string) {
   try {
     const parts = token.split('.')
     if (parts.length !== 3) return null
-    const sig = createHmac('sha256', TOKEN_SECRET).update(`${parts[0]}.${parts[1]}`).digest('base64url')
+    const sig = createHmac('sha256', JWT_SECRET).update(`${parts[0]}.${parts[1]}`).digest('base64url')
     if (sig !== parts[2]) return null
-    const { user, exp } = JSON.parse(Buffer.from(parts[1], 'base64url').toString())
+    const { user, exp } = JSON.parse(fromB64url(parts[1]))
     if (Date.now() > exp) return null
     return { user }
-  } catch {
-    return null
-  }
+  } catch { return null }
+}
+
+function isValidUser(username: string) {
+  if (username === ADMIN_USER) return true
+  if (ADMIN_USER.includes('@') && username === ADMIN_USER.split('@')[0]) return true
+  return false
 }
 
 export default async function handler(req: any, res: any) {
@@ -52,14 +59,8 @@ export default async function handler(req: any, res: any) {
     }
 
     if (!username || !password) return res.status(400).json({ error: 'Missing credentials' })
-
-    const userMatch = ADMIN_USER.includes('@')
-      ? (username === ADMIN_USER || username === ADMIN_USER.split('@')[0])
-      : username === ADMIN_USER
-    if (!userMatch) return res.status(401).json({ error: 'Invalid credentials' })
-    if (createHash('sha256').update(password).digest('hex') !== ADMIN_PASS_HASH) {
-      return res.status(401).json({ error: 'Invalid credentials' })
-    }
+    if (!isValidUser(username)) return res.status(401).json({ error: 'Invalid credentials' })
+    if (password !== ADMIN_PASS) return res.status(401).json({ error: 'Invalid credentials' })
 
     return res.json({ token: signToken(username), user: username })
   }
@@ -133,7 +134,7 @@ async function handleAction(action: string, params: any) {
         await supabaseAdmin.from('mission_images').delete().eq('mission_id', id)
         if (Array.isArray(images) && images.length > 0) {
           const { error: e2 } = await supabaseAdmin.from('mission_images').insert((images as string[]).map((url, i) => ({
-            mission_id: id, url: url.split('/').pop() || `img-${String(i + 1).padStart(2, '0')}.jpg`, alt: '', sort_order: i,
+            mission_id: id, url: url.startsWith('http') ? url.split('/').pop()! : url.split('/').pop() || `img-${String(i + 1).padStart(2, '0')}.jpg`, alt: '', sort_order: i,
           })))
           if (e2) return { error: { message: e2.message } }
         }
