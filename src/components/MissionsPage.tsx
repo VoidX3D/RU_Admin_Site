@@ -108,7 +108,9 @@ export function MissionsPage() {
         })
         setFImages(imgs)
       }
-    } catch { /* ignore */ }
+    } catch {
+      addToast('Failed to load mission details', 'error')
+    }
     setMode('form')
   }
 
@@ -166,10 +168,14 @@ export function MissionsPage() {
 
   async function executeDelete(id: string) {
     setConfirmDelete(null)
-    const { error } = await deleteMission(id)
-    if (error) { addToast('Delete failed: ' + error.message, 'error'); return }
-    addToast('Mission deleted', 'success')
-    loadMissions()
+    try {
+      const { error } = await deleteMission(id)
+      if (error) { addToast('Delete failed: ' + error.message, 'error'); return }
+      addToast('Mission deleted', 'success')
+      loadMissions()
+    } catch (e) {
+      addToast('Delete failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
+    }
   }
 
   if (mode === 'form') {
@@ -432,8 +438,12 @@ export function MissionsPage() {
           { icon: ctx.mission.show !== false ? <EyeOffIcon size={12} /> : <EyeIcon size={12} />,
             label: ctx.mission.show !== false ? 'Hide from site' : 'Show on site',
             onClick: async () => {
-              const { error } = await saveMission(ctx.mission!.id, { ...ctx.mission, show: ctx.mission!.show === false })
-              if (!error) loadMissions()
+              try {
+                const { error } = await saveMission(ctx.mission!.id, { ...ctx.mission, show: ctx.mission!.show === false })
+                if (!error) loadMissions()
+              } catch (e) {
+                addToast('Toggle failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
+              }
             }
           },
           { icon: <TrashIcon size={12} />, label: 'Delete', onClick: () => handleDelete(ctx.mission!.id), dangerous: true },

@@ -26,6 +26,7 @@ const item = {
 }
 
 export function Dashboard() {
+  const addToast = useStore(s => s.addToast)
   const missions = useStore(s => s.missions)
   const announcements = useStore(s => s.announcements)
   const members = useStore(s => s.members)
@@ -63,7 +64,9 @@ export function Dashboard() {
           const total = data?.stats?.total || 0
           setLiveStats(p => ({ ...p, members: String(total) }))
         }
-      } catch { /* ignore */ }
+      } catch {
+        addToast('Failed to load dashboard data', 'error')
+      }
       setLoading(false)
     }
     load()

@@ -71,14 +71,18 @@ export function MembersPage() {
       input.remove()
       const reader = new FileReader()
       reader.onload = async () => {
-        const dataUrl = reader.result as string
-        const filename = `members/${Date.now()}_${file.name}`
-        const result = await uploadBase64Image('public', filename, dataUrl)
-        if (result.url) {
-          upd(idx, 'image', result.url)
-          addToast('Image uploaded', 'success')
-        } else {
-          addToast('Upload failed', 'error')
+        try {
+          const dataUrl = reader.result as string
+          const filename = `members/${Date.now()}_${file.name}`
+          const result = await uploadBase64Image('public', filename, dataUrl)
+          if (result.url) {
+            upd(idx, 'image', result.url)
+            addToast('Image uploaded', 'success')
+          } else {
+            addToast('Upload failed', 'error')
+          }
+        } catch {
+          addToast('Upload failed: network error', 'error')
         }
       }
       reader.readAsDataURL(file)
@@ -106,16 +110,21 @@ export function MembersPage() {
 
   async function handleSave() {
     setSaving(true)
-    const filtered = {
-      teachers: teachers.filter(t => t.name.trim()).map(m => ({ ...m, image: m.image ? stripUrl(m.image) : '' })),
-      core: core.filter(c => c.name.trim()).map(m => ({ ...m, image: m.image ? stripUrl(m.image) : '' })),
-      general: general.filter(g => g.name.trim()).map(m => ({ ...m, image: m.image ? stripUrl(m.image) : '' })),
+    try {
+      const filtered = {
+        teachers: teachers.filter(t => t.name.trim()).map(m => ({ ...m, image: m.image ? stripUrl(m.image) : '' })),
+        core: core.filter(c => c.name.trim()).map(m => ({ ...m, image: m.image ? stripUrl(m.image) : '' })),
+        general: general.filter(g => g.name.trim()).map(m => ({ ...m, image: m.image ? stripUrl(m.image) : '' })),
+      }
+      const { error } = await saveMembers(filtered as unknown as Record<string, unknown>)
+      if (error) { addToast('Save failed: ' + error.message, 'error'); setSaving(false); return }
+      addToast('Members saved to database!', 'success')
+      setSaving(false)
+      load()
+    } catch (e) {
+      addToast('Save failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
+      setSaving(false)
     }
-    const { error } = await saveMembers(filtered as unknown as Record<string, unknown>)
-    if (error) { addToast('Save failed: ' + error.message, 'error'); setSaving(false); return }
-    addToast('Members saved to database!', 'success')
-    setSaving(false)
-    load()
   }
 
   const current = tab === 'teachers' ? teachers : tab === 'core' ? core : general

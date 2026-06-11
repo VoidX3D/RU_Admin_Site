@@ -71,14 +71,18 @@ export function PartnersEditorPage() {
       input.remove()
       const reader = new FileReader()
       reader.onload = async () => {
-        const dataUrl = reader.result as string
-        const filename = `partners/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '')}`
-        const result = await uploadBase64Image('public', filename, dataUrl)
-        if (result.url) {
-          update(i, 'src', result.url)
-          addToast('Image uploaded', 'success')
-        } else {
-          addToast('Upload failed', 'error')
+        try {
+          const dataUrl = reader.result as string
+          const filename = `partners/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '')}`
+          const result = await uploadBase64Image('public', filename, dataUrl)
+          if (result.url) {
+            update(i, 'src', result.url)
+            addToast('Image uploaded', 'success')
+          } else {
+            addToast('Upload failed', 'error')
+          }
+        } catch {
+          addToast('Upload failed: network error', 'error')
         }
       }
       reader.readAsDataURL(file)
@@ -110,20 +114,25 @@ export function PartnersEditorPage() {
     if (!validate()) return
     setSaving(true)
 
-    const items = partners
-      .filter(p => p.name.trim())
-      .map((p, i) => ({
-        src: p.src,
-        alt: p.alt || p.name,
-        name: p.name,
-        sort_order: i,
-      }))
+    try {
+      const items = partners
+        .filter(p => p.name.trim())
+        .map((p, i) => ({
+          src: p.src,
+          alt: p.alt || p.name,
+          name: p.name,
+          sort_order: i,
+        }))
 
-    const { error } = await savePartners(items)
-    if (error) { addToast('Save failed: ' + error.message, 'error'); setSaving(false); return }
-    addToast('All partners saved to database — homepage is live!', 'success')
-    setSaving(false)
-    load()
+      const { error } = await savePartners(items)
+      if (error) { addToast('Save failed: ' + error.message, 'error'); setSaving(false); return }
+      addToast('All partners saved to database — homepage is live!', 'success')
+      setSaving(false)
+      load()
+    } catch (e) {
+      addToast('Save failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
+      setSaving(false)
+    }
   }
 
   return (

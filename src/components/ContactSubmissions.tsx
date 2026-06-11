@@ -42,11 +42,15 @@ export function ContactSubmissions() {
 
   async function executeDelete(id: number) {
     setConfirmDeleteId(null)
-    const { error } = await deleteContactSubmission(id)
-    if (error) { addToast('Delete failed: ' + error.message, 'error'); return }
-    addToast('Submission deleted', 'success')
-    if (selected?.id === id) setSelected(null)
-    load()
+    try {
+      const { error } = await deleteContactSubmission(id)
+      if (error) { addToast('Delete failed: ' + error.message, 'error'); return }
+      addToast('Submission deleted', 'success')
+      if (selected?.id === id) setSelected(null)
+      load()
+    } catch (e) {
+      addToast('Delete failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
+    }
   }
 
   const filtered = submissions.filter(s =>

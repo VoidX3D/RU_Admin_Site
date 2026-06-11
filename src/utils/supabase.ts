@@ -11,40 +11,72 @@ export const supabaseAnon = hasSupabase
   ? createClient(supabaseUrl, supabaseAnonKey, { auth: { storageKey: 'sb-ruclub-admin-anon' } })
   : (null as unknown as ReturnType<typeof createClient>)
 
+let _unauthorizedHandled = false
+
 function handleUnauthorized() {
+  if (_unauthorizedHandled) return
+  _unauthorizedHandled = true
   Storage.clearSession()
   useStore.getState().setView('login')
   useStore.getState().addToast('Session expired. Please log in again.', 'warning')
+  setTimeout(() => { _unauthorizedHandled = false }, 5000)
 }
+
+const REQUEST_TIMEOUT = 20000
 
 async function api(action: string, params?: Record<string, unknown>): Promise<any> {
   const token = Storage.getToken()
-  const res = await fetch('/api/admin', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, token, ...params }),
-  })
-  if (!res.ok) {
-    if (res.status === 401) {
-      handleUnauthorized()
-      return { data: null, _expired: true }
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
+    const res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, token, ...params }),
+      signal: controller.signal,
+    })
+    clearTimeout(timeout)
+    if (!res.ok) {
+      if (res.status === 401) {
+        handleUnauthorized()
+        return { data: null, _expired: true }
+      }
+      throw new Error(`Request failed (${res.status})`)
     }
-    throw new Error(`Request failed (${res.status})`)
+    return res.json()
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      throw new Error('Request timed out')
+    }
+    if (e instanceof TypeError && e.message === 'Failed to fetch') {
+      throw new Error('Network error — check your connection')
+    }
+    throw e
   }
-  return res.json()
 }
 
 export async function login(username: string, password: string) {
-  const res = await fetch('/api/admin', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'login', username, password }),
-  })
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    return { error: body.error || `Login failed (${res.status})` }
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
+    const res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'login', username, password }),
+      signal: controller.signal,
+    })
+    clearTimeout(timeout)
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      return { error: body.error || `Login failed (${res.status})` }
+    }
+    return res.json()
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      return { error: 'Request timed out' }
+    }
+    return { error: 'Network error — check your connection' }
   }
-  return res.json()
 }
 
 export function storageUrl(path: string): string {

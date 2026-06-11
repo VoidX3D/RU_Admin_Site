@@ -17,7 +17,9 @@ export function SettingsPage() {
   const env = getEnvConfig()
 
   useEffect(() => {
-    checkDBConnection().then(ok => setDbStatus(ok ? 'connected' : 'error'))
+    checkDBConnection()
+      .then(ok => setDbStatus(ok ? 'connected' : 'error'))
+      .catch(() => setDbStatus('error'))
   }, [])
 
   function handleExport() {
@@ -74,7 +76,7 @@ export function SettingsPage() {
             <DatabaseIcon size={14} className="dark:text-zinc-400" />
             <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-500">Database Connection</h3>
           </div>
-          <button onClick={() => { setDbStatus('checking'); checkDBConnection().then(ok => setDbStatus(ok ? 'connected' : 'error')) }}
+          <button onClick={() => { setDbStatus('checking'); checkDBConnection().then(ok => setDbStatus(ok ? 'connected' : 'error')).catch(() => setDbStatus('error')) }}
             className="flex items-center gap-1 rounded-md dark:bg-zinc-800 min-h-[44px] sm:min-h-0 px-3 py-2 sm:px-2 sm:py-1 text-[9px] dark:text-zinc-500 hover:text-zinc-300"
           >
             <RefreshIcon size={10} /> Test

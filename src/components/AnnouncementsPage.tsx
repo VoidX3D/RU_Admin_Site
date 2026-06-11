@@ -122,7 +122,9 @@ export function AnnouncementsPage() {
           }))
         }
       }
-    } catch { /* ignore */ }
+    } catch {
+      addToast('Failed to load announcement details', 'error')
+    }
     setMode('form')
   }
 
@@ -183,10 +185,14 @@ export function AnnouncementsPage() {
 
   async function executeDelete(id: string) {
     setConfirmDelete(null)
-    const { error } = await deleteAnnouncement(id)
-    if (error) { addToast('Delete failed: ' + error.message, 'error'); return }
-    addToast('Announcement deleted', 'success')
-    load()
+    try {
+      const { error } = await deleteAnnouncement(id)
+      if (error) { addToast('Delete failed: ' + error.message, 'error'); return }
+      addToast('Announcement deleted', 'success')
+      load()
+    } catch (e) {
+      addToast('Delete failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
+    }
   }
 
   if (mode === 'form') {
@@ -475,8 +481,12 @@ export function AnnouncementsPage() {
           { icon: ctx.ann.active !== false ? <EyeOffIcon size={12} /> : <EyeIcon size={12} />,
             label: ctx.ann.active !== false ? 'Hide from site' : 'Show on site',
             onClick: async () => {
-              const { error } = await saveAnnouncement(ctx.ann!.id, { ...ctx.ann, active: ctx.ann!.active === false })
-              if (!error) load()
+              try {
+                const { error } = await saveAnnouncement(ctx.ann!.id, { ...ctx.ann, active: ctx.ann!.active === false })
+                if (!error) load()
+              } catch (e) {
+                addToast('Toggle failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
+              }
             }
           },
           { icon: <TrashIcon size={12} />, label: 'Delete', onClick: () => handleDelete(ctx.ann!.id), dangerous: true },

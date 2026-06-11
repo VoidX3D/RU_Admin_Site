@@ -162,7 +162,7 @@ export function Login() {
         setAppUser(result.user || user)
         setView('dashboard')
       } else {
-        setError('Invalid credentials')
+        setError(result.error || 'Invalid credentials')
         setLoading(false)
       }
     } catch {

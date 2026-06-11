@@ -81,19 +81,24 @@ export function StatsEditorPage() {
     if (!validate()) return
     setSaving(true)
 
-    const items = stats
-      .filter(s => s.label.trim() && s.value.trim())
-      .map((s, i) => ({
-        value: s.value.trim(),
-        label: s.label.trim(),
-        sort_order: i,
-      }))
+    try {
+      const items = stats
+        .filter(s => s.label.trim() && s.value.trim())
+        .map((s, i) => ({
+          value: s.value.trim(),
+          label: s.label.trim(),
+          sort_order: i,
+        }))
 
-    const { error } = await saveStats(items)
-    if (error) { addToast('Save failed: ' + error.message, 'error'); setSaving(false); return }
-    addToast('Stats saved to database — homepage is live!', 'success')
-    setSaving(false)
-    load()
+      const { error } = await saveStats(items)
+      if (error) { addToast('Save failed: ' + error.message, 'error'); setSaving(false); return }
+      addToast('Stats saved to database — homepage is live!', 'success')
+      setSaving(false)
+      load()
+    } catch (e) {
+      addToast('Save failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
+      setSaving(false)
+    }
   }
 
   return (

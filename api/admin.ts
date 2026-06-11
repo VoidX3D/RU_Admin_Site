@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { createHmac, randomBytes } from 'crypto'
+import { createHmac, createHash } from 'crypto'
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_SERVICE_KEY || ''
@@ -11,14 +11,16 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 const ADMIN_USER = process.env.ADMIN_USERNAME || process.env.VITE_ADMIN_USERNAME || ''
 const ADMIN_PASS = process.env.ADMIN_PASSWORD || process.env.VITE_ADMIN_PASSWORD || ''
 const MASTER_KEY = process.env.MASTER_KEY || process.env.VITE_MASTER_KEY || ''
-const JWT_SECRET = process.env.SUPABASE_JWT_SECRET || process.env.VITE_SUPABASE_JWT_SECRET || randomBytes(32).toString('hex')
+// Deterministic fallback so sessions survive Vercel cold starts when SUPABASE_JWT_SECRET is unset.
+// In production, always set SUPABASE_JWT_SECRET in Vercel environment variables.
+const JWT_SECRET = process.env.SUPABASE_JWT_SECRET || process.env.VITE_SUPABASE_JWT_SECRET || createHash('sha256').update(supabaseUrl + supabaseServiceKey).digest('hex')
 
 function b64url(s: string) { return Buffer.from(s).toString('base64url') }
 function fromB64url(s: string) { return Buffer.from(s, 'base64url').toString() }
 
 function signToken(user: string) {
   const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
-  const payload = b64url(JSON.stringify({ user, exp: Date.now() + 43200000 }))
+  const payload = b64url(JSON.stringify({ user, exp: Date.now() + 604800000 }))
   const sig = createHmac('sha256', JWT_SECRET).update(`${header}.${payload}`).digest('base64url')
   return `${header}.${payload}.${sig}`
 }
@@ -72,7 +74,15 @@ export default async function handler(req: any, res: any) {
     const result = await handleAction(action, params)
     return res.json(result)
   } catch (err: any) {
-    return res.status(500).json({ error: { message: err.message || 'Internal error' } })
+    console.error(`[${action}] Error:`, err)
+    const message = err?.message || 'Internal server error'
+    if (message.includes('relation') || message.includes('does not exist')) {
+      return res.status(500).json({ error: { message: 'Database schema missing — run migration SQL in Supabase', code: 'SCHEMA' } })
+    }
+    if (message.includes('JWT') || message.includes('jwt')) {
+      return res.status(401).json({ error: { message: 'JWT verification failed' } })
+    }
+    return res.status(500).json({ error: { message } })
   }
 }
 
