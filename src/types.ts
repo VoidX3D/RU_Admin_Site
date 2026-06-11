@@ -21,10 +21,9 @@ export interface AnnouncementEntry {
 export interface AnnouncementFull {
   id: string; title: string; tag?: string; status?: string;
   tags?: string[]; date: string; day?: string; deadline?: string;
-  time?: string; location?: string; issued_by?: string;
+  issued_by?: string;
   summary: string; description: string; importance?: string;
   instructions?: string; image?: string; active?: boolean;
-  gallery?: { url: string; alt?: string }[];
 }
 export interface Member {
   name: string; class?: string; role: string; image?: string; member_type?: string;

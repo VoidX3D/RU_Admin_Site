@@ -29,8 +29,6 @@ export function AnnouncementsPage() {
   const [fStatus, setFStatus] = useState('')
   const [fDate, setFDate] = useState('')
   const [fDay, setFDay] = useState('')
-  const [fTime, setFTime] = useState('')
-  const [fLoc, setFLoc] = useState('')
   const [fIssued, setFIssued] = useState('')
   const [fSummary, setFSummary] = useState('')
   const [fDesc, setFDesc] = useState('')
@@ -40,7 +38,6 @@ export function AnnouncementsPage() {
   const [fDeadline, setFDeadline] = useState('')
   const [fTags, setFTags] = useState<string[]>([])
   const [fImg, setFImg] = useState<PendingImage | null>(null)
-  const [fGallery, setFGallery] = useState<PendingImage[]>([])
   const [saving, setSaving] = useState(false)
   const tagInputRef = useRef<HTMLInputElement>(null)
 
@@ -77,9 +74,9 @@ export function AnnouncementsPage() {
     const n = String(anns.length + 1).padStart(2, '0')
     setFId('announcement-' + n); setFTitle(''); setFTag('Update'); setFStatus('')
     setFDate(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))
-    setFDay(''); setFTime(''); setFLoc(''); setFIssued('')
+    setFDay(''); setFIssued('')
     setFSummary(''); setFDesc(''); setFImport(''); setFInstr('')
-    setFActive(true); setFDeadline(''); setFTags([]); setFImg(null); setFGallery([]); setErrors({}); setMode('form')
+    setFActive(true); setFDeadline(''); setFTags([]); setFImg(null); setErrors({}); setMode('form')
   }
 
   function addTag(tag: string) {
@@ -105,8 +102,7 @@ export function AnnouncementsPage() {
     try {
       const info = await fetchAnnouncementDetail(annId)
       if (info) {
-        setFStatus(info.status || ''); setFTime(info.time || '')
-        setFLoc(info.location || ''); setFIssued(info.issued_by || '')
+        setFStatus(info.status || ''); setFIssued(info.issued_by || '')
         setFDesc(info.description || ''); setFImport(info.importance || '')
         setFInstr(info.instructions || ''); setFDeadline(info.deadline || '')
         if (info.image) {
@@ -115,12 +111,7 @@ export function AnnouncementsPage() {
         if (info.tags && Array.isArray(info.tags)) {
           setFTags(info.tags)
         }
-        if (info.gallery && Array.isArray(info.gallery)) {
-          setFGallery(info.gallery.map((g: { url: string; alt?: string }) => {
-            const url = typeof g === 'string' ? g : g.url
-            return { dataUrl: url, name: url.split('/').pop() || 'gallery', remote: true }
-          }))
-        }
+
       }
     } catch {
       addToast('Failed to load announcement details', 'error')
@@ -149,24 +140,12 @@ export function AnnouncementsPage() {
         if (result.url) imageUrl = result.url
       }
 
-      const galleryUrls: string[] = []
-      for (let i = 0; i < fGallery.length; i++) {
-        if (fGallery[i].remote && fGallery[i].dataUrl.startsWith('http')) {
-          galleryUrls.push(fGallery[i].dataUrl)
-        } else if (fGallery[i].dataUrl.startsWith('data:')) {
-          const filename = `announcements/${fId}/gallery-${String(i + 1).padStart(2, '0')}.jpg`
-          const result = await uploadBase64Image('public', filename, fGallery[i].dataUrl)
-          if (result.url) galleryUrls.push(result.url)
-        }
-      }
-
       const { error } = await saveAnnouncement(fId, {
         title: fTitle, tag: fTag, status: fStatus, date: fDate,
-        day: fDay, time: fTime, location: fLoc, issued_by: fIssued,
+        day: fDay, issued_by: fIssued,
         summary: fSummary, description: fDesc, importance: fImport,
         instructions: fInstr, active: fActive, deadline: fDeadline, image: imageUrl,
         tags: fTags,
-        gallery: galleryUrls,
       })
       if (error) { addToast(error.message, 'error'); return }
 
@@ -271,8 +250,6 @@ export function AnnouncementsPage() {
             <div className="p-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Day" value={fDay} onChange={setFDay} placeholder="e.g. Monday" />
-                <Field label="Time" value={fTime} onChange={setFTime} placeholder="e.g. 9:00 AM" />
-                <Field label="Location" value={fLoc} onChange={setFLoc} placeholder="e.g. School ground" />
                 <Field label="Issued By" value={fIssued} onChange={setFIssued} placeholder="e.g. Club Coordinator" />
               </div>
             </div>
@@ -357,17 +334,7 @@ export function AnnouncementsPage() {
             </div>
           </div>
 
-          {/* Gallery */}
-          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
-            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-emerald-400"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Gallery ({fGallery.length})</h3>
-            </div>
-            <div className="p-4">
-              <ImageUpload images={fGallery} onChange={setFGallery} />
-              <div className="mt-2 text-[10px] dark:text-zinc-700">Additional images for the announcement gallery.</div>
-            </div>
-          </div>
+
         </div>
     </motion.div>
   )
@@ -386,7 +353,7 @@ export function AnnouncementsPage() {
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Announcements</h2>
-          <p className="mt-0.5 text-xs dark:text-zinc-600">Create and manage announcements with tags & gallery</p>
+          <p className="mt-0.5 text-xs dark:text-zinc-600">Create and manage announcements</p>
         </div>
         <div className="flex items-center gap-2">
           <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={load}>

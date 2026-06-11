@@ -214,25 +214,18 @@ async function handleAction(action: string, params: any) {
       const { id } = params
       const { data: announcement } = await supabaseAdmin.from('announcements').select('*').eq('id', id).single()
       if (!announcement) return { data: null }
-      const [tagsRes, galleryRes] = await Promise.all([
-        supabaseAdmin.from('announcement_tags').select('tag').eq('announcement_id', id).order('sort_order'),
-        supabaseAdmin.from('announcement_gallery').select('url, alt').eq('announcement_id', id).order('sort_order'),
-      ])
+      const { data: tags } = await supabaseAdmin.from('announcement_tags').select('tag').eq('announcement_id', id).order('sort_order')
       return {
         data: {
           ...announcement,
           image: announcement.image ? (announcement.image.startsWith('http') ? announcement.image : storageUrl(announcement.image.startsWith('announcements/') ? announcement.image : `announcements/${announcement.image}`)) : null,
-          tags: (tagsRes.data || []).map((t: any) => t.tag),
-          gallery: (galleryRes.data || []).map((g: any) => ({
-            url: g.url.startsWith('http') ? g.url : storageUrl(g.url.startsWith('announcements/') ? g.url : `announcements/${g.url}`),
-            alt: g.alt,
-          })),
+          tags: (tags || []).map((t: any) => t.tag),
         },
       }
     }
     case 'announcements:save': {
       const { id, fields } = params
-      const { tags, gallery, ...dataFields } = fields
+      const { tags, ...dataFields } = fields
       const { error: e } = await supabaseAdmin.from('announcements').upsert({ id, ...dataFields })
       if (e) return { error: { message: e.message } }
       if (tags !== undefined) {
@@ -242,26 +235,11 @@ async function handleAction(action: string, params: any) {
           if (e2) return { error: { message: e2.message } }
         }
       }
-      if (gallery !== undefined) {
-        await supabaseAdmin.from('announcement_gallery').delete().eq('announcement_id', id)
-        const urls = Array.isArray(gallery) ? [...gallery] : []
-        if (urls.length === 0 && dataFields.image) {
-          urls.push(dataFields.image)
-        }
-        if (urls.length > 0) {
-          const { error: e2 } = await supabaseAdmin.from('announcement_gallery').insert(urls.map((url, i) => {
-            const isFullUrl = url.startsWith('http')
-            return { announcement_id: id, url: isFullUrl ? url : url.split('/').pop() || `gallery-${i}.jpg`, alt: '', sort_order: i }
-          }))
-          if (e2) return { error: { message: e2.message } }
-        }
-      }
       return { error: null }
     }
     case 'announcements:delete': {
       const { id } = params
       await supabaseAdmin.from('announcement_tags').delete().eq('announcement_id', id)
-      await supabaseAdmin.from('announcement_gallery').delete().eq('announcement_id', id)
       await supabaseAdmin.from('announcements').delete().eq('id', id)
       return { error: null }
     }
