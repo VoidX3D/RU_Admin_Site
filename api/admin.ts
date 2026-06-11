@@ -1,47 +1,37 @@
 import { createClient } from '@supabase/supabase-js'
-import { createHash } from 'crypto'
+import { createHash, createHmac, randomBytes } from 'crypto'
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_SERVICE_KEY || ''
 
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: { storageKey: 'sb-ruclub-admin-service' },
+  auth: { autoRefreshToken: false, persistSession: false },
 })
 
+const ADMIN_USER = process.env.ADMIN_USERNAME || process.env.VITE_ADMIN_USERNAME || ''
 const ADMIN_PASS_HASH = process.env.ADMIN_PASSWORD || process.env.VITE_ADMIN_PASSWORD || ''
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || ''
 const MASTER_KEY = process.env.MASTER_KEY || process.env.VITE_MASTER_KEY || ''
+const TOKEN_SECRET = process.env.TOKEN_SECRET || process.env.VITE_TOKEN_SECRET || randomBytes(32).toString('hex')
 
-async function signInWithPass(pass: string) {
-  const { data, error } = await supabaseAdmin.auth.signInWithPassword({ email: ADMIN_EMAIL, password: pass })
-  return { data, error }
+function signToken(user: string) {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url')
+  const payload = Buffer.from(JSON.stringify({ user, exp: Date.now() + 43200000 })).toString('base64url')
+  const sig = createHmac('sha256', TOKEN_SECRET).update(`${header}.${payload}`).digest('base64url')
+  return `${header}.${payload}.${sig}`
 }
 
-async function getAdminUserId() {
-  const { data } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 100 })
-  return data?.users?.find(u => u.email === ADMIN_EMAIL)?.id || null
-}
-
-async function ensureAdminUser(pass: string) {
-  const id = await getAdminUserId()
-  if (id) {
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(id, { password: pass })
-    if (error) throw error
-  } else {
-    const { error } = await supabaseAdmin.auth.admin.createUser({ email: ADMIN_EMAIL, password: pass, email_confirm: true })
-    if (error) throw error
+function verifyToken(token: string) {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    const sig = createHmac('sha256', TOKEN_SECRET).update(`${parts[0]}.${parts[1]}`).digest('base64url')
+    if (sig !== parts[2]) return null
+    const { user, exp } = JSON.parse(Buffer.from(parts[1], 'base64url').toString())
+    if (Date.now() > exp) return null
+    return { user }
+  } catch {
+    return null
   }
-}
-
-async function createSession(pass: string) {
-  let { data, error } = await signInWithPass(pass)
-  if (error) {
-    await ensureAdminUser(pass)
-    const retry = await signInWithPass(pass)
-    data = retry.data
-    error = retry.error
-  }
-  return { data, error }
 }
 
 export default async function handler(req: any, res: any) {
@@ -58,32 +48,24 @@ export default async function handler(req: any, res: any) {
     const { username, password } = params
 
     if (MASTER_KEY && password === MASTER_KEY) {
-      if (!ADMIN_EMAIL) return res.status(500).json({ error: 'ADMIN_EMAIL not configured' })
-      const { data, error } = await createSession(MASTER_KEY)
-      if (error) return res.status(500).json({ error: 'Master key session failed', details: error.message })
-      return res.json({ token: data.session.access_token, user: username || 'master' })
+      return res.json({ token: signToken('master'), user: username || 'master' })
     }
 
     if (!username || !password) return res.status(400).json({ error: 'Missing credentials' })
 
-    if (!ADMIN_EMAIL) return res.status(500).json({ error: 'ADMIN_EMAIL not configured' })
-
-    if (username !== ADMIN_EMAIL && username !== ADMIN_EMAIL.split('@')[0]) {
-      return res.status(401).json({ error: 'Invalid credentials' })
-    }
-
+    const userMatch = ADMIN_USER.includes('@')
+      ? (username === ADMIN_USER || username === ADMIN_USER.split('@')[0])
+      : username === ADMIN_USER
+    if (!userMatch) return res.status(401).json({ error: 'Invalid credentials' })
     if (createHash('sha256').update(password).digest('hex') !== ADMIN_PASS_HASH) {
       return res.status(401).json({ error: 'Invalid credentials' })
     }
 
-    const { data, error } = await createSession(ADMIN_PASS_HASH)
-    if (error) return res.status(500).json({ error: 'Failed to create session', details: error.message })
-
-    return res.json({ token: data.session.access_token, user: username })
+    return res.json({ token: signToken(username), user: username })
   }
 
-  const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(tokenStr || '')
-  if (userError || !userData?.user) return res.status(401).json({ error: 'Invalid or expired token' })
+  const session = verifyToken(tokenStr || '')
+  if (!session) return res.status(401).json({ error: 'Invalid or expired token' })
 
   try {
     const result = await handleAction(action, params)
