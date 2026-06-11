@@ -141,7 +141,7 @@ export function AnnouncementsPage() {
       }
 
       const { error } = await saveAnnouncement(fId, {
-        title: fTitle, tag: fTag, status: fStatus, date: fDate,
+        title: fTitle, tag: fTag, status: fStatus || null, date: fDate,
         day: fDay, issued_by: fIssued,
         summary: fSummary, description: fDesc, importance: fImport,
         instructions: fInstr, active: fActive, deadline: fDeadline, image: imageUrl,
