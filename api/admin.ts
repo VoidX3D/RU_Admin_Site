@@ -1,8 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
-import { createHmac, createHash } from 'crypto'
+import { createHmac, createHash } from 'node:crypto'
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ''
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_SERVICE_KEY || ''
+// Fallback to anon key so the API works even when SUPABASE_SERVICE_KEY is not set.
+// In production, always set SUPABASE_SERVICE_KEY in Vercel env vars for security.
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
 
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -56,13 +58,17 @@ export default async function handler(req: any, res: any) {
   if (action === 'login') {
     const { username, password } = params
 
+    if (!ADMIN_USER && !MASTER_KEY) {
+      return res.status(500).json({ error: { message: 'Admin credentials not configured. Set ADMIN_USERNAME, ADMIN_PASSWORD in Vercel env vars.' } })
+    }
+
     if (MASTER_KEY && password === MASTER_KEY) {
       return res.json({ token: signToken('master'), user: username || 'master' })
     }
 
-    if (!username || !password) return res.status(400).json({ error: 'Missing credentials' })
-    if (!isValidUser(username)) return res.status(401).json({ error: 'Invalid credentials' })
-    if (password !== ADMIN_PASS) return res.status(401).json({ error: 'Invalid credentials' })
+    if (!username || !password) return res.status(400).json({ error: { message: 'Missing credentials' } })
+    if (!isValidUser(username)) return res.status(401).json({ error: { message: 'Invalid credentials' } })
+    if (password !== ADMIN_PASS) return res.status(401).json({ error: { message: 'Invalid credentials' } })
 
     return res.json({ token: signToken(username), user: username })
   }
