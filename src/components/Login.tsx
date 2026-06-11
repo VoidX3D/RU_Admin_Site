@@ -287,20 +287,20 @@ export function Login() {
             )}
 
             <div>
-              <label className="mb-1.5 block text-xs font-medium tracking-wide text-zinc-500 uppercase">Username</label>
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 dark:text-zinc-600">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                </div>
-                <input
-                  value={user}
-                  onChange={e => { setUser(e.target.value); setError('') }}
-                  onKeyDown={e => e.key === 'Enter' && handleLogin()}
-                  placeholder="Enter your username"
-                  autoFocus
-                  className="w-full rounded-lg border dark:border-zinc-800 bg-white dark:bg-zinc-900/50 py-2.5 pl-10 pr-3 text-sm text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition-all focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20"
-                />
-              </div>
+                    <label className="mb-1.5 block text-xs font-medium tracking-wide text-zinc-500 uppercase">Email</label>
+                    <div className="relative">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 dark:text-zinc-600">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      </div>
+                      <input
+                        value={user}
+                        onChange={e => { setUser(e.target.value); setError('') }}
+                        onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                        placeholder="admin@example.com"
+                        autoFocus
+                        className="w-full rounded-lg border dark:border-zinc-800 bg-white dark:bg-zinc-900/50 py-2.5 pl-10 pr-3 text-sm text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition-all focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20"
+                      />
+                    </div>
             </div>
 
             <div>

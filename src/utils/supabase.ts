@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { Storage } from './storage'
+import { useStore } from '../store'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
@@ -10,6 +11,12 @@ export const supabaseAnon = hasSupabase
   ? createClient(supabaseUrl, supabaseAnonKey, { auth: { storageKey: 'sb-ruclub-admin-anon' } })
   : (null as unknown as ReturnType<typeof createClient>)
 
+function handleUnauthorized() {
+  Storage.clearSession()
+  useStore.getState().setView('login')
+  useStore.getState().addToast('Session expired. Please log in again.', 'warning')
+}
+
 async function api(action: string, params?: Record<string, unknown>): Promise<any> {
   const token = Storage.getToken()
   const res = await fetch('/api/admin', {
@@ -17,6 +24,13 @@ async function api(action: string, params?: Record<string, unknown>): Promise<an
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action, token, ...params }),
   })
+  if (!res.ok) {
+    if (res.status === 401) {
+      handleUnauthorized()
+      return { data: null, error: { message: 'Session expired' } }
+    }
+    throw new Error(`Request failed (${res.status})`)
+  }
   return res.json()
 }
 
@@ -26,6 +40,10 @@ export async function login(username: string, password: string) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'login', username, password }),
   })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    return { error: body.error || `Login failed (${res.status})` }
+  }
   return res.json()
 }
 

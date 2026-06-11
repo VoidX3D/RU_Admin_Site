@@ -1,26 +1,38 @@
 import { createClient } from '@supabase/supabase-js'
-import jwt from 'jsonwebtoken'
+import { createHash } from 'crypto'
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_SERVICE_KEY || ''
-const jwtSecret = process.env.JWT_SECRET || 'ru-admin-secret-change-in-production'
 
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   auth: { storageKey: 'sb-ruclub-admin-service' },
 })
 
-function token(user: string) {
-  return jwt.sign({ user, role: 'admin' }, jwtSecret, { expiresIn: '12h' })
-}
-
-function verify(tokenStr: string) {
-  try { return jwt.verify(tokenStr, jwtSecret) as { user: string } }
-  catch { return null }
-}
-
 const ADMIN_USER = process.env.ADMIN_USERNAME || process.env.VITE_ADMIN_USERNAME || ''
-const ADMIN_PASS = process.env.ADMIN_PASSWORD || process.env.VITE_ADMIN_PASSWORD || ''
-const MASTER_KEY = process.env.MASTER_KEY || process.env.VITE_MASTER_KEY || ''
+const ADMIN_PASS_HASH = process.env.ADMIN_PASSWORD || process.env.VITE_ADMIN_PASSWORD || ''
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || ''
+
+async function signInWithPass(pass: string) {
+  const { data, error } = await supabaseAdmin.auth.signInWithPassword({
+    email: ADMIN_EMAIL,
+    password: pass,
+  })
+  return { data, error }
+}
+
+async function ensureAdminUser(pass: string) {
+  const { data: existing } = await supabaseAdmin.auth.admin.listUsers()
+  const found = existing?.users?.find(u => u.email === ADMIN_EMAIL)
+  if (found) {
+    await supabaseAdmin.auth.admin.updateUserById(found.id, { password: pass })
+  } else {
+    await supabaseAdmin.auth.admin.createUser({
+      email: ADMIN_EMAIL,
+      password: pass,
+      email_confirm: true,
+    })
+  }
+}
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -36,19 +48,28 @@ export default async function handler(req: any, res: any) {
     const { username, password } = params
     if (!username || !password) return res.status(400).json({ error: 'Missing credentials' })
 
-    if (MASTER_KEY && password === MASTER_KEY) {
-      return res.json({ token: token('master'), user: 'master' })
+    const passHash = createHash('sha256').update(password).digest('hex')
+
+    if (username !== ADMIN_USER || passHash !== ADMIN_PASS_HASH) {
+      return res.status(401).json({ error: 'Invalid credentials' })
     }
 
-    if (username === ADMIN_USER && password === ADMIN_PASS) {
-      return res.json({ token: token(username), user: username })
-    }
+    if (!ADMIN_EMAIL) return res.status(500).json({ error: 'ADMIN_EMAIL not configured' })
 
-    return res.status(401).json({ error: 'Invalid credentials' })
+    let { data, error } = await signInWithPass(passHash)
+    if (error) {
+      await ensureAdminUser(passHash).catch(() => {})
+      const retry = await signInWithPass(passHash)
+      data = retry.data
+      error = retry.error
+    }
+    if (error) return res.status(500).json({ error: 'Failed to create session' })
+
+    return res.json({ token: data.session.access_token, user: username })
   }
 
-  const session = verify(tokenStr || '')
-  if (!session) return res.status(401).json({ error: 'Invalid or expired token' })
+  const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(tokenStr || '')
+  if (userError || !userData?.user) return res.status(401).json({ error: 'Invalid or expired token' })
 
   try {
     const result = await handleAction(action, params)

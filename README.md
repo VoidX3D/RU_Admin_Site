@@ -118,26 +118,17 @@ Create a `.env` file in the project root:
 # Supabase
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
-VITE_SUPABASE_SERVICE_KEY=your-service-role-key
 
-# Admin login (used for login form authentication)
-VITE_ADMIN_USERNAME=your-username
-VITE_ADMIN_PASSWORD=your-password
-
-# Master key (optional — overrides normal auth, enter as password with any username)
-VITE_MASTER_KEY=your-secret-master-password
-
-# Pull request verification code (for PR workflow if enabled)
-VITE_PR_VERIFY_CODE=your-verification-code
-
-# GitHub settings (for PR workflow and branch management)
-VITE_GITHUB_OWNER=VoidX3D
-VITE_GITHUB_REPO=RU_Club_Website
-VITE_GITHUB_BRANCH=main
-
-# Production mode (locks settings to env-only)
+# Production mode
 VITE_PRODUCTION_MODE=true
 ```
+
+> **Server-only env vars** (set in Vercel dashboard, never in `.env`):
+> - `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` — Supabase project credentials
+> - `ADMIN_USERNAME` — admin username for login
+> - `ADMIN_PASSWORD` — SHA256 hex hash of the admin password (use `echo -n "yourpass" | sha256sum`)
+> - `ADMIN_EMAIL` — email of a Supabase Auth user (created automatically if missing)
+> - `MASTER_KEY` — optional override; enter as password with any username to bypass normal auth
 
 ### 3. Run
 
