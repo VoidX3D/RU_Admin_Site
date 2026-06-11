@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { fetchMembers, saveMembers, uploadBase64Image } from '../utils/supabase'
-import type { Member } from '../types'
-import { UsersIcon, PlusIcon, XIcon, RefreshIcon, ImageIcon } from './Icons'
+import { UsersIcon, PlusIcon, XIcon, RefreshIcon, ImageIcon, DownloadIcon } from './Icons'
 
 type Tab = 'teachers' | 'core' | 'general'
 
@@ -108,6 +107,36 @@ export function MembersPage() {
     return url
   }
 
+  const [showExport, setShowExport] = useState(false)
+
+  function exportCSV() {
+    const headers = ['Name', 'Class', 'Role', 'Type', 'Group', 'Image']
+    const rows: string[][] = []
+    teachers.forEach(m => rows.push([m.name, m.class || '', m.role, m.member_type || '', 'Teachers', m.image || '']))
+    core.forEach(m => rows.push([m.name, m.class || '', m.role, m.member_type || '', 'Core Team', m.image || '']))
+    general.forEach(m => rows.push([m.name, m.class || '', m.role, m.member_type || '', 'General', m.image || '']))
+
+    const csv = [headers, ...rows].map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `members_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click(); URL.revokeObjectURL(url)
+    setShowExport(false)
+    addToast('Members exported as CSV', 'success')
+  }
+
+  function exportJSON() {
+    const data = { teachers, core, general, exported: new Date().toISOString() }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `members_${new Date().toISOString().slice(0, 10)}.json`
+    a.click(); URL.revokeObjectURL(url)
+    setShowExport(false)
+    addToast('Members exported as JSON', 'success')
+  }
+
   async function handleSave() {
     setSaving(true)
     try {
@@ -162,6 +191,27 @@ export function MembersPage() {
           <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 px-3 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200" onClick={load}>
             <RefreshIcon size={13} /> Refresh
           </button>
+          <div className="relative">
+            <button
+              className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 px-3 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200"
+              onClick={() => setShowExport(!showExport)}
+            >
+              <DownloadIcon size={13} /> Export
+            </button>
+            {showExport && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowExport(false)} />
+                <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1 shadow-lg">
+                  <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={exportCSV}>
+                    Export as CSV
+                  </button>
+                  <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={exportJSON}>
+                    Export as JSON
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <button
             className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50"
             onClick={handleSave}
