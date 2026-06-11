@@ -125,9 +125,8 @@ VITE_PRODUCTION_MODE=true
 
 > **Server-only env vars** (set in Vercel dashboard, never in `.env`):
 > - `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` — Supabase project credentials
-> - `ADMIN_USERNAME` — admin username for login
 > - `ADMIN_PASSWORD` — SHA256 hex hash of the admin password (use `echo -n "yourpass" | sha256sum`)
-> - `ADMIN_EMAIL` — email of a Supabase Auth user (created automatically if missing)
+> - `ADMIN_EMAIL` — email of a Supabase Auth user (created automatically if missing); login accepts full email or local part
 > - `MASTER_KEY` — optional override; enter as password with any username to bypass normal auth
 
 ### 3. Run
