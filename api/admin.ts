@@ -100,7 +100,7 @@ async function handleAction(action: string, params: any) {
           stats: (stats.data || []).map((s: any) => ({ label: s.label, value: s.value })),
           partners: (partners.data || []).map((p: any) => p.name),
           images: (images.data || []).map((i: any) => ({
-            url: storageUrl(`mission/${mission.slug}/${i.url}`),
+            url: i.url.startsWith('http') ? i.url : storageUrl(`mission/${mission.slug}/${i.url}`),
             alt: i.alt,
           })),
           goals: (goals.data || []).map((g: any) => g.goal),
