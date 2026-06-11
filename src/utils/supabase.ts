@@ -27,7 +27,7 @@ async function api(action: string, params?: Record<string, unknown>): Promise<an
   if (!res.ok) {
     if (res.status === 401) {
       handleUnauthorized()
-      return { data: null, error: { message: 'Session expired' } }
+      return { data: null, _expired: true }
     }
     throw new Error(`Request failed (${res.status})`)
   }

@@ -13,25 +13,35 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || '
 const MASTER_KEY = process.env.MASTER_KEY || process.env.VITE_MASTER_KEY || ''
 
 async function signInWithPass(pass: string) {
-  const { data, error } = await supabaseAdmin.auth.signInWithPassword({
-    email: ADMIN_EMAIL,
-    password: pass,
-  })
+  const { data, error } = await supabaseAdmin.auth.signInWithPassword({ email: ADMIN_EMAIL, password: pass })
   return { data, error }
 }
 
+async function getAdminUserId() {
+  const { data } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 100 })
+  return data?.users?.find(u => u.email === ADMIN_EMAIL)?.id || null
+}
+
 async function ensureAdminUser(pass: string) {
-  const { data: existing } = await supabaseAdmin.auth.admin.listUsers()
-  const found = existing?.users?.find(u => u.email === ADMIN_EMAIL)
-  if (found) {
-    await supabaseAdmin.auth.admin.updateUserById(found.id, { password: pass })
+  const id = await getAdminUserId()
+  if (id) {
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(id, { password: pass })
+    if (error) throw error
   } else {
-    await supabaseAdmin.auth.admin.createUser({
-      email: ADMIN_EMAIL,
-      password: pass,
-      email_confirm: true,
-    })
+    const { error } = await supabaseAdmin.auth.admin.createUser({ email: ADMIN_EMAIL, password: pass, email_confirm: true })
+    if (error) throw error
   }
+}
+
+async function createSession(pass: string) {
+  let { data, error } = await signInWithPass(pass)
+  if (error) {
+    await ensureAdminUser(pass)
+    const retry = await signInWithPass(pass)
+    data = retry.data
+    error = retry.error
+  }
+  return { data, error }
 }
 
 export default async function handler(req: any, res: any) {
@@ -49,14 +59,8 @@ export default async function handler(req: any, res: any) {
 
     if (MASTER_KEY && password === MASTER_KEY) {
       if (!ADMIN_EMAIL) return res.status(500).json({ error: 'ADMIN_EMAIL not configured' })
-      let { data, error } = await signInWithPass(MASTER_KEY)
-      if (error) {
-        await ensureAdminUser(MASTER_KEY).catch(() => {})
-        const retry = await signInWithPass(MASTER_KEY)
-        data = retry.data
-        error = retry.error
-      }
-      if (error) return res.status(500).json({ error: 'Master key session failed' })
+      const { data, error } = await createSession(MASTER_KEY)
+      if (error) return res.status(500).json({ error: 'Master key session failed', details: error.message })
       return res.json({ token: data.session.access_token, user: username || 'master' })
     }
 
@@ -64,38 +68,16 @@ export default async function handler(req: any, res: any) {
 
     if (!ADMIN_EMAIL) return res.status(500).json({ error: 'ADMIN_EMAIL not configured' })
 
-    const emailLocal = ADMIN_EMAIL.split('@')[0]
-
-    if (MASTER_KEY && password === MASTER_KEY) {
-      let { data, error } = await signInWithPass(MASTER_KEY)
-      if (error) {
-        await ensureAdminUser(MASTER_KEY).catch(() => {})
-        const retry = await signInWithPass(MASTER_KEY)
-        data = retry.data
-        error = retry.error
-      }
-      if (error) return res.status(500).json({ error: 'Master key session failed' })
-      return res.json({ token: data.session.access_token, user: username })
-    }
-
-    if (username !== ADMIN_EMAIL && username !== emailLocal) {
+    if (username !== ADMIN_EMAIL && username !== ADMIN_EMAIL.split('@')[0]) {
       return res.status(401).json({ error: 'Invalid credentials' })
     }
 
-    const passHash = createHash('sha256').update(password).digest('hex')
-
-    if (passHash !== ADMIN_PASS_HASH) {
+    if (createHash('sha256').update(password).digest('hex') !== ADMIN_PASS_HASH) {
       return res.status(401).json({ error: 'Invalid credentials' })
     }
 
-    let { data, error } = await signInWithPass(passHash)
-    if (error) {
-      await ensureAdminUser(passHash).catch(() => {})
-      const retry = await signInWithPass(passHash)
-      data = retry.data
-      error = retry.error
-    }
-    if (error) return res.status(500).json({ error: 'Failed to create session' })
+    const { data, error } = await createSession(ADMIN_PASS_HASH)
+    if (error) return res.status(500).json({ error: 'Failed to create session', details: error.message })
 
     return res.json({ token: data.session.access_token, user: username })
   }
@@ -113,7 +95,6 @@ export default async function handler(req: any, res: any) {
 
 async function handleAction(action: string, params: any) {
   switch (action) {
-    // Missions
     case 'missions:list': {
       const { data } = await supabaseAdmin.from('missions').select('*').order('date', { ascending: false })
       return { data: data || [] }
@@ -221,7 +202,6 @@ async function handleAction(action: string, params: any) {
       return { error: null }
     }
 
-    // Announcements
     case 'announcements:list': {
       const { data } = await supabaseAdmin.from('announcements').select('*').order('date', { ascending: false })
       return { data: data || [] }
@@ -278,7 +258,6 @@ async function handleAction(action: string, params: any) {
       return { error: null }
     }
 
-    // Members
     case 'members:list': {
       const { data } = await supabaseAdmin.from('members').select('*').order('sort_order')
       if (!data) return { data: null }
@@ -311,7 +290,6 @@ async function handleAction(action: string, params: any) {
       return { error: null }
     }
 
-    // Stats
     case 'stats:list': {
       const { data } = await supabaseAdmin.from('stats').select('*').order('sort_order')
       return { data: data || [] }
@@ -323,7 +301,6 @@ async function handleAction(action: string, params: any) {
       return { error: null }
     }
 
-    // Partners
     case 'partners:list': {
       const { data } = await supabaseAdmin.from('partners').select('*').order('sort_order')
       return {
@@ -339,7 +316,6 @@ async function handleAction(action: string, params: any) {
       return { error: null }
     }
 
-    // Contact submissions
     case 'contact:list': {
       const { data } = await supabaseAdmin.from('contact_submissions').select('*').order('created_at', { ascending: false })
       return { data: data || [] }
@@ -350,7 +326,6 @@ async function handleAction(action: string, params: any) {
       return { error: null }
     }
 
-    // Image upload
     case 'image:upload': {
       const { bucket, path: imgPath, dataUrl } = params
       const res = await fetch(dataUrl)
@@ -363,7 +338,6 @@ async function handleAction(action: string, params: any) {
       return { url: publicUrl, error: null }
     }
 
-    // DB check
     case 'db:check': {
       const { error } = await supabaseAdmin.from('stats').select('id', { count: 'exact', head: true }).limit(1)
       return { connected: !error }
