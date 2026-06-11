@@ -287,7 +287,7 @@ export function Login() {
             )}
 
             <div>
-                    <label className="mb-1.5 block text-xs font-medium tracking-wide text-zinc-500 uppercase">Email</label>
+                    <label className="mb-1.5 block text-xs font-medium tracking-wide text-zinc-500 uppercase">Email or Username</label>
                     <div className="relative">
                       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 dark:text-zinc-600">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
