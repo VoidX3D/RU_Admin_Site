@@ -50,7 +50,10 @@ export default async function handler(req: any, res: any) {
 
     const passHash = createHash('sha256').update(password).digest('hex')
 
-    if (username !== ADMIN_USER || passHash !== ADMIN_PASS_HASH) {
+    if (
+      (username !== ADMIN_USER && username !== ADMIN_EMAIL && username !== ADMIN_EMAIL.split('@')[0])
+      || passHash !== ADMIN_PASS_HASH
+    ) {
       return res.status(401).json({ error: 'Invalid credentials' })
     }
 
