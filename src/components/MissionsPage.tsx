@@ -84,7 +84,8 @@ export function MissionsPage() {
     try {
       const live = await fetchMissions()
       setMissions(live || [])
-    } catch {
+    } catch (e) {
+      console.error('[Missions] Load failed:', e)
       setMissions([])
       addToast('Failed to load missions', 'error')
     }
@@ -156,7 +157,8 @@ export function MissionsPage() {
         })
         setFImages(imgs)
       }
-    } catch {
+    } catch (e) {
+      console.error('[Missions] Load details failed:', missionId, e)
       addToast('Failed to load mission details', 'error')
     }
     setMode('form')
@@ -235,6 +237,7 @@ export function MissionsPage() {
       setMode('list')
       loadMissions()
     } catch (e) {
+      console.error('[Missions] Save failed:', fId, e)
       addToast('Save failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
     } finally {
       setSaving(false)
@@ -254,6 +257,7 @@ export function MissionsPage() {
       removeDraft(`mission_${id}`)
       loadMissions()
     } catch (e) {
+      console.error('[Missions] Delete failed:', id, e)
       addToast('Delete failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
     }
   }
@@ -533,6 +537,7 @@ export function MissionsPage() {
                   const { error } = await saveMission(ctx.mission!.id, { ...ctx.mission, show: ctx.mission!.show === false })
                   if (!error) loadMissions()
                 } catch (e) {
+                  console.error('[Missions] Toggle failed:', e)
                   addToast('Toggle failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
                 }
               }

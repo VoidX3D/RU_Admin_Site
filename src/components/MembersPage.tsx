@@ -37,7 +37,7 @@ export function MembersPage() {
         setCore(d.core || [])
         setGeneral(d.general || [])
       }
-    } catch { addToast('Failed to load members', 'error') }
+    } catch (e) { console.error('[Members] Load failed:', e); addToast('Failed to load members', 'error') }
     setLoading(false)
   }
 
@@ -84,7 +84,8 @@ export function MembersPage() {
           } else {
             addToast('Upload failed', 'error')
           }
-        } catch {
+        } catch (e) {
+          console.error('[Members] Image upload failed:', e)
           addToast('Upload failed: network error', 'error')
         }
       }
@@ -168,6 +169,7 @@ export function MembersPage() {
       setValidationErrors({})
       load()
     } catch (e) {
+      console.error('[Members] Save failed:', e)
       addToast('Save failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
       setSaving(false)
     }

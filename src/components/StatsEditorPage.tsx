@@ -26,7 +26,8 @@ export function StatsEditorPage() {
     try {
       const data = await fetchStats()
       setStats(data || [])
-    } catch {
+    } catch (e) {
+      console.error('[StatsEditor] Load failed:', e)
       addToast('Failed to load stats', 'error')
     }
     setLoading(false)
@@ -97,6 +98,7 @@ export function StatsEditorPage() {
       setSaving(false)
       load()
     } catch (e) {
+      console.error('[StatsEditor] Save failed:', e)
       addToast('Save failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
       setSaving(false)
     }

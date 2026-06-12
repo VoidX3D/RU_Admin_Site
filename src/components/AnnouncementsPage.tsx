@@ -85,7 +85,8 @@ export function AnnouncementsPage() {
     try {
       const live = await fetchAnnouncements()
       setAnns(live || [])
-    } catch {
+    } catch (e) {
+      console.error('[Announcements] Load failed:', e)
       setAnns([])
       addToast('Failed to load announcements', 'error')
     }
@@ -157,7 +158,8 @@ export function AnnouncementsPage() {
           setFTags(info.tags)
         }
       }
-    } catch {
+    } catch (e) {
+      console.error('[Announcements] Load details failed:', annId, e)
       addToast('Failed to load announcement details', 'error')
     }
     setMode('form')
@@ -227,6 +229,7 @@ export function AnnouncementsPage() {
       setMode('list')
       load()
     } catch (e) {
+      console.error('[Announcements] Save failed:', fId, e)
       addToast('Save failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
     } finally {
       setSaving(false)
@@ -246,6 +249,7 @@ export function AnnouncementsPage() {
       removeDraft(`announcement_${id}`)
       load()
     } catch (e) {
+      console.error('[Announcements] Delete failed:', id, e)
       addToast('Delete failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
     }
   }
@@ -537,6 +541,7 @@ export function AnnouncementsPage() {
                   const { error } = await saveAnnouncement(ctx.ann!.id, { ...ctx.ann, status: ctx.ann!.status || null, active: ctx.ann!.active === false })
                   if (!error) load()
                 } catch (e) {
+                  console.error('[Announcements] Toggle failed:', e)
                   addToast('Toggle failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
                 }
               }

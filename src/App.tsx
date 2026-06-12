@@ -78,7 +78,8 @@ export default function App() {
       // Only check DB if authenticated
       checkDBConnection().then(connected => {
         setDbConnected(connected)
-      }).catch(() => {
+      }).catch((e) => {
+        console.error('[App] DB check failed:', e)
         setDbConnected(false)
       })
     }

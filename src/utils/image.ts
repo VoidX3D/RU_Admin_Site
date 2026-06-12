@@ -18,7 +18,8 @@ export function dataUrlToBlob(dataUrl: string): Blob {
     const arr = new Uint8Array(bytes.length);
     for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
     return new Blob([arr], { type: mime });
-  } catch {
+  } catch (e) {
+    console.error('[dataUrlToBlob] Failed to decode base64:', e)
     return new Blob([], { type: mime });
   }
 }
@@ -69,7 +70,7 @@ export async function processFiles(files: FileList | File[], maxCount = Infinity
   const arr = Array.from(files);
   for (const file of arr) {
     if (!ALLOWED.has(file.type)) continue;
-    try { results.push(await compress(file)); } catch {}
+    try { results.push(await compress(file)); } catch (e) { console.error('[processFiles] compress failed:', file.name, e) }
     if (results.length >= maxCount) break;
   }
   return results;
@@ -91,6 +92,7 @@ export async function uploadWithRetry(
       if (!result.error || attempt === maxRetries) return result
       lastError = result.error
     } catch (e) {
+      console.error(`[uploadWithRetry] Attempt ${attempt}/${maxRetries} failed:`, e)
       lastError = e
       if (attempt === maxRetries) return { error: lastError || 'Upload failed after retries' }
     }

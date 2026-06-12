@@ -28,7 +28,8 @@ export function PartnersEditorPage() {
     try {
       const data = await fetchPartners()
       setPartners(data || [])
-    } catch {
+    } catch (e) {
+      console.error('[PartnersEditor] Load failed:', e)
       addToast('Failed to load partners', 'error')
     }
     setLoading(false)
@@ -82,7 +83,8 @@ export function PartnersEditorPage() {
           } else {
             addToast('Upload failed', 'error')
           }
-        } catch {
+        } catch (e) {
+          console.error('[PartnersEditor] Image upload failed:', e)
           addToast('Upload failed: network error', 'error')
         }
       }
@@ -131,6 +133,7 @@ export function PartnersEditorPage() {
       setSaving(false)
       load()
     } catch (e) {
+      console.error('[PartnersEditor] Save failed:', e)
       addToast('Save failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
       setSaving(false)
     }

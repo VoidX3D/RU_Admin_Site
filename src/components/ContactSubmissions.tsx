@@ -34,7 +34,8 @@ export function ContactSubmissions() {
     try {
       const data = await fetchContactSubmissions()
       setSubmissions(data || [])
-    } catch {
+    } catch (e) {
+      console.error('[ContactSubmissions] Load failed:', e)
       setSubmissions([])
       addToast('Failed to load submissions', 'error')
     }
@@ -54,6 +55,7 @@ export function ContactSubmissions() {
       if (selected?.id === id) setSelected(null)
       load()
     } catch (e) {
+      console.error('[ContactSubmissions] Delete failed:', e)
       addToast('Delete failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
     }
   }

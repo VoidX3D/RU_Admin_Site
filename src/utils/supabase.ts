@@ -15,6 +15,7 @@ let _unauthorizedHandled = false
 
 function handleUnauthorized() {
   if (_unauthorizedHandled) return
+  console.warn('[supabase] Unauthorized — clearing session')
   _unauthorizedHandled = true
   Storage.clearSession()
   useStore.getState().logout()
@@ -48,6 +49,7 @@ async function api(action: string, params?: Record<string, unknown>): Promise<an
     }
     return res.json()
   } catch (e) {
+    console.error('[api] Request failed:', action, e)
     if (e instanceof DOMException && e.name === 'AbortError') {
       throw new Error('Request timed out')
     }
@@ -75,6 +77,7 @@ export async function login(username: string, password: string) {
     }
     return res.json()
   } catch (e) {
+    console.error('[login] Request failed:', e)
     if (e instanceof DOMException && e.name === 'AbortError') {
       return { error: { message: 'Request timed out. Check your connection.' } }
     }
@@ -204,7 +207,8 @@ export async function validateSession(): Promise<boolean> {
   try {
     await api('db:check')
     return true
-  } catch {
+  } catch (e) {
+    console.error('[validateSession] Failed:', e)
     return false
   }
 }
