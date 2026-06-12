@@ -6,7 +6,6 @@ export function ConnectionStatus() {
   const dbConnected = useStore(s => s.dbConnected)
   const dbLastChecked = useStore(s => s.dbLastChecked)
   const setDbConnected = useStore(s => s.setDbConnected)
-  const addToast = useStore(s => s.addToast)
   const [checking, setChecking] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval>>()
 
