@@ -28,3 +28,4 @@ node_modules/
 
 # API / serverless
 api/*.js
+.env*

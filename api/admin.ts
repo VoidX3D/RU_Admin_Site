@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { createHmac, createHash } from 'node:crypto'
+import { createHmac, createHash, createSign, createVerify } from 'node:crypto'
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ''
 // Fallback to anon key so the API works even when SUPABASE_SERVICE_KEY is not set.
@@ -16,26 +16,56 @@ const MASTER_KEY = process.env.MASTER_KEY || process.env.VITE_MASTER_KEY || ''
 // Deterministic fallback so sessions survive Vercel cold starts when SUPABASE_JWT_SECRET is unset.
 // In production, always set SUPABASE_JWT_SECRET in Vercel environment variables.
 const JWT_SECRET = process.env.SUPABASE_JWT_SECRET || process.env.VITE_SUPABASE_JWT_SECRET || createHash('sha256').update(supabaseUrl + supabaseServiceKey).digest('hex')
+// ECDSA P-256 private key (PEM) for ES256 JWT signing. Set in Vercel env for production.
+// Generate: openssl ecparam -genkey -name prime256v1 -noout -out ec-private.pem
+// Copy the full PEM (including BEGIN/END lines) into JWT_EC_PRIVATE_KEY env var.
+// Falls back to HS256 when unset.
+const EC_PRIVATE_KEY = process.env.JWT_EC_PRIVATE_KEY || ''
+
+const USE_ES256 = !!EC_PRIVATE_KEY
 
 function b64url(s: string) { return Buffer.from(s).toString('base64url') }
 function fromB64url(s: string) { return Buffer.from(s, 'base64url').toString() }
 
 function signToken(user: string) {
-  const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+  const header = b64url(JSON.stringify({ alg: USE_ES256 ? 'ES256' : 'HS256', typ: 'JWT' }))
   const payload = b64url(JSON.stringify({ user, exp: Date.now() + 604800000 }))
-  const sig = createHmac('sha256', JWT_SECRET).update(`${header}.${payload}`).digest('base64url')
-  return `${header}.${payload}.${sig}`
+  const data = `${header}.${payload}`
+  if (USE_ES256) {
+    const signer = createSign('sha256')
+    signer.update(data)
+    signer.end()
+    const sig = signer.sign(EC_PRIVATE_KEY, 'base64url')
+    return `${data}.${sig}`
+  }
+  const sig = createHmac('sha256', JWT_SECRET).update(data).digest('base64url')
+  return `${data}.${sig}`
 }
 
 function verifyToken(token: string) {
   try {
     const parts = token.split('.')
     if (parts.length !== 3) return null
-    const sig = createHmac('sha256', JWT_SECRET).update(`${parts[0]}.${parts[1]}`).digest('base64url')
-    if (sig !== parts[2]) return null
     const { user, exp } = JSON.parse(fromB64url(parts[1]))
     if (Date.now() > exp) return null
-    return { user }
+    const data = `${parts[0]}.${parts[1]}`
+    const sig = parts[2]
+
+    // Try ES256 first if configured (handles tokens signed after upgrade)
+    if (USE_ES256) {
+      try {
+        const verifier = createVerify('sha256')
+        verifier.update(data)
+        verifier.end()
+        if (verifier.verify(EC_PRIVATE_KEY, sig, 'base64url')) return { user }
+      } catch {}
+    }
+
+    // Fall back to HS256 (handles legacy tokens or when ES256 is unset)
+    const expectedSig = createHmac('sha256', JWT_SECRET).update(data).digest('base64url')
+    if (expectedSig === sig) return { user }
+
+    return null
   } catch { return null }
 }
 
