@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useStore, checkLoginRateLimit, resetLoginRateLimit } from '../store'
 import { Storage } from '../utils/storage'
 import { login } from '../utils/supabase'
@@ -32,9 +32,13 @@ export function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [successUser, setSuccessUser] = useState('')
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const storeLogin = useStore(s => s.login)
   const setView = useStore(s => s.setView)
+  const addToast = useStore(s => s.addToast)
+  const triggerRefresh = useStore(s => s.triggerRefresh)
 
   useEffect(() => {
     setMounted(true)
@@ -176,7 +180,13 @@ export function Login() {
           if (rememberMe) localStorage.setItem('ru_admin_remembered_user', userField)
           else localStorage.removeItem('ru_admin_remembered_user')
         } catch {}
-        storeLogin(result.user || userField, rememberMe, expiresAt)
+        const displayUser = result.user || userField
+        setSuccessUser(displayUser)
+        setShowSuccess(true)
+        await new Promise(r => setTimeout(r, 1500))
+        storeLogin(displayUser, rememberMe, expiresAt)
+        addToast(`Welcome back, ${displayUser}!`, 'success')
+        triggerRefresh()
       } else {
         const err = result.error
         setError(typeof err === 'string' ? err : err?.message || (err ? JSON.stringify(err) : 'Invalid credentials. Check your email/password or use the master key.'))
@@ -190,6 +200,45 @@ export function Login() {
 
   return (
     <div className="fixed inset-0 flex dark:bg-zinc-950">
+      <AnimatePresence>
+        {showSuccess && (
+          <motion.div
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-zinc-950/90 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <motion.div
+              className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/30"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1, rotate: [0, 10, -10, 0] }}
+              transition={{ scale: { duration: 0.4, ease: [0.16, 1, 0.3, 1] }, rotate: { delay: 0.3, duration: 0.6 } }}
+            >
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </motion.div>
+            <motion.div
+              className="text-center"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+            >
+              <p className="text-lg font-semibold text-white">Welcome back</p>
+              <p className="mt-1 text-sm text-emerald-400">{successUser}</p>
+            </motion.div>
+            <motion.p
+              className="text-[11px] text-zinc-500"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
+            >
+              Redirecting to dashboard...
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Left Panel — Animated Background */}
       <div className="relative hidden w-[55%] overflow-hidden lg:block">
         <canvas ref={canvasRef} className="absolute inset-0" />

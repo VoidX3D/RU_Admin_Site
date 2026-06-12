@@ -35,9 +35,11 @@ export function Dashboard() {
   const setMembers = useStore(s => s.setMembers)
   const setView = useStore(s => s.setView)
   const refreshTrigger = useStore(s => s.refreshTrigger)
+  const triggerRefresh = useStore(s => s.triggerRefresh)
 
   const [liveStats, setLiveStats] = useState({ missions: '0', announcements: '0', members: '0' })
   const [loading, setLoading] = useState(true)
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null)
 
   useEffect(() => {
     setLoading(true)
@@ -67,10 +69,22 @@ export function Dashboard() {
       } catch {
         addToast('Failed to load dashboard data', 'error')
       }
+      setLastUpdated(Date.now())
       setLoading(false)
     }
     load()
   }, [refreshTrigger])
+
+  function timeAgo(ts: number): string {
+    const diff = Date.now() - ts
+    const secs = Math.floor(diff / 1000)
+    if (secs < 10) return 'just now'
+    if (secs < 60) return `${secs}s ago`
+    const mins = Math.floor(secs / 60)
+    if (mins < 60) return `${mins}m ago`
+    const hrs = Math.floor(mins / 60)
+    return `${hrs}h ago`
+  }
 
   const mCount = missions.length > 0 ? missions.length : liveStats.missions
   const aCount = announcements.length > 0 ? announcements.length : liveStats.announcements
@@ -101,6 +115,29 @@ export function Dashboard() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
+      <motion.div variants={item} className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <HomeIcon size={14} className="text-zinc-500" />
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Overview</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          {lastUpdated && (
+            <span className="text-[10px] text-zinc-500">
+              Updated {timeAgo(lastUpdated)}
+            </span>
+          )}
+          <button
+            onClick={() => { triggerRefresh(); addToast('Refreshing dashboard...', 'info') }}
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </motion.div>
       <motion.div variants={item} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((c, i) => (
           <motion.div
