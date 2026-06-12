@@ -166,9 +166,8 @@ export function MissionsPage() {
     const dateErr = validateDate(fDate)
     if (dateErr && fDate.trim()) errs.date = dateErr
 
-    // Check for duplicate slugs
-    const duplicate = missions.find(m => m.id === fId && m.id !== fId)
-    if (duplicate && mode === 'form') errs.id = 'This slug is already in use by another mission'
+    const duplicate = missions.find(m => m.slug === fId && m.id !== fId)
+    if (duplicate) errs.id = 'This slug is already in use by another mission'
 
     setErrors(errs)
     return Object.keys(errs).length === 0

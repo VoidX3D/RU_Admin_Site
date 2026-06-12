@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { fetchPartners, savePartners, uploadBase64Image } from '../utils/supabase'
 import { PlusIcon, XIcon, RefreshIcon, SaveIcon, ImageIcon, MoveUpIcon, MoveDownIcon } from './Icons'
+import { PageErrorBoundary } from './PageErrorBoundary'
 
 interface PartnerItem {
   id?: number
@@ -136,6 +137,7 @@ export function PartnersEditorPage() {
   }
 
   return (
+    <PageErrorBoundary name="Partners Editor">
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -263,5 +265,6 @@ export function PartnersEditorPage() {
         </div>
       </motion.div>
     </motion.div>
+    </PageErrorBoundary>
   )
 }

@@ -5,6 +5,7 @@ import { fetchContactSubmissions, deleteContactSubmission } from '../utils/supab
 import { validateEmail } from '../utils/validation'
 import { MailIcon, RefreshIcon, TrashIcon, SearchIcon } from './Icons'
 import { ConfirmModal } from './ConfirmModal'
+import { PageErrorBoundary } from './PageErrorBoundary'
 
 interface ContactEntry {
   id: number
@@ -76,6 +77,7 @@ export function ContactSubmissions() {
   }, [totalPages, page])
 
   return (
+    <PageErrorBoundary name="Contact Submissions">
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -251,5 +253,6 @@ export function ContactSubmissions() {
         onCancel={() => setConfirmDeleteId(null)}
       />
     </motion.div>
+    </PageErrorBoundary>
   )
 }

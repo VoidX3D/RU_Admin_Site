@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { fetchStats, saveStats } from '../utils/supabase'
 import { PlusIcon, XIcon, RefreshIcon, SaveIcon, BarChartIcon, MoveUpIcon, MoveDownIcon } from './Icons'
+import { PageErrorBoundary } from './PageErrorBoundary'
 
 interface StatItem {
   id?: number
@@ -102,6 +103,7 @@ export function StatsEditorPage() {
   }
 
   return (
+    <PageErrorBoundary name="Stats Editor">
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -201,5 +203,6 @@ export function StatsEditorPage() {
         </div>
       </motion.div>
     </motion.div>
+    </PageErrorBoundary>
   )
 }

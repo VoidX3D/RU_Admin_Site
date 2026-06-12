@@ -5,6 +5,7 @@ import { getEnvConfig, isProductionEnv } from '../utils/env'
 import { checkDBConnection, fetchMissions, fetchMissionDetail, saveMission, fetchAnnouncements, fetchAnnouncementDetail, saveAnnouncement } from '../utils/supabase'
 import { formatText } from '../utils/helpers'
 import { exportBackup, importBackup } from '../utils/backup'
+import { PageErrorBoundary } from './PageErrorBoundary'
 import {
   DownloadIcon, UploadIcon, CheckCircleIcon, AlertCircleIcon, DatabaseIcon, UserIcon,
   FileTextIcon, AlertTriangleIcon, RefreshIcon,
@@ -48,6 +49,7 @@ export function SettingsPage() {
   const prod = isProductionEnv()
 
   return (
+    <PageErrorBoundary name="Settings">
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -236,5 +238,6 @@ export function SettingsPage() {
         </p>
       </div>
     </motion.div>
+    </PageErrorBoundary>
   )
 }

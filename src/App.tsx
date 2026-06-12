@@ -70,17 +70,16 @@ export default function App() {
   useEffect(() => {
     initAdminAnalytics()
 
-    // Check DB connection on startup
-    checkDBConnection().then(connected => {
-      setDbConnected(connected)
-    }).catch(() => {
-      setDbConnected(false)
-    })
-
-    // Restore session
+    // Restore session first
     const session = Storage.getSession()
     if (session?.user) {
       useStore.getState().login(session.user, session.rememberMe || false, session.expiresAt)
+      // Only check DB if authenticated
+      checkDBConnection().then(connected => {
+        setDbConnected(connected)
+      }).catch(() => {
+        setDbConnected(false)
+      })
     }
     setAppLoading(false)
   }, [])

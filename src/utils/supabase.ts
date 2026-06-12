@@ -26,6 +26,9 @@ const REQUEST_TIMEOUT = 20000
 
 async function api(action: string, params?: Record<string, unknown>): Promise<any> {
   const token = Storage.getToken()
+  if (!token && action !== 'login') {
+    throw new Error('Not authenticated')
+  }
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
