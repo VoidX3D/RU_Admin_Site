@@ -4,18 +4,18 @@ import { createHmac, createHash, createSign, createVerify } from 'node:crypto'
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ''
 // Fallback to anon key so the API works even when SUPABASE_SERVICE_KEY is not set.
 // In production, always set SUPABASE_SERVICE_KEY in Vercel env vars for security.
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || ''
 
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 
-const ADMIN_USER = process.env.ADMIN_USERNAME || process.env.VITE_ADMIN_USERNAME || ''
-const ADMIN_PASS = process.env.ADMIN_PASSWORD || process.env.VITE_ADMIN_PASSWORD || ''
-const MASTER_KEY = process.env.MASTER_KEY || process.env.VITE_MASTER_KEY || ''
+const ADMIN_USER = process.env.ADMIN_USERNAME || ''
+const ADMIN_PASS = process.env.ADMIN_PASSWORD || ''
+const MASTER_KEY = process.env.MASTER_KEY || ''
 // Deterministic fallback so sessions survive Vercel cold starts when SUPABASE_JWT_SECRET is unset.
 // In production, always set SUPABASE_JWT_SECRET in Vercel environment variables.
-const JWT_SECRET = process.env.SUPABASE_JWT_SECRET || process.env.VITE_SUPABASE_JWT_SECRET || createHash('sha256').update(supabaseUrl + supabaseServiceKey).digest('hex')
+const JWT_SECRET = process.env.SUPABASE_JWT_SECRET || createHash('sha256').update(supabaseUrl + supabaseServiceKey).digest('hex')
 // ECDSA P-256 private key (PEM) for ES256 JWT signing. Set in Vercel env for production.
 // Generate: openssl ecparam -genkey -name prime256v1 -noout -out ec-private.pem
 // Copy the full PEM (including BEGIN/END lines) into JWT_EC_PRIVATE_KEY env var.

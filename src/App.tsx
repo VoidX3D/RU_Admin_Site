@@ -59,13 +59,14 @@ export default function App() {
   const theme = useStore(s => s.theme)
   const setPendingAction = useStore(s => s.setPendingAction)
   const setDbConnected = useStore(s => s.setDbConnected)
+  const isAuthenticated = useStore(s => s.auth.isAuthenticated)
   const [appLoading, setAppLoading] = useState(true)
 
   const navigate = useCallback((v: string) => setView(v as any), [setView])
   const setPending = useCallback((a: string | null) => setPendingAction(a), [setPendingAction])
 
   const shortcuts = getDefaultShortcuts(navigate, setPending)
-  useKeyboardShortcuts(shortcuts)
+  useKeyboardShortcuts(isAuthenticated ? shortcuts : [])
 
   useEffect(() => {
     initAdminAnalytics()

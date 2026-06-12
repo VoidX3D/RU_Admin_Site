@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
-import { fetchMissions, fetchAnnouncements, fetchMembers, fetchStats, fetchPartners } from '../utils/supabase'
+import { fetchMissions, fetchAnnouncements, fetchMembers } from '../utils/supabase'
 import {
-  TargetIcon, MegaphoneIcon, UsersIcon, FileTextIcon,
-  PlusIcon, ArrowRightIcon,
-  HomeIcon, HeartIcon, LeafIcon,
+  TargetIcon, MegaphoneIcon, UsersIcon,
+  ArrowRightIcon, HomeIcon, LeafIcon,
 } from './Icons'
 
 const container = {
@@ -39,7 +38,6 @@ export function Dashboard() {
 
   const [liveStats, setLiveStats] = useState({ missions: '0', announcements: '0', members: '0' })
   const [loading, setLoading] = useState(true)
-  const [lastUpdated, setLastUpdated] = useState<number | null>(null)
 
   // Silent background refresh every 2 minutes
   useEffect(() => {
@@ -75,22 +73,10 @@ export function Dashboard() {
       } catch {
         addToast('Failed to load dashboard data', 'error')
       }
-      setLastUpdated(Date.now())
       setLoading(false)
     }
     load()
   }, [refreshTrigger])
-
-  function timeAgo(ts: number): string {
-    const diff = Date.now() - ts
-    const secs = Math.floor(diff / 1000)
-    if (secs < 10) return 'just now'
-    if (secs < 60) return `${secs}s ago`
-    const mins = Math.floor(secs / 60)
-    if (mins < 60) return `${mins}m ago`
-    const hrs = Math.floor(mins / 60)
-    return `${hrs}h ago`
-  }
 
   const mCount = missions.length > 0 ? missions.length : liveStats.missions
   const aCount = announcements.length > 0 ? announcements.length : liveStats.announcements

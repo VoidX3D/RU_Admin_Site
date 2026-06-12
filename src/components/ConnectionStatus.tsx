@@ -8,15 +8,9 @@ export function ConnectionStatus() {
   const setDbConnected = useStore(s => s.setDbConnected)
   const [checking, setChecking] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval>>()
+  const checkRef = useRef<() => Promise<void>>()
 
   const isAuthenticated = useStore(s => s.auth.isAuthenticated)
-
-  useEffect(() => {
-    if (!isAuthenticated) return
-    checkNow()
-    intervalRef.current = setInterval(checkNow, 30000)
-    return () => clearInterval(intervalRef.current)
-  }, [isAuthenticated])
 
   async function checkNow() {
     if (checking) return
@@ -29,6 +23,15 @@ export function ConnectionStatus() {
     }
     setChecking(false)
   }
+
+  checkRef.current = checkNow
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    checkNow()
+    intervalRef.current = setInterval(() => checkRef.current?.(), 30000)
+    return () => clearInterval(intervalRef.current)
+  }, [isAuthenticated])
 
   function getTimeAgo(): string {
     if (!dbLastChecked) return ''
