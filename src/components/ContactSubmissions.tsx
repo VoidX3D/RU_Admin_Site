@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { fetchContactSubmissions, deleteContactSubmission } from '../utils/supabase'
+import { validateEmail } from '../utils/validation'
 import { MailIcon, RefreshIcon, TrashIcon, SearchIcon } from './Icons'
 import { ConfirmModal } from './ConfirmModal'
 
@@ -14,6 +15,8 @@ interface ContactEntry {
   created_at: string
 }
 
+const PAGE_SIZE = 50
+
 export function ContactSubmissions() {
   const addToast = useStore(s => s.addToast)
   const [submissions, setSubmissions] = useState<ContactEntry[]>([])
@@ -21,6 +24,7 @@ export function ContactSubmissions() {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<ContactEntry | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+  const [page, setPage] = useState(0)
 
   useEffect(() => { load() }, [])
 
@@ -53,13 +57,23 @@ export function ContactSubmissions() {
     }
   }
 
-  const filtered = submissions.filter(s =>
-    !search ||
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.email.toLowerCase().includes(search.toLowerCase()) ||
-    s.subject.toLowerCase().includes(search.toLowerCase()) ||
-    s.message.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = useMemo(() => {
+    if (!search) return submissions
+    const q = search.toLowerCase()
+    return submissions.filter(s =>
+      s.name.toLowerCase().includes(q) ||
+      s.email.toLowerCase().includes(q) ||
+      s.subject.toLowerCase().includes(q) ||
+      s.message.toLowerCase().includes(q)
+    )
+  }, [submissions, search])
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
+  useEffect(() => {
+    if (page >= totalPages && totalPages > 0) setPage(totalPages - 1)
+  }, [totalPages, page])
 
   return (
     <motion.div
@@ -82,7 +96,7 @@ export function ContactSubmissions() {
         <SearchIcon size={14} className="dark:text-zinc-600" />
         <input
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={e => { setSearch(e.target.value); setPage(0) }}
           placeholder="Search submissions..."
           className="flex-1 bg-transparent text-sm dark:text-white outline-none placeholder:text-zinc-400"
         />
@@ -121,7 +135,7 @@ export function ContactSubmissions() {
                       </td>
                     </tr>
                   ) : (
-                    filtered.map(s => (
+                    paged.map(s => (
                       <tr
                         key={s.id}
                         className={`cursor-pointer transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800/20 ${selected?.id === s.id ? 'bg-emerald-500/5 dark:bg-emerald-500/5' : ''}`}
@@ -129,7 +143,12 @@ export function ContactSubmissions() {
                       >
                         <td className="px-4 py-3">
                           <div className="font-medium dark:text-white">{s.name}</div>
-                          <div className="text-[10px] dark:text-zinc-600">{s.email}</div>
+                          <div className="flex items-center gap-1 text-[10px] dark:text-zinc-600">
+                            {s.email}
+                            {validateEmail(s.email) && (
+                              <span className="rounded bg-red-500/10 px-1 text-[8px] text-red-500" title="Invalid email format">!</span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3 dark:text-white">{s.subject}</td>
                         <td className="hidden px-4 py-3 text-[10px] dark:text-zinc-600 sm:table-cell">
@@ -150,6 +169,29 @@ export function ContactSubmissions() {
               </table>
             </div>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-3 flex items-center justify-center gap-2">
+              <button
+                className="rounded-lg border dark:border-zinc-800 px-2.5 py-1 text-[10px] font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 disabled:opacity-30"
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0}
+              >
+                Previous
+              </button>
+              <span className="text-[10px] dark:text-zinc-500">
+                Page {page + 1} of {totalPages}
+              </span>
+              <button
+                className="rounded-lg border dark:border-zinc-800 px-2.5 py-1 text-[10px] font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 disabled:opacity-30"
+                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Detail panel */}
@@ -176,7 +218,12 @@ export function ContactSubmissions() {
                 </div>
                 <div>
                   <label className="mb-1 block text-[10px] font-medium text-zinc-500">Email</label>
-                  <a href={`mailto:${selected.email}`} className="text-sm text-emerald-500 hover:underline">{selected.email}</a>
+                  <div className="flex items-center gap-1">
+                    <a href={`mailto:${selected.email}`} className="text-sm text-emerald-500 hover:underline">{selected.email}</a>
+                    {validateEmail(selected.email) && (
+                      <span className="rounded bg-red-500/10 px-1 text-[9px] text-red-500">Invalid</span>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="mb-1 block text-[10px] font-medium text-zinc-500">Subject</label>
