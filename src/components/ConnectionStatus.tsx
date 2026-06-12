@@ -10,11 +10,14 @@ export function ConnectionStatus() {
   const [checking, setChecking] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval>>()
 
+  const isAuthenticated = useStore(s => s.auth.isAuthenticated)
+
   useEffect(() => {
+    if (!isAuthenticated) return
     checkNow()
     intervalRef.current = setInterval(checkNow, 30000)
     return () => clearInterval(intervalRef.current)
-  }, [])
+  }, [isAuthenticated])
 
   async function checkNow() {
     if (checking) return
