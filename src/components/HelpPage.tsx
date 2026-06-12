@@ -218,7 +218,7 @@ export function HelpPage() {
         <p><strong>Rendering:</strong> Markdown via <code>marked</code> (GFM) + KaTeX (math) + DOMPurify (sanitizer)</p>
         <p><strong>Deployment:</strong> Vercel auto-deploy from <code>main</code> branch</p>
         <p><strong>Main Site:</strong> <a href="https://ruclub.motherland.edu.np" target="_blank" className="text-emerald-400 underline">ruclub.motherland.edu.np</a> / <a href="https://ruclubmss.vercel.app" target="_blank" className="text-emerald-400 underline">ruclubmss.vercel.app</a></p>
-        <p><strong>Admin Panel:</strong> <a href="https://ru-admin-site.vercel.app" target="_blank" className="text-emerald-400 underline">ru-admin-site.vercel.app</a></p>
+        <p><strong>Admin Panel:</strong> <a href="https://ruclubadmin.vercel.app" target="_blank" className="text-emerald-400 underline">ruclubadmin.vercel.app</a></p>
       </Section>
 
       <div className="rounded-xl border dark:border-zinc-800/50 px-4 py-6 text-center bg-gradient-to-br from-emerald-500/5 to-transparent">

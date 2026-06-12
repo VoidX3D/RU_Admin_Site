@@ -2,7 +2,7 @@
 
 A React 19 + TypeScript + Vite SPA for managing all dynamic content on [ruclub.motherland.edu.np](https://ruclub.motherland.edu.np). Every save writes directly to Supabase with no draft/publish workflow.
 
-**Deployed at:** [ru-admin-site.vercel.app](https://ru-admin-site.vercel.app)
+**Deployed at:** [ruclubadmin.vercel.app](https://ruclubadmin.vercel.app)
 
 ---
 

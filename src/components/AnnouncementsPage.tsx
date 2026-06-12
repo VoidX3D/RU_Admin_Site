@@ -449,7 +449,7 @@ export function AnnouncementsPage() {
             label: ctx.ann.active !== false ? 'Hide from site' : 'Show on site',
             onClick: async () => {
               try {
-                const { error } = await saveAnnouncement(ctx.ann!.id, { ...ctx.ann, active: ctx.ann!.active === false })
+                const { error } = await saveAnnouncement(ctx.ann!.id, { ...ctx.ann, status: ctx.ann!.status || null, active: ctx.ann!.active === false })
                 if (!error) load()
               } catch (e) {
                 addToast('Toggle failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')

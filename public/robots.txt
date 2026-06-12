@@ -1,4 +1,4 @@
 User-agent: *
 Disallow: /
 
-Sitemap: https://ru-admin-site.vercel.app/sitemap.xml
+Sitemap: https://ruclubadmin.vercel.app/sitemap.xml

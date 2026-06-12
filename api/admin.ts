@@ -132,76 +132,98 @@ async function handleAction(action: string, params: any) {
       const { stats, partners, images, goals, timeline, participants, budget, ...missionFields } = fields
       const { error: e } = await supabaseAdmin.from('missions').upsert({ id, ...missionFields })
       if (e) return { error: { message: e.message } }
+      const ops: Promise<{ error?: any }>[] = []
       if (stats !== undefined) {
-        await supabaseAdmin.from('mission_stats').delete().eq('mission_id', id)
-        if (Array.isArray(stats) && stats.length > 0) {
-          const { error: e2 } = await supabaseAdmin.from('mission_stats').insert((stats as any[]).map((s, i) => ({ mission_id: id, label: s.label, value: s.value, sort_order: i })))
-          if (e2) return { error: { message: e2.message } }
-        }
+        ops.push(
+          supabaseAdmin.from('mission_stats').delete().eq('mission_id', id).then(() => {
+            if (Array.isArray(stats) && stats.length > 0) {
+              return supabaseAdmin.from('mission_stats').insert((stats as any[]).map((s, i) => ({ mission_id: id, label: s.label, value: s.value, sort_order: i })))
+            }
+            return { error: null }
+          })
+        )
       }
       if (partners !== undefined) {
-        await supabaseAdmin.from('mission_partners').delete().eq('mission_id', id)
-        if (Array.isArray(partners) && partners.length > 0) {
-          const { error: e2 } = await supabaseAdmin.from('mission_partners').insert((partners as string[]).map((name, i) => ({ mission_id: id, name, sort_order: i })))
-          if (e2) return { error: { message: e2.message } }
-        }
+        ops.push(
+          supabaseAdmin.from('mission_partners').delete().eq('mission_id', id).then(() => {
+            if (Array.isArray(partners) && partners.length > 0) {
+              return supabaseAdmin.from('mission_partners').insert((partners as string[]).map((name, i) => ({ mission_id: id, name, sort_order: i })))
+            }
+            return { error: null }
+          })
+        )
       }
       if (images !== undefined) {
-        await supabaseAdmin.from('mission_images').delete().eq('mission_id', id)
         const urls = Array.isArray(images) ? images : []
-        // If no explicit images but featured is set, sync it as a mission_image
         if (urls.length === 0 && missionFields.featured) {
           urls.push(missionFields.featured)
         }
-        if (urls.length > 0) {
-          const { error: e2 } = await supabaseAdmin.from('mission_images').insert(urls.map((url, i) => ({
-            mission_id: id, url: url.startsWith('http') ? url.split('/').pop()! : url.split('/').pop() || `img-${String(i + 1).padStart(2, '0')}.jpg`, alt: '', sort_order: i,
-          })))
-          if (e2) return { error: { message: e2.message } }
-        }
+        ops.push(
+          supabaseAdmin.from('mission_images').delete().eq('mission_id', id).then(() => {
+            if (urls.length > 0) {
+              return supabaseAdmin.from('mission_images').insert(urls.map((url, i) => ({
+                mission_id: id, url: url.startsWith('http') ? url.split('/').pop()! : url.split('/').pop() || `img-${String(i + 1).padStart(2, '0')}.jpg`, alt: '', sort_order: i,
+              })))
+            }
+            return { error: null }
+          })
+        )
       }
       if (goals !== undefined) {
-        await supabaseAdmin.from('mission_goals').delete().eq('mission_id', id)
-        if (Array.isArray(goals) && goals.length > 0) {
-          const { error: e2 } = await supabaseAdmin.from('mission_goals').insert((goals as string[]).map((g, i) => ({ mission_id: id, goal: g, sort_order: i })))
-          if (e2) return { error: { message: e2.message } }
-        }
+        ops.push(
+          supabaseAdmin.from('mission_goals').delete().eq('mission_id', id).then(() => {
+            if (Array.isArray(goals) && goals.length > 0) {
+              return supabaseAdmin.from('mission_goals').insert((goals as string[]).map((g, i) => ({ mission_id: id, goal: g, sort_order: i })))
+            }
+            return { error: null }
+          })
+        )
       }
       if (timeline !== undefined) {
-        await supabaseAdmin.from('mission_timeline').delete().eq('mission_id', id)
-        if (Array.isArray(timeline) && timeline.length > 0) {
-          const { error: e2 } = await supabaseAdmin.from('mission_timeline').insert((timeline as any[]).map((t, i) => ({
-            mission_id: id, title: t.title, date: t.date, description: t.description, sort_order: i,
-          })))
-          if (e2) return { error: { message: e2.message } }
-        }
+        ops.push(
+          supabaseAdmin.from('mission_timeline').delete().eq('mission_id', id).then(() => {
+            if (Array.isArray(timeline) && timeline.length > 0) {
+              return supabaseAdmin.from('mission_timeline').insert((timeline as any[]).map((t, i) => ({
+                mission_id: id, title: t.title, date: t.date, description: t.description, sort_order: i,
+              })))
+            }
+            return { error: null }
+          })
+        )
       }
       if (participants !== undefined) {
-        await supabaseAdmin.from('mission_participants').delete().eq('mission_id', id)
-        if (Array.isArray(participants) && participants.length > 0) {
-          const { error: e2 } = await supabaseAdmin.from('mission_participants').insert((participants as any[]).map((p, i) => ({
-            mission_id: id, group_name: p.group_name, participant_count: p.participant_count, sort_order: i,
-          })))
-          if (e2) return { error: { message: e2.message } }
-        }
+        ops.push(
+          supabaseAdmin.from('mission_participants').delete().eq('mission_id', id).then(() => {
+            if (Array.isArray(participants) && participants.length > 0) {
+              return supabaseAdmin.from('mission_participants').insert((participants as any[]).map((p, i) => ({
+                mission_id: id, group_name: p.group_name, participant_count: p.participant_count, sort_order: i,
+              })))
+            }
+            return { error: null }
+          })
+        )
       }
       if (budget !== undefined) {
-        await supabaseAdmin.from('mission_budget').delete().eq('mission_id', id)
-        if (Array.isArray(budget) && budget.length > 0) {
-          const { error: e2 } = await supabaseAdmin.from('mission_budget').insert((budget as any[]).map((b, i) => ({
-            mission_id: id, item: b.item, amount: b.amount || null, sort_order: i,
-          })))
-          if (e2) return { error: { message: e2.message } }
-        }
+        ops.push(
+          supabaseAdmin.from('mission_budget').delete().eq('mission_id', id).then(() => {
+            if (Array.isArray(budget) && budget.length > 0) {
+              return supabaseAdmin.from('mission_budget').insert((budget as any[]).map((b, i) => ({
+                mission_id: id, item: b.item, amount: b.amount || null, sort_order: i,
+              })))
+            }
+            return { error: null }
+          })
+        )
       }
+      const results = await Promise.all(ops)
+      const firstError = results.find(r => r.error)
+      if (firstError) return { error: { message: firstError.error.message } }
       return { error: null }
     }
     case 'missions:delete': {
       const { id } = params
       const tables = ['mission_stats', 'mission_partners', 'mission_images', 'mission_goals', 'mission_timeline', 'mission_participants', 'mission_budget']
-      for (const table of tables) {
-        await supabaseAdmin.from(table as any).delete().eq('mission_id', id)
-      }
+      await Promise.all(tables.map(table => supabaseAdmin.from(table as any).delete().eq('mission_id', id)))
       await supabaseAdmin.from('missions').delete().eq('id', id)
       return { error: null }
     }
@@ -314,11 +336,12 @@ async function handleAction(action: string, params: any) {
 
     case 'image:upload': {
       const { bucket, path: imgPath, dataUrl } = params
-      const res = await fetch(dataUrl)
-      const blob = await res.blob()
-      const file = new File([blob], imgPath.split('/').pop() || 'image', { type: blob.type })
+      const matches = dataUrl.match(/^data:([^;]+);base64,(.+)$/)
+      if (!matches) return { error: { message: 'Invalid data URL format' } }
+      const mimeType = matches[1]
+      const buffer = Buffer.from(matches[2], 'base64')
       const storagePath = imgPath.startsWith('static/assets/') ? imgPath : `static/assets/${imgPath}`
-      const { data, error } = await supabaseAdmin.storage.from('ruclub').upload(storagePath, file, { upsert: true })
+      const { data, error } = await supabaseAdmin.storage.from('ruclub').upload(storagePath, buffer, { contentType: mimeType, upsert: true })
       if (error) return { error: { message: error.message || 'Upload failed' } }
       const { data: { publicUrl } } = supabaseAdmin.storage.from('ruclub').getPublicUrl(storagePath)
       return { url: publicUrl, error: null }

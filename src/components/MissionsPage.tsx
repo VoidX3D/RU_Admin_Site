@@ -128,16 +128,18 @@ export function MissionsPage() {
     setSaving(true)
 
     try {
-      const imageUrls: string[] = []
-      for (let i = 0; i < fImages.length; i++) {
-        if (fImages[i].remote && fImages[i].dataUrl.startsWith('http')) {
-          imageUrls.push(fImages[i].dataUrl)
-        } else if (fImages[i].dataUrl.startsWith('data:')) {
-          const filename = `mission/${fId}/img-${String(i + 1).padStart(2, '0')}.jpg`
-          const result = await uploadBase64Image('public', filename, fImages[i].dataUrl)
-          if (result.url) imageUrls.push(result.url)
+      const uploadPromises = fImages.map(async (img, i) => {
+        if (img.remote && img.dataUrl.startsWith('http')) {
+          return img.dataUrl
         }
-      }
+        if (img.dataUrl.startsWith('data:')) {
+          const filename = `mission/${fId}/img-${String(i + 1).padStart(2, '0')}.jpg`
+          const result = await uploadBase64Image('public', filename, img.dataUrl)
+          return result.url || null
+        }
+        return null
+      })
+      const imageUrls = (await Promise.all(uploadPromises)).filter(Boolean) as string[]
 
       const statsArr = fStats.filter(s => s.label).map(s => ({ label: s.label, value: s.value }))
       const { error } = await saveMission(fId, {
