@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { fetchMissions, fetchMissionDetail, saveMission, deleteMission, uploadBase64Image } from '../utils/supabase'
@@ -44,6 +44,7 @@ export function MissionsPage() {
   const [fBudget, setFBudget] = useState<{ item: string; amount: string }[]>([])
   const [fImages, setFImages] = useState<PendingImage[]>([])
   const [saving, setSaving] = useState(false)
+  const initialForm = useRef<Record<string, unknown>>({})
 
   // Auto-save draft
   useEffect(() => {
@@ -90,6 +91,10 @@ export function MissionsPage() {
     setLoading(false)
   }
 
+  function snapshot() {
+    initialForm.current = { title: fTitle, tag: fTag, date: fDate, description: fDesc, detail: fDetail, show: fShow, featured: fImages.find(i => i.remote)?.dataUrl || null }
+  }
+
   function startNew() {
     const n = String(missions.length + 1).padStart(2, '0')
     setFId('mission-' + n); setFTitle(''); setFTag('Mission #' + n)
@@ -98,6 +103,7 @@ export function MissionsPage() {
     setFStats([]); setFPartners([]); setFGoals([])
     setFTimeline([]); setFParticipants([]); setFBudget([])
     setFImages([]); setErrors({}); setDraftSavedAt(null)
+    setTimeout(() => snapshot(), 0)
     setMode('form')
 
     // Restore draft if exists
@@ -154,6 +160,7 @@ export function MissionsPage() {
       addToast('Failed to load mission details', 'error')
     }
     setMode('form')
+    setTimeout(() => snapshot(), 0)
   }
 
   function validate(): boolean {
@@ -171,6 +178,20 @@ export function MissionsPage() {
 
     setErrors(errs)
     return Object.keys(errs).length === 0
+  }
+
+  function buildDelta(): Record<string, unknown> {
+    const init = initialForm.current
+    const delta: Record<string, unknown> = {}
+    if (fTitle !== init.title) delta.title = fTitle
+    if (fTag !== init.tag) delta.tag = fTag
+    if (fDate !== init.date) delta.date = fDate
+    if (fDesc !== init.description) delta.description = fDesc
+    if (fDetail !== init.detail) delta.detail = fDetail
+    if (fShow !== init.show) delta.show = fShow
+    const currentFeatured = fImages.find(i => i.remote)?.dataUrl || null
+    if (currentFeatured !== init.featured) delta.featured = currentFeatured
+    return delta
   }
 
   async function handleSave() {
@@ -192,30 +213,32 @@ export function MissionsPage() {
       const imageUrls = (await Promise.all(uploadPromises)).filter(Boolean) as string[]
 
       const statsArr = fStats.filter(s => s.label).map(s => ({ label: s.label, value: s.value }))
-      const { error } = await saveMission(fId, {
-        slug: fId, title: fTitle, tag: fTag, date: fDate,
-        description: fDesc, detail: fDetail, show: fShow,
-        image_count: fImages.length, featured: imageUrls[0] || null,
+      const fields: Record<string, unknown> = {
+        ...buildDelta(),
+        slug: fId,
         images: imageUrls, stats: statsArr,
         partners: fPartners.filter(p => p.trim()),
         goals: fGoals.filter(g => g.trim()),
         timeline: fTimeline.filter(t => t.title.trim()),
         participants: fParticipants.filter(p => p.group_name.trim()),
         budget: fBudget.filter(b => b.item.trim()),
-      })
+      }
+      const { error } = await saveMission(fId, fields)
       if (error) { addToast(error.message, 'error'); return }
 
       // Clear draft on successful save
       removeDraft(`mission_${fId}`)
       setDraftSavedAt(null)
+      snapshot()
 
       addToast('Mission saved to database!', 'success')
       setMode('list')
       loadMissions()
     } catch (e) {
       addToast('Save failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   function handleDelete(id: string) {

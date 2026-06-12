@@ -44,6 +44,7 @@ export function AnnouncementsPage() {
   const [fTags, setFTags] = useState<string[]>([])
   const [fImg, setFImg] = useState<PendingImage | null>(null)
   const [saving, setSaving] = useState(false)
+  const initialForm = useRef<Record<string, unknown>>({})
   const tagInputRef = useRef<HTMLInputElement>(null)
 
   // Auto-save draft
@@ -99,6 +100,7 @@ export function AnnouncementsPage() {
     setFSummary(''); setFDesc(''); setFImport(''); setFInstr('')
     setFActive(true); setFDeadline(''); setFTags([]); setFImg(null); setErrors({}); setDraftSavedAt(null)
     setMode('form')
+    setTimeout(() => snapshot(), 0)
 
     const draft = loadDraft(`announcement_announcement-${n}`)
     if (draft) {
@@ -159,6 +161,29 @@ export function AnnouncementsPage() {
       addToast('Failed to load announcement details', 'error')
     }
     setMode('form')
+    setTimeout(() => snapshot(), 0)
+  }
+
+  function snapshot() {
+    initialForm.current = { title: fTitle, tag: fTag, date: fDate, day: fDay, summary: fSummary, description: fDesc, status: fStatus, issued_by: fIssued, importance: fImport, instructions: fInstr, active: fActive, deadline: fDeadline, image: (fImg?.remote && fImg.dataUrl.startsWith('http')) ? fImg.dataUrl : null }
+  }
+
+  function buildDelta(): Record<string, unknown> {
+    const init = initialForm.current
+    const delta: Record<string, unknown> = {}
+    if (fTitle !== init.title) delta.title = fTitle
+    if (fTag !== init.tag) delta.tag = fTag
+    if (fDate !== init.date) delta.date = fDate
+    if (fDay !== init.day) delta.day = fDay
+    if (fSummary !== init.summary) delta.summary = fSummary
+    if (fDesc !== init.description) delta.description = fDesc
+    if (fStatus !== init.status) delta.status = fStatus
+    if (fIssued !== init.issued_by) delta.issued_by = fIssued
+    if (fImport !== init.importance) delta.importance = fImport
+    if (fInstr !== init.instructions) delta.instructions = fInstr
+    if (fActive !== init.active) delta.active = fActive
+    if (fDeadline !== init.deadline) delta.deadline = fDeadline
+    return delta
   }
 
   function validate(): boolean {
@@ -186,13 +211,13 @@ export function AnnouncementsPage() {
         if (result.url) imageUrl = result.url
       }
 
-      const { error } = await saveAnnouncement(fId, {
-        title: fTitle, tag: fTag, status: fStatus || null, date: fDate,
-        day: fDay, issued_by: fIssued,
-        summary: fSummary, description: fDesc, importance: fImport,
-        instructions: fInstr, active: fActive, deadline: fDeadline, image: imageUrl,
+      const fields: Record<string, unknown> = {
+        ...buildDelta(),
         tags: fTags,
-      })
+        image: imageUrl,
+        status: fStatus || null,
+      }
+      const { error } = await saveAnnouncement(fId, fields)
       if (error) { addToast(error.message, 'error'); return }
 
       removeDraft(`announcement_${fId}`)
@@ -203,8 +228,9 @@ export function AnnouncementsPage() {
       load()
     } catch (e) {
       addToast('Save failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   function handleDelete(id: string) {
