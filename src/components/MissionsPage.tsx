@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { fetchMissions, fetchMissionDetail, saveMission, deleteMission, uploadBase64Image } from '../utils/supabase'
+import { validateSlug, validateDate } from '../utils/validation'
+import { saveDraft, loadDraft, removeDraft, getDraftAge } from '../utils/drafts'
 import type { MissionEntry, PendingImage, MissionTimeline } from '../types'
 import { ConfirmModal } from './ConfirmModal'
 import { ContextMenu } from './ContextMenu'
+import { DraftIndicator } from './DraftIndicator'
+import { PageErrorBoundary } from './PageErrorBoundary'
 import {
   ArrowLeftIcon, PlusIcon, ImageIcon, TargetIcon, RefreshIcon, TrashIcon, EditIcon, SearchIcon, EyeIcon, EyeOffIcon,
 } from './Icons'
@@ -23,6 +27,7 @@ export function MissionsPage() {
   const [search, setSearch] = useState('')
   const [ctx, setCtx] = useState<{ open: boolean; x: number; y: number; mission: MissionEntry | null }>({ open: false, x: 0, y: 0, mission: null })
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null)
 
   const [fId, setFId] = useState('')
   const [fTitle, setFTitle] = useState('')
@@ -39,6 +44,22 @@ export function MissionsPage() {
   const [fBudget, setFBudget] = useState<{ item: string; amount: string }[]>([])
   const [fImages, setFImages] = useState<PendingImage[]>([])
   const [saving, setSaving] = useState(false)
+
+  // Auto-save draft
+  useEffect(() => {
+    if (mode !== 'form' || !fId) return
+    const interval = setInterval(() => {
+      saveDraft(`mission_${fId}`, {
+        id: fId,
+        type: 'mission',
+        data: { title: fTitle, tag: fTag, date: fDate, description: fDesc, detail: fDetail, show: fShow, stats: fStats, partners: fPartners, goals: fGoals, timeline: fTimeline, participants: fParticipants, budget: fBudget, images: fImages.map(i => i.dataUrl) },
+        savedAt: Date.now(),
+        label: fTitle || 'Untitled Mission',
+      })
+      setDraftSavedAt(Date.now())
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [mode, fId, fTitle, fTag, fDate, fDesc, fDetail, fShow, fStats, fPartners, fGoals, fTimeline, fParticipants, fBudget, fImages])
 
   useEffect(() => { loadMissions() }, [refreshTrigger])
 
@@ -76,8 +97,29 @@ export function MissionsPage() {
     setFDesc(''); setFDetail(''); setFShow(true)
     setFStats([]); setFPartners([]); setFGoals([])
     setFTimeline([]); setFParticipants([]); setFBudget([])
-    setFImages([]); setErrors({})
+    setFImages([]); setErrors({}); setDraftSavedAt(null)
     setMode('form')
+
+    // Restore draft if exists
+    const draft = loadDraft(`mission_mission-${n}`)
+    if (draft) {
+      const d = draft.data as any
+      if (d.title) setFTitle(d.title)
+      if (d.tag) setFTag(d.tag)
+      if (d.date) setFDate(d.date)
+      if (d.description) setFDesc(d.description)
+      if (d.detail) setFDetail(d.detail)
+      if (d.show !== undefined) setFShow(d.show)
+      if (d.stats) setFStats(d.stats)
+      if (d.partners) setFPartners(d.partners)
+      if (d.goals) setFGoals(d.goals)
+      if (d.timeline) setFTimeline(d.timeline)
+      if (d.participants) setFParticipants(d.participants)
+      if (d.budget) setFBudget(d.budget)
+      if (d.images) setFImages(d.images.map((url: string) => ({ dataUrl: url, name: 'draft', remote: url.startsWith('http') })))
+      setDraftSavedAt(draft.savedAt)
+      addToast('Draft restored from ' + getDraftAge(draft.savedAt), 'info')
+    }
   }
 
   async function startEdit(id: string) {
@@ -87,7 +129,7 @@ export function MissionsPage() {
     setFId(id); setFTitle(m.title); setFTag(m.tag || '')
     setFDate(m.date || ''); setFDesc(m.description || '')
     setFShow(m.show !== false)
-    setErrors({})
+    setErrors({}); setDraftSavedAt(null)
 
     const missionId = m?.id
     if (!missionId) { setMode('form'); return }
@@ -119,6 +161,15 @@ export function MissionsPage() {
     if (!fTitle.trim()) errs.title = 'Title is required'
     if (!fDesc.trim()) errs.description = 'Description is required'
     if (!fId.trim()) errs.id = 'ID is required'
+    const slugErr = validateSlug(fId)
+    if (slugErr && fId.trim()) errs.id = slugErr
+    const dateErr = validateDate(fDate)
+    if (dateErr && fDate.trim()) errs.date = dateErr
+
+    // Check for duplicate slugs
+    const duplicate = missions.find(m => m.id === fId && m.id !== fId)
+    if (duplicate && mode === 'form') errs.id = 'This slug is already in use by another mission'
+
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -155,6 +206,10 @@ export function MissionsPage() {
       })
       if (error) { addToast(error.message, 'error'); return }
 
+      // Clear draft on successful save
+      removeDraft(`mission_${fId}`)
+      setDraftSavedAt(null)
+
       addToast('Mission saved to database!', 'success')
       setMode('list')
       loadMissions()
@@ -174,161 +229,172 @@ export function MissionsPage() {
       const { error } = await deleteMission(id)
       if (error) { addToast('Delete failed: ' + error.message, 'error'); return }
       addToast('Mission deleted', 'success')
+      removeDraft(`mission_${id}`)
       loadMissions()
     } catch (e) {
       addToast('Delete failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
     }
   }
 
+  function clearDraft() {
+    if (fId) removeDraft(`mission_${fId}`)
+    setDraftSavedAt(null)
+    addToast('Draft cleared', 'info')
+  }
+
   if (mode === 'form') {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      >
-        <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <button className="flex min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 sm:h-8 sm:w-8 items-center justify-center rounded-lg border dark:border-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>
-              <ArrowLeftIcon size={16} />
-            </button>
-            <div>
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">{fId ? 'Edit Mission' : 'Create Mission'}</h2>
-              <div className="text-xs dark:text-zinc-600">{fId}</div>
+      <PageErrorBoundary name="Mission Form" onReset={() => setMode('list')}>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <button className="flex min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 sm:h-8 sm:w-8 items-center justify-center rounded-lg border dark:border-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>
+                <ArrowLeftIcon size={16} />
+              </button>
+              <div>
+                <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">{fId ? 'Edit Mission' : 'Create Mission'}</h2>
+                <div className="text-xs dark:text-zinc-600">{fId}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {draftSavedAt && <DraftIndicator savedAt={draftSavedAt} onClearDraft={clearDraft} />}
+              <button className="rounded-lg border dark:border-zinc-800 min-h-[44px] sm:min-h-0 px-4 py-2 sm:px-3 sm:py-1.5 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>
+                Cancel
+              </button>
+              <button
+                className="rounded-lg bg-emerald-500 min-h-[44px] sm:min-h-0 px-5 py-2 sm:px-4 sm:py-1.5 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50"
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? 'Saving...' : 'Save to Database'}
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button className="rounded-lg border dark:border-zinc-800 min-h-[44px] sm:min-h-0 px-4 py-2 sm:px-3 sm:py-1.5 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => setMode('list')}>
-              Cancel
-            </button>
-            <button
-              className="rounded-lg bg-emerald-500 min-h-[44px] sm:min-h-0 px-5 py-2 sm:px-4 sm:py-1.5 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-50"
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? 'Saving...' : 'Save to Database'}
-            </button>
-          </div>
-        </div>
 
-        <div className="space-y-4">
-          {/* Basic Information */}
-          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
-            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
-              <TargetIcon size={14} className="dark:text-blue-400" />
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Basic Information</h3>
-            </div>
-            <div className="p-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Mission ID" value={fId} onChange={() => {}} readOnly error={errors.id} />
-                <Field label="Tag / Badge" value={fTag} onChange={setFTag} placeholder="Mission #XX" hint="Appears as a badge on the card" />
-                <div className="sm:col-span-2">
-                  <Field label="Title *" value={fTitle} onChange={setFTitle} placeholder="Enter mission title"
-                    error={errors.title} maxLength={100} hint="A clear, descriptive title for your mission" />
-                </div>
-                <Field label="Date" value={fDate} onChange={setFDate} placeholder="May 2025" hint="Month and year" />
-                <div className="sm:col-span-2">
-                  <Field label="Short Description *" value={fDesc} onChange={setFDesc} placeholder="One sentence summary"
-                    error={errors.description} maxLength={200} hint="Appears on the mission card" />
-                </div>
-                <div className="sm:col-span-2">
-                  <RichTextEditor label="Full Story" value={fDetail} onChange={setFDetail} placeholder="Write the complete mission story, details, impact, and outcomes..." />
+          <div className="space-y-4">
+            {/* Basic Information */}
+            <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+              <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+                <TargetIcon size={14} className="dark:text-blue-400" />
+                <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Basic Information</h3>
+              </div>
+              <div className="p-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Mission ID" value={fId} onChange={() => {}} readOnly error={errors.id} />
+                  <Field label="Tag / Badge" value={fTag} onChange={setFTag} placeholder="Mission #XX" hint="Appears as a badge on the card" />
+                  <div className="sm:col-span-2">
+                    <Field label="Title *" value={fTitle} onChange={setFTitle} placeholder="Enter mission title"
+                      error={errors.title} maxLength={100} hint="A clear, descriptive title for your mission" />
+                  </div>
+                  <Field label="Date" value={fDate} onChange={setFDate} placeholder="May 2025" hint="Month and year" error={errors.date} />
+                  <div className="sm:col-span-2">
+                    <Field label="Short Description *" value={fDesc} onChange={setFDesc} placeholder="One sentence summary"
+                      error={errors.description} maxLength={200} hint="Appears on the mission card" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <RichTextEditor label="Full Story" value={fDetail} onChange={setFDetail} placeholder="Write the complete mission story, details, impact, and outcomes..." />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Statistics */}
-          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
-            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-emerald-400"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Statistics</h3>
+            {/* Statistics */}
+            <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+              <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-emerald-400"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Statistics</h3>
+              </div>
+              <div className="p-4">
+                <StatsEditor stats={fStats} onChange={setFStats} keyPlaceholder="Label (e.g. volunteers)" valuePlaceholder="Value (e.g. 25+)" />
+              </div>
             </div>
-            <div className="p-4">
-              <StatsEditor stats={fStats} onChange={setFStats} keyPlaceholder="Label (e.g. volunteers)" valuePlaceholder="Value (e.g. 25+)" />
-            </div>
-          </div>
 
-          {/* Partners */}
-          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
-            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-purple-400"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Partners</h3>
+            {/* Partners */}
+            <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+              <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-purple-400"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Partners</h3>
+              </div>
+              <div className="p-4">
+                <PartnersEditor partners={fPartners} onChange={setFPartners} />
+              </div>
             </div>
-            <div className="p-4">
-              <PartnersEditor partners={fPartners} onChange={setFPartners} />
-            </div>
-          </div>
 
-          {/* Goals */}
-          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
-            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber-400"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Goals</h3>
+            {/* Goals */}
+            <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+              <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber-400"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Goals</h3>
+              </div>
+              <div className="p-4">
+                <GoalsEditor goals={fGoals} onChange={setFGoals} />
+              </div>
             </div>
-            <div className="p-4">
-              <GoalsEditor goals={fGoals} onChange={setFGoals} />
-            </div>
-          </div>
 
-          {/* Timeline */}
-          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
-            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-400"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Timeline</h3>
+            {/* Timeline */}
+            <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+              <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-400"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Timeline</h3>
+              </div>
+              <div className="p-4">
+                <TimelineEditor timeline={fTimeline} onChange={setFTimeline} />
+              </div>
             </div>
-            <div className="p-4">
-              <TimelineEditor timeline={fTimeline} onChange={setFTimeline} />
-            </div>
-          </div>
 
-          {/* Participants */}
-          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
-            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-pink-400"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Participants</h3>
+            {/* Participants */}
+            <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+              <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-pink-400"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Participants</h3>
+              </div>
+              <div className="p-4">
+                <ParticipantsEditor participants={fParticipants} onChange={setFParticipants} />
+              </div>
             </div>
-            <div className="p-4">
-              <ParticipantsEditor participants={fParticipants} onChange={setFParticipants} />
-            </div>
-          </div>
 
-          {/* Budget */}
-          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
-            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-emerald-400"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Budget</h3>
+            {/* Budget */}
+            <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+              <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-emerald-400"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Budget</h3>
+              </div>
+              <div className="p-4">
+                <BudgetEditor budget={fBudget} onChange={setFBudget} />
+              </div>
             </div>
-            <div className="p-4">
-              <BudgetEditor budget={fBudget} onChange={setFBudget} />
-            </div>
-          </div>
 
-          {/* Visibility */}
-          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
-            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-zinc-500"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Visibility</h3>
+            {/* Visibility */}
+            <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+              <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-zinc-500"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Visibility</h3>
+              </div>
+              <div className="p-4">
+                <Toggle label="Show on site" checked={fShow} onChange={setFShow}
+                  onLabel="Visible to visitors" offLabel="Hidden from visitors" />
+              </div>
             </div>
-            <div className="p-4">
-              <Toggle label="Show on site" checked={fShow} onChange={setFShow}
-                onLabel="Visible to visitors" offLabel="Hidden from visitors" />
-            </div>
-          </div>
 
-          {/* Images */}
-          <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
-            <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
-              <ImageIcon size={14} className="dark:text-blue-400" />
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Images ({fImages.length})</h3>
-            </div>
-            <div className="p-4">
-              <ImageUpload images={fImages} onChange={setFImages} />
-              <div className="mt-2 text-[10px] dark:text-zinc-700">Drag to reorder. First image is used as the featured cover image.</div>
+            {/* Images */}
+            <div className="rounded-xl border dark:border-zinc-800/50 dark:bg-zinc-900/30">
+              <div className="flex items-center gap-2 border-b dark:border-zinc-800/50 px-4 py-3">
+                <ImageIcon size={14} className="dark:text-blue-400" />
+                <h3 className="text-[11px] font-semibold uppercase tracking-wider dark:text-zinc-400">Images ({fImages.length})</h3>
+              </div>
+              <div className="p-4">
+                <ImageUpload images={fImages} onChange={setFImages}
+                  pathPrefix={`mission/${fId}`} bucket="public" />
+                <div className="mt-2 text-[10px] dark:text-zinc-700">Drag to reorder. First image is used as the featured cover image.</div>
+              </div>
             </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      </PageErrorBoundary>
     )
   }
 
@@ -337,128 +403,130 @@ export function MissionsPage() {
   )
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-    >
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Missions</h2>
-          <p className="mt-0.5 text-xs dark:text-zinc-600">Create and manage mission posts with all data</p>
+    <PageErrorBoundary name="Missions List">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Missions</h2>
+            <p className="mt-0.5 text-xs dark:text-zinc-600">Create and manage mission posts with all data</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={loadMissions}>
+              <RefreshIcon size={13} /> Refresh
+            </button>
+            <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white dark:hover:bg-emerald-400" onClick={startNew}>
+              <PlusIcon size={13} /> New Mission
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={loadMissions}>
-            <RefreshIcon size={13} /> Refresh
-          </button>
-          <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white dark:hover:bg-emerald-400" onClick={startNew}>
-            <PlusIcon size={13} /> New Mission
-          </button>
+
+        <div className="mb-4 flex items-center gap-2 rounded-lg border dark:border-zinc-800/50 dark:bg-zinc-900/30 px-3 min-h-[44px] sm:min-h-0 sm:py-2">
+          <SearchIcon size={14} className="dark:text-zinc-600 shrink-0" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search missions..."
+            className="flex-1 bg-transparent text-sm dark:text-white outline-none placeholder:text-zinc-400 py-2"
+          />
         </div>
-      </div>
 
-      <div className="mb-4 flex items-center gap-2 rounded-lg border dark:border-zinc-800/50 dark:bg-zinc-900/30 px-3 min-h-[44px] sm:min-h-0 sm:py-2">
-        <SearchIcon size={14} className="dark:text-zinc-600 shrink-0" />
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search missions..."
-          className="flex-1 bg-transparent text-sm dark:text-white outline-none placeholder:text-zinc-400 py-2"
-        />
-      </div>
-
-      <div className="overflow-hidden rounded-xl border dark:border-zinc-800/50">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b dark:border-zinc-800/50 dark:bg-zinc-900/50">
-                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Mission</th>
-                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Tag</th>
-                <th className="hidden px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:table-cell">Date</th>
-                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Status</th>
-                <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/30">
-              {loading ? (
-                [...Array(5)].map((_, i) => (
-                  <tr key={i}>
-                    <td colSpan={5} className="px-4 py-3">
-                      <div className="h-4 w-full animate-pulse rounded dark:bg-zinc-800/50" />
-                    </td>
-                  </tr>
-                ))
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center">
-                    <TargetIcon size={24} className="mx-auto dark:text-zinc-700" />
-                    <div className="mt-2 text-sm font-medium text-zinc-500">No missions yet</div>
-                    <div className="text-xs dark:text-zinc-700">Click "New Mission" to create one</div>
-                  </td>
+        <div className="overflow-hidden rounded-xl border dark:border-zinc-800/50">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b dark:border-zinc-800/50 dark:bg-zinc-900/50">
+                  <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Mission</th>
+                  <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Tag</th>
+                  <th className="hidden px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:table-cell">Date</th>
+                  <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Status</th>
+                  <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Actions</th>
                 </tr>
-              ) : (
-                filtered.map(m => (
-                  <tr key={m.id} className="transition-colors hover:bg-zinc-200 dark:bg-zinc-800/20"
-                    onContextMenu={e => { e.preventDefault(); setCtx({ open: true, x: e.clientX, y: e.clientY, mission: m }) }}>
-                    <td className="px-4 py-3">
-                      <div className="font-medium dark:text-white">{m.title}</div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="inline-block rounded-md dark:bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium dark:text-emerald-400">{m.tag || '—'}</span>
-                    </td>
-                    <td className="hidden px-4 py-3 dark:text-zinc-600 sm:table-cell">{m.date || '—'}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${ m.show !== false ? 'bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-600' }`}>
-                        {m.show !== false && <div className="h-1 w-1 rounded-full bg-emerald-500" />}
-                        {m.show !== false ? 'Active' : 'Hidden'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <button className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[10px] font-medium dark:text-white hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700 min-h-[36px] sm:min-h-0" onClick={() => startEdit(m.id)}>
-                          <EditIcon size={12} /> Edit
-                        </button>
-                        <button className="rounded-lg p-2 dark:text-zinc-700 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 min-h-[36px] min-w-[36px] sm:min-h-0 sm:min-w-0 sm:p-1" onClick={() => handleDelete(m.id)}>
-                          <TrashIcon size={12} />
-                        </button>
-                      </div>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/30">
+                {loading ? (
+                  [...Array(5)].map((_, i) => (
+                    <tr key={i}>
+                      <td colSpan={5} className="px-4 py-3">
+                        <div className="h-4 w-full animate-pulse rounded dark:bg-zinc-800/50" />
+                      </td>
+                    </tr>
+                  ))
+                ) : filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-10 text-center">
+                      <TargetIcon size={24} className="mx-auto dark:text-zinc-700" />
+                      <div className="mt-2 text-sm font-medium text-zinc-500">No missions yet</div>
+                      <div className="text-xs dark:text-zinc-700">Click "New Mission" to create one</div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  filtered.map(m => (
+                    <tr key={m.id} className="transition-colors hover:bg-zinc-200 dark:bg-zinc-800/20"
+                      onContextMenu={e => { e.preventDefault(); setCtx({ open: true, x: e.clientX, y: e.clientY, mission: m }) }}>
+                      <td className="px-4 py-3">
+                        <div className="font-medium dark:text-white">{m.title}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-block rounded-md dark:bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium dark:text-emerald-400">{m.tag || '—'}</span>
+                      </td>
+                      <td className="hidden px-4 py-3 dark:text-zinc-600 sm:table-cell">{m.date || '—'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${ m.show !== false ? 'bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-600' }`}>
+                          {m.show !== false && <div className="h-1 w-1 rounded-full bg-emerald-500" />}
+                          {m.show !== false ? 'Active' : 'Hidden'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <button className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[10px] font-medium dark:text-white hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700 min-h-[36px] sm:min-h-0" onClick={() => startEdit(m.id)}>
+                            <EditIcon size={12} /> Edit
+                          </button>
+                          <button className="rounded-lg p-2 dark:text-zinc-700 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 min-h-[36px] min-w-[36px] sm:min-h-0 sm:min-w-0 sm:p-1" onClick={() => handleDelete(m.id)}>
+                            <TrashIcon size={12} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      <ContextMenu
-        open={ctx.open}
-        x={ctx.x} y={ctx.y}
-        onClose={() => setCtx(o => ({ ...o, open: false }))}
-        actions={ctx.mission ? [
-          { icon: <EditIcon size={12} />, label: 'Edit Mission', onClick: () => startEdit(ctx.mission!.id) },
-          { icon: ctx.mission.show !== false ? <EyeOffIcon size={12} /> : <EyeIcon size={12} />,
-            label: ctx.mission.show !== false ? 'Hide from site' : 'Show on site',
-            onClick: async () => {
-              try {
-                const { error } = await saveMission(ctx.mission!.id, { ...ctx.mission, show: ctx.mission!.show === false })
-                if (!error) loadMissions()
-              } catch (e) {
-                addToast('Toggle failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
+        <ContextMenu
+          open={ctx.open}
+          x={ctx.x} y={ctx.y}
+          onClose={() => setCtx(o => ({ ...o, open: false }))}
+          actions={ctx.mission ? [
+            { icon: <EditIcon size={12} />, label: 'Edit Mission', onClick: () => startEdit(ctx.mission!.id) },
+            { icon: ctx.mission.show !== false ? <EyeOffIcon size={12} /> : <EyeIcon size={12} />,
+              label: ctx.mission.show !== false ? 'Hide from site' : 'Show on site',
+              onClick: async () => {
+                try {
+                  const { error } = await saveMission(ctx.mission!.id, { ...ctx.mission, show: ctx.mission!.show === false })
+                  if (!error) loadMissions()
+                } catch (e) {
+                  addToast('Toggle failed: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
+                }
               }
-            }
-          },
-          { icon: <TrashIcon size={12} />, label: 'Delete', onClick: () => handleDelete(ctx.mission!.id), dangerous: true },
-        ] : []}
-      />
-      <ConfirmModal
-        open={!!confirmDelete}
-        title="Delete Mission"
-        message="Are you sure you want to delete this mission? This action cannot be undone. All associated data including images, stats, goals, timeline entries, and participant records will be permanently removed."
-        confirmLabel="Delete Permanently"
-        onConfirm={() => confirmDelete && executeDelete(confirmDelete)}
-        onCancel={() => setConfirmDelete(null)}
-      />
-    </motion.div>
+            },
+            { icon: <TrashIcon size={12} />, label: 'Delete', onClick: () => handleDelete(ctx.mission!.id), dangerous: true },
+          ] : []}
+        />
+        <ConfirmModal
+          open={!!confirmDelete}
+          title="Delete Mission"
+          message="Are you sure you want to delete this mission? This action cannot be undone. All associated data including images, stats, goals, timeline entries, and participant records will be permanently removed."
+          confirmLabel="Delete Permanently"
+          onConfirm={() => confirmDelete && executeDelete(confirmDelete)}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      </motion.div>
+    </PageErrorBoundary>
   )
 }
