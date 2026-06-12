@@ -41,6 +41,12 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState<number | null>(null)
 
+  // Silent background refresh every 2 minutes
+  useEffect(() => {
+    const interval = setInterval(() => triggerRefresh(), 120000)
+    return () => clearInterval(interval)
+  }, [])
+
   useEffect(() => {
     setLoading(true)
     async function load() {
@@ -115,29 +121,6 @@ export function Dashboard() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <motion.div variants={item} className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <HomeIcon size={14} className="text-zinc-500" />
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Overview</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          {lastUpdated && (
-            <span className="text-[10px] text-zinc-500">
-              Updated {timeAgo(lastUpdated)}
-            </span>
-          )}
-          <button
-            onClick={() => { triggerRefresh(); addToast('Refreshing dashboard...', 'info') }}
-            className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="23 4 23 10 17 10" />
-              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-            </svg>
-            Refresh
-          </button>
-        </div>
-      </motion.div>
       <motion.div variants={item} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((c, i) => (
           <motion.div
