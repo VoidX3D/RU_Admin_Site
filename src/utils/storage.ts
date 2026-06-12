@@ -14,13 +14,14 @@ function remove(key: string) {
 }
 
 export const Storage = {
-  saveSession(user: string) {
-    set('session', { user, time: Date.now() });
+  saveSession(user: string, rememberMe = false, expiresAt?: number) {
+    set('session', { user, time: Date.now(), rememberMe, expiresAt: expiresAt || Date.now() + SESSION_EXPIRY_MS });
   },
   getSession: () => {
-    const session = get<{ user: string; time: number } | null>('session', null);
+    const session = get<{ user: string; time: number; rememberMe?: boolean; expiresAt?: number } | null>('session', null);
     if (!session) return null;
-    if (Date.now() - session.time > SESSION_EXPIRY_MS) {
+    const expiry = session.expiresAt || session.time + SESSION_EXPIRY_MS
+    if (Date.now() > expiry) {
       remove('session');
       remove('token');
       return null;

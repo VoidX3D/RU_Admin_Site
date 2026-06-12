@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState, lazy, Suspense } from 'react'
+import { useEffect, useState, lazy, Suspense, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Analytics } from '@vercel/analytics/react'
 import { useStore } from './store'
 import { Storage } from './utils/storage'
 import { initAdminAnalytics, trackAdminPage } from './utils/analytics'
+import { checkDBConnection } from './utils/supabase'
+import { useKeyboardShortcuts, getDefaultShortcuts } from './hooks/useKeyboardShortcuts'
 
 const Login = lazy(() => import('./components/Login').then(m => ({ default: m.Login })))
 const Layout = lazy(() => import('./components/Layout').then(m => ({ default: m.Layout })))
@@ -53,21 +55,32 @@ const PAGES: Record<string, React.ReactNode> = {
 
 export default function App() {
   const view = useStore(s => s.view)
-  const setUser = useStore(s => s.setUser)
   const setView = useStore(s => s.setView)
   const theme = useStore(s => s.theme)
   const setPendingAction = useStore(s => s.setPendingAction)
+  const setDbConnected = useStore(s => s.setDbConnected)
   const [appLoading, setAppLoading] = useState(true)
 
-  const viewRef = useRef(view)
-  viewRef.current = view
+  const navigate = useCallback((v: string) => setView(v as any), [setView])
+  const setPending = useCallback((a: string | null) => setPendingAction(a), [setPendingAction])
+
+  const shortcuts = getDefaultShortcuts(navigate, setPending)
+  useKeyboardShortcuts(shortcuts)
 
   useEffect(() => {
     initAdminAnalytics()
+
+    // Check DB connection on startup
+    checkDBConnection().then(connected => {
+      setDbConnected(connected)
+    }).catch(() => {
+      setDbConnected(false)
+    })
+
+    // Restore session
     const session = Storage.getSession()
     if (session?.user) {
-      setUser(session.user)
-      setView('dashboard')
+      useStore.getState().login(session.user, session.rememberMe || false, session.expiresAt)
     }
     setAppLoading(false)
   }, [])
@@ -81,33 +94,6 @@ export default function App() {
       trackAdminPage(`/admin/${view}`, `Admin — ${view.charAt(0).toUpperCase() + view.slice(1)}`)
     }
   }, [view])
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      const el = e.target as HTMLElement
-      const isInput = el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable
-      if (isInput) return
-
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
-        switch (e.key.toLowerCase()) {
-          case '1': e.preventDefault(); setPendingAction('newMission'); setView('missions'); break
-          case '2': e.preventDefault(); setPendingAction('newAnnouncement'); setView('announcements'); break
-          case 'd': e.preventDefault(); setView('dashboard'); break
-          case 'm': e.preventDefault(); setView('missions'); break
-          case 'u': e.preventDefault(); setView('members'); break
-        }
-      }
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-        switch (e.key.toLowerCase()) {
-          case 'a': e.preventDefault(); setView('announcements'); break
-          case 'c': e.preventDefault(); setView('contact'); break
-        }
-      }
-    }
-
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
 
   if (appLoading) {
     return (

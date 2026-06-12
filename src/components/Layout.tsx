@@ -1,7 +1,8 @@
-import { ReactNode, useState, useEffect } from 'react'
+import { ReactNode, useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useStore, type View } from '../store'
 import { Storage } from '../utils/storage'
+import { ConnectionStatus } from './ConnectionStatus'
 import {
   TargetIcon, MegaphoneIcon, UsersIcon,
   SettingsIcon, HelpCircleIcon, MailIcon,
@@ -42,26 +43,29 @@ const sidebarVariants = {
 export function Layout({ children }: { children: ReactNode }) {
   const view = useStore(s => s.view)
   const setView = useStore(s => s.setView)
-  const setUser = useStore(s => s.setUser)
+  const logout = useStore(s => s.logout)
   const toggleTheme = useStore(s => s.toggleTheme)
   const triggerRefresh = useStore(s => s.triggerRefresh)
   const addToast = useStore(s => s.addToast)
+  const updateActivity = useStore(s => s.updateActivity)
   const theme = useStore(s => s.theme)
+  const dbConnected = useStore(s => s.dbConnected)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  const handleActivity = useCallback(() => {
+    updateActivity()
+  }, [updateActivity])
+
   useEffect(() => {
-    let lastActivity = Date.now()
     const INACTIVITY_TIMEOUT = 30 * 60 * 1000
-    const resetTimer = () => { lastActivity = Date.now() }
-    window.addEventListener('mousedown', resetTimer)
-    window.addEventListener('keydown', resetTimer)
-    window.addEventListener('touchstart', resetTimer)
+    window.addEventListener('mousedown', handleActivity)
+    window.addEventListener('keydown', handleActivity)
+    window.addEventListener('touchstart', handleActivity)
     const check = () => {
       const s = Storage.getSession()
-      if (!s || (Date.now() - lastActivity > INACTIVITY_TIMEOUT)) {
+      if (!s || (Date.now() - useStore.getState().auth.lastActivity > INACTIVITY_TIMEOUT)) {
         Storage.clearSession()
-        setUser(null)
-        setView('login')
+        logout()
         addToast('Session expired due to inactivity', 'info')
       }
     }
@@ -69,16 +73,16 @@ export function Layout({ children }: { children: ReactNode }) {
     const interval = setInterval(check, 60000)
     return () => {
       clearInterval(interval)
-      window.removeEventListener('mousedown', resetTimer)
-      window.removeEventListener('keydown', resetTimer)
-      window.removeEventListener('touchstart', resetTimer)
+      window.removeEventListener('mousedown', handleActivity)
+      window.removeEventListener('keydown', handleActivity)
+      window.removeEventListener('touchstart', handleActivity)
     }
-  }, [])
+  }, [handleActivity, logout, addToast])
 
-  function logout() {
+  function handleLogout() {
     Storage.clearSession()
-    setUser(null)
-    setView('login')
+    logout()
+    addToast('Signed out successfully', 'info')
   }
 
   function navTo(v: View) {
@@ -138,7 +142,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </button>
           <button
             className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-red-400 sm:min-h-0 sm:min-w-0 sm:h-7 sm:w-7"
-            onClick={logout}
+            onClick={handleLogout}
             title="Sign Out"
           >
             <LogOutIcon size={13} />
@@ -189,17 +193,14 @@ export function Layout({ children }: { children: ReactNode }) {
             {PAGE_TITLES[view] ?? 'Dashboard'}
           </h1>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 rounded-md dark:bg-zinc-900 px-2 py-1">
-              <DatabaseIcon size={11} className="text-emerald-500" />
-              <span className="text-[10px] font-medium text-zinc-500">Live</span>
-            </div>
-          <button
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 sm:min-h-0 sm:min-w-0 sm:h-8 sm:w-8"
-            onClick={() => { triggerRefresh(); addToast('Refreshing data...', 'info') }}
-            title="Refresh data"
-          >
-            <RefreshIcon size={14} />
-          </button>
+            <ConnectionStatus />
+            <button
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 sm:min-h-0 sm:min-w-0 sm:h-8 sm:w-8"
+              onClick={() => { triggerRefresh(); addToast('Refreshing data...', 'info') }}
+              title="Refresh data"
+            >
+              <RefreshIcon size={14} />
+            </button>
           </div>
         </header>
 

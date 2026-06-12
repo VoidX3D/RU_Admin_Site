@@ -23,17 +23,26 @@ const itemVariants = {
 }
 
 export function Login() {
-  const [user, setUser] = useState('')
+  const [userField, setUserField] = useState('')
   const [pass, setPass] = useState('')
   const [showPass, setShowPass] = useState(false)
+  const [rememberMe, setRememberMe] = useState(() => {
+    try { return localStorage.getItem('ru_admin_remember_me') === 'true' } catch { return false }
+  })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const setAppUser = useStore(s => s.setUser)
+  const storeLogin = useStore(s => s.login)
   const setView = useStore(s => s.setView)
 
-  useEffect(() => { setMounted(true) }, [])
+  useEffect(() => {
+    setMounted(true)
+    try {
+      const saved = localStorage.getItem('ru_admin_remembered_user')
+      if (saved) setUserField(saved)
+    } catch {}
+  }, [])
 
   // Canvas animation for the left panel
   useEffect(() => {
@@ -145,28 +154,36 @@ export function Login() {
   }, [])
 
   async function handleLogin() {
-    if (!user || !pass) { setError('Enter username and password'); return }
+    if (!userField || !pass) { setError('Enter email/username and password'); return }
     const delay = checkLoginRateLimit()
     if (delay > 0) {
-      setError(`Too many attempts. Try again in ${Math.ceil(delay / 1000)}s`)
+      const minutes = Math.ceil(delay / 60000)
+      const seconds = Math.ceil((delay % 60000) / 1000)
+      setError(`Too many attempts. Locked for ${minutes > 0 ? `${minutes}m ` : ''}${seconds}s`)
       return
     }
     setLoading(true); setError('')
 
     try {
-      const result = await login(user, pass)
+      const result = await login(userField, pass) as any
       if (result.token) {
         resetLoginRateLimit()
-        Storage.saveSession(result.user || user)
+        const expiresAt = rememberMe ? Date.now() + 7 * 24 * 60 * 60 * 1000 : Date.now() + 24 * 60 * 60 * 1000
+        Storage.saveSession(result.user || userField, rememberMe, expiresAt)
         Storage.saveToken(result.token)
-        setAppUser(result.user || user)
-        setView('dashboard')
+        try {
+          localStorage.setItem('ru_admin_remember_me', String(rememberMe))
+          if (rememberMe) localStorage.setItem('ru_admin_remembered_user', userField)
+          else localStorage.removeItem('ru_admin_remembered_user')
+        } catch {}
+        storeLogin(result.user || userField, rememberMe, expiresAt)
       } else {
-        setError(result.error || 'Invalid credentials')
+        const err = result.error
+        setError(typeof err === 'string' ? err : err?.message || (err ? JSON.stringify(err) : 'Invalid credentials. Check your email/password or use the master key.'))
         setLoading(false)
       }
     } catch {
-      setError('Connection error. Check API availability.')
+      setError('Connection error. Check API availability and Supabase configuration.')
       setLoading(false)
     }
   }
@@ -282,25 +299,25 @@ export function Login() {
                 animate={{ opacity: 1, height: 'auto', scale: 1 }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <span>{error}</span>
+                <span className="text-xs">{error}</span>
               </motion.div>
             )}
 
             <div>
-                    <label className="mb-1.5 block text-xs font-medium tracking-wide text-zinc-500 uppercase">Email or Username</label>
-                    <div className="relative">
-                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 dark:text-zinc-600">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                      </div>
-                      <input
-                        value={user}
-                        onChange={e => { setUser(e.target.value); setError('') }}
-                        onKeyDown={e => e.key === 'Enter' && handleLogin()}
-                        placeholder="admin@example.com"
-                        autoFocus
-                        className="w-full rounded-lg border dark:border-zinc-800 bg-white dark:bg-zinc-900/50 py-2.5 pl-10 pr-3 text-sm text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition-all focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20"
-                      />
-                    </div>
+              <label className="mb-1.5 block text-xs font-medium tracking-wide text-zinc-500 uppercase">Email or Username</label>
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 dark:text-zinc-600">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <input
+                  value={userField}
+                  onChange={e => { setUserField(e.target.value); setError('') }}
+                  onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                  placeholder="admin@example.com"
+                  autoFocus
+                  className="w-full rounded-lg border dark:border-zinc-800 bg-white dark:bg-zinc-900/50 py-2.5 pl-10 pr-3 text-sm text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition-all focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20"
+                />
+              </div>
             </div>
 
             <div>
@@ -314,7 +331,7 @@ export function Login() {
                   value={pass}
                   onChange={e => { setPass(e.target.value); setError('') }}
                   onKeyDown={e => e.key === 'Enter' && handleLogin()}
-                  placeholder="Enter your password"
+                  placeholder="Enter your password or master key"
                   className="w-full rounded-lg border dark:border-zinc-800 bg-white dark:bg-zinc-900/50 py-2.5 pl-10 pr-10 text-sm text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition-all focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20"
                 />
                 <button
@@ -330,6 +347,20 @@ export function Login() {
                   )}
                 </button>
               </div>
+              <p className="mt-1 text-[10px] text-zinc-500 dark:text-zinc-600">Use your admin password or the master key</p>
+            </div>
+
+            {/* Remember Me */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={e => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600 text-emerald-500 focus:ring-emerald-500/30 dark:bg-zinc-800"
+                />
+                <span className="text-xs text-zinc-600 dark:text-zinc-400">Remember me for 7 days</span>
+              </label>
             </div>
 
             <motion.button
@@ -357,6 +388,12 @@ export function Login() {
                 'Sign In'
               )}
             </motion.button>
+
+            <div className="rounded-lg border border-zinc-200 dark:border-zinc-800/50 bg-zinc-50 dark:bg-zinc-900/30 p-3">
+              <p className="text-[10px] leading-relaxed text-zinc-500 dark:text-zinc-500">
+                <span className="font-semibold text-zinc-700 dark:text-zinc-300">Master Key Access:</span> If you have the emergency master key, enter it in the password field with any username to bypass credential authentication.
+              </p>
+            </div>
           </motion.div>
 
           <motion.p
