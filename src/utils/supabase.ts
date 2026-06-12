@@ -17,7 +17,7 @@ function handleUnauthorized() {
   if (_unauthorizedHandled) return
   _unauthorizedHandled = true
   Storage.clearSession()
-  useStore.getState().setView('login')
+  useStore.getState().logout()
   useStore.getState().addToast('Session expired. Please log in again.', 'warning')
   setTimeout(() => { _unauthorizedHandled = false }, 5000)
 }
@@ -73,9 +73,9 @@ export async function login(username: string, password: string) {
     return res.json()
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
-      return { error: 'Request timed out' }
+      return { error: { message: 'Request timed out. Check your connection.' } }
     }
-    return { error: 'Network error — check your connection' }
+    return { error: { message: 'Network error — check your connection and Supabase configuration.' } }
   }
 }
 
@@ -192,4 +192,16 @@ export async function deleteContactSubmission(id: number) {
 export async function checkDBConnection() {
   const result = await api('db:check')
   return result.connected === true
+}
+
+// Session validation
+export async function validateSession(): Promise<boolean> {
+  const token = Storage.getToken()
+  if (!token) return false
+  try {
+    await api('db:check')
+    return true
+  } catch {
+    return false
+  }
 }

@@ -1,136 +1,146 @@
 # AGENTS — Admin Panel Guide
 
 ## Overview
-RU Club Motherland Admin Panel — a **React 19 + TypeScript + Vite** SPA for managing all dynamic content on `ruclub.motherland.edu.np`. Every save writes directly to Supabase (no draft/publish workflow). Deployed at `ruclubadmin.vercel.app`.
+RU Club Motherland Admin Panel — a **React 19 + TypeScript + Vite 7** SPA for managing all dynamic content on `ruclub.motherland.edu.np`. Every save writes directly to Supabase. Deployed at `ruclubadmin.vercel.app`. Authentication via JWT + environment variable credentials.
 
 ## Tech Stack
-- **Framework:** React 19 + TypeScript
-- **Build:** Vite 7 + Tailwind CSS v4
-- **Routing:** React Router DOM v7 (HashRouter in `App.tsx`)
+- **Framework:** React 18.3 + TypeScript
+- **Build:** Vite 7 + Tailwind CSS v3
+- **Routing:** Zustand-based view switching (no React Router)
 - **Backend:** Supabase (Postgres + Storage), accessed via **service key** (`supabaseAdmin`) to bypass RLS
 - **Animations:** Framer Motion
-- **State:** React hooks + Zustand (`store.ts`)
-- **Auth:** None — protected via `SettingsPage.tsx` session PIN
+- **State:** Zustand (`store.ts`)
+- **Auth:** JWT-based login via `/api/admin` endpoint with HMAC-SHA256
 
 ## Architecture
 ```
 /src
-├── App.tsx                  → HashRouter, all routes (lazy-loaded)
-├── main.tsx                 → Entry, renders Root
-├── index.css                → Tailwind v4 + dark theme + animations
-├── store.ts                 → Zustand store (view, toasts, refreshTrigger, etc.)
+├── App.tsx                  → Root: lazy-loaded pages, auth gate, connection check
+├── main.tsx                 → Entry, renders App
+├── App.css                  → Tailwind + KaTeX + scrollbar styles
+├── store.ts                 → Zustand store (auth, view, toasts, drafts, DB status)
 ├── types.ts                 → All TypeScript interfaces
 ├── utils/
-│   ├── supabase.ts          → ALL DB operations (CRUD for every table)
-│   ├── storage.ts           → Session + settings persistence (localStorage)
-│   ├── helpers.ts           → countBy(), formatDate() + other utils
-│   ├── backup.ts            → Import/export all settings (localStorage)
-│   └── image.ts             → Image compression + processing (client-side)
+│   ├── supabase.ts          → ALL DB operations via /api/admin endpoint
+│   ├── storage.ts           → Session + token persistence (localStorage)
+│   ├── helpers.ts           → formatDate(), debounce(), cn(), etc.
+│   ├── validation.ts        → Field/form validation, email/slug/date rules
+│   ├── drafts.ts            → localStorage draft save/load system
+│   ├── image.ts             → Image compression + upload retry logic
+│   ├── markdown.ts          → Markdown rendering (marked + KaTeX + DOMPurify)
+│   ├── analytics.ts         → GA4 dual-tag initialization
+│   ├── backup.ts            → Import/export all settings
+│   └── env.ts               → Environment config reader
+├── hooks/
+│   └── useKeyboardShortcuts.ts → Global keyboard shortcut hook
 ├── components/
-│   ├── Layout.tsx           → Root layout: sidebar nav + header + content
-│   ├── Dashboard.tsx        → Home: stat cards + quick actions
-│   ├── MissionsPage.tsx     → Full CRUD: form with all 7 child tables
-│   ├── AnnouncementsPage.tsx→ Full CRUD: tags + gallery support
-│   ├── MembersPage.tsx      → Full CRUD: image upload, types, tabs
+│   ├── Login.tsx            → JWT login with Remember Me, master key, rate limiting
+│   ├── Layout.tsx           → Sidebar nav + header + ConnectionStatus + logout
+│   ├── Dashboard.tsx        → Stat cards + quick actions
+│   ├── MissionsPage.tsx     → Full CRUD: 7 child tables + drafts + PageErrorBoundary
+│   ├── AnnouncementsPage.tsx→ Tags + images + drafts + PageErrorBoundary
+│   ├── MembersPage.tsx      → 3 tabs, image upload, CSV/JSON export, validation
 │   ├── StatsEditorPage.tsx  → Global stats rows (value + label)
 │   ├── PartnersEditorPage.tsx→ Partner logos (name + alt + image)
-│   ├── ContactSubmissions.tsx→ Read-only viewer with detail panel
-│   ├── SettingsPage.tsx     → Login PIN, theme, backup/restore
+│   ├── ContactSubmissions.tsx→ Paginated viewer (50/page) + email validation
+│   ├── SettingsPage.tsx     → DB status, backup/restore, data migration
 │   ├── HelpPage.tsx         → Keyboard shortcuts + usage guide
-│   ├── Icons.tsx            → All SVG icon components (60+ icons)
-│   ├── ErrorBoundary.tsx    → Global error boundary
+│   ├── Icons.tsx            → 60+ SVG icon components
+│   ├── ErrorBoundary.tsx    → Global error boundary with chunk error detection
+│   ├── PageErrorBoundary.tsx→ Page-level error boundary with Reset button
+│   ├── ConnectionStatus.tsx → Live DB connection indicator
+│   ├── ConfirmModal.tsx     → Delete confirmation dialog
+│   ├── ContextMenu.tsx      → Right-click context menu
+│   ├── ShortcutsHelp.tsx    → Keyboard shortcuts help modal
+│   ├── DraftIndicator.tsx   → Draft saved indicator with age
+│   ├── Modal.tsx            → Reusable modal dialog
+│   ├── Toast.tsx            → Toast notification system
+│   ├── AnimatedBackground.tsx→ Canvas particle background
 │   └── form/
 │       ├── index.ts         → Re-exports all form components
-│       ├── Field.tsx        → Text input with label + error
+│       ├── Field.tsx        → Text input with label + error + maxLength
 │       ├── Textarea.tsx     → Textarea with label + error
 │       ├── Select.tsx       → Dropdown select
 │       ├── Toggle.tsx       → On/off switch
-│       └── ImageUpload.tsx  → Drag & drop image picker
-└── ...config files
+│       ├── ImageUpload.tsx  → Drag & drop with progress bar + retry
+│       ├── RichTextEditor.tsx→ Full markdown editor with toolbar + preview
+│       ├── StatsEditor.tsx  → Key-value pair editor
+│       └── ... (PartnersEditor, GoalsEditor, TimelineEditor, ParticipantsEditor, BudgetEditor)
+├── styles/
+│   └── md-content.css       → Markdown rendering styles
+└── api/
+    └── admin.ts             → Vercel serverless handler (all DB ops, auth, image upload)
 ```
 
-## Routes
-| Hash Route | Component | Data Source |
-|---|---|---|
-| `#/dashboard` | Dashboard | live DB counts |
-| `#/missions` | MissionsPage | `saveMission()` + children |
-| `#/announcements` | AnnouncementsPage | `saveAnnouncement()` + tags/gallery |
-| `#/members` | MembersPage | `saveMembers()` delete-all-then-insert |
-| `#/stats` | StatsEditorPage | `saveStats()` delete-all-then-insert |
-| `#/partners` | PartnersEditorPage | `savePartners()` delete-all-then-insert |
-| `#/contact` | ContactSubmissions | read-only + delete |
-| `#/settings` | SettingsPage | localStorage |
-| `#/help` | HelpPage | static |
-| `*` | redirect → `#/dashboard` |
+## Pages & View Switching
+| View | Component | Data | Notes |
+|---|---|---|---|
+| `login` | Login | env vars | JWT auth, rate-limited, master key support |
+| `dashboard` | Dashboard | DB stats | Stat cards + quick actions |
+| `missions` | MissionsPage | 7 sub-tables | Full CRUD + drafts + PageErrorBoundary |
+| `announcements` | AnnouncementsPage | Tags + image | Full CRUD + drafts + PageErrorBoundary |
+| `members` | MembersPage | 3 groups | CSV/JSON export + validation |
+| `stats` | StatsEditorPage | Rows | Delete-all-then-insert |
+| `partners` | PartnersEditorPage | Rows + images | Delete-all-then-insert |
+| `contact` | ContactSubmissions | Read-only | Paginated (50/page) + email validation |
+| `settings` | SettingsPage | localStorage | Backup/restore, DB status |
+| `help` | HelpPage | Static | Keyboard shortcuts guide |
 
-## DB Operations in `utils/supabase.ts`
+## Key Features Implemented
+- **Authentication:** JWT-based login with HMAC-SHA256, "Remember Me" (7-day session), master key bypass, rate limiting (5 attempts → 15-min lockout), inactivity timeout (30 min)
+- **Connection Status:** Live DB indicator in header, auto-checks every 30s, color-coded (green/red/yellow)
+- **Validation:** Required fields, email format, slug format (lowercase-hyphens), date format, image file types, character limits, duplicate slug detection
+- **Image Upload:** Drag-and-drop, compression (max 1920px), retry on failure (3 attempts with exponential backoff), progress bar, preview before upload
+- **Error Handling:** Global ErrorBoundary with chunk error detection + cache reset, PageErrorBoundary per page with Reset button
+- **Drafts:** Auto-save every 30s, restore on new/edit, clear on save, age indicator, localStorage quota handling
+- **Keyboard Shortcuts:** Ctrl+1/2 new mission/announcement, Ctrl+D/M/U navigation, Ctrl+Shift+A/C/S for announcements/contact/settings, Ctrl+? for help
+- **Performance:** Contact submissions paginated (50/page), memoized filtered lists, debounced search
+- **Dark Mode:** Persisted in localStorage, theme toggle in sidebar, Tailwind `dark:` classes
+
+## DB Operations in `api/admin.ts`
 
 ### Pattern: delete-all-then-insert
-Tables with no foreign key dependencies use this pattern (simpler, avoids update complexity):
-- **stats** (`saveStats()`)
-- **partners** (`savePartners()`)
-- **members** (`saveMembers()`)
+Tables with no foreign key dependencies:
+- **stats** - `stats:save`
+- **partners** - `partners:save`
+- **members** - `members:save`
 
 ### Pattern: upsert + child-table replace
-Tables with child dependencies use upsert for the parent and delete-all-then-insert for children:
-- **missions** (`saveMission()`) — handles 7 child tables: stats, partners, images, goals, timeline, participants, budget
-- **announcements** (`saveAnnouncement()`) — handles `announcement_tags` + `announcement_gallery`
+Tables with child dependencies:
+- **missions** (`missions:save`) — 7 child tables: stats, partners, images, goals, timeline, participants, budget
+- **announcements** (`announcements:save`) — announcement_tags
 
 ### Pattern: read-only
-- **contact_submissions** (`fetchContactSubmissions()`) — user-submitted messages, only read + delete
-
-### Service Key
-All DB operations use `supabaseAdmin` (service key) to bypass RLS. The anon key `supabase` client exists only for storage operations. Both use distinct `storageKey` values to avoid GoTrueClient conflicts.
+- **contact_submissions** (`contact:list`) — user-submitted messages, only read + delete
 
 ### Image Upload
-- `uploadBase64Image()` converts dataUrl → blob → File, uploads to `ruclub` bucket under `static/assets/`
-- `storageUrl()` reconstructs the public URL from relative paths
-- Used by: members (click avatar), partners (click preview), missions/announcements (ImageUpload component)
-
-### Cascade Deletes
-- `deleteMission()` manually deletes all 7 child tables before deleting the mission
-- `deleteAnnouncement()` manually deletes tags + gallery before deleting the announcement
-
-## Data Flow
-1. Each page loads via `useEffect` + `refreshTrigger` from Zustand store
-2. Dashboard refreshes every 30s; other pages refresh on navigation
-3. Every save writes directly to Supabase — no draft, no publish step
-4. Live badge in Layout header signals direct-DB mode
-5. Toast notifications for success/error on every operation
+- Base64 → Buffer → Supabase Storage (`ruclub` bucket under `static/assets/`)
+- Used by: missions, announcements, members, partners
 
 ## Environment Variables
 ```
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
-VITE_SUPABASE_SERVICE_KEY=your-service-role-key
-```
 
-## Key Conventions
-- **No draft/publish workflow** — every save instant to DB
-- **No GitHub PR workflow** — removed `github.ts`, `diff.ts`, `prTemplates.ts`
-- **No autosave** — `autosave.ts`, `history.ts` removed
-- **No localStorage drafts** — only session + settings persisted
-- All pages have: loading skeleton, empty state, error handling
-- Image previews use `storageUrl()` to resolve relative paths
-- Stats/Partners editors have move-up/down reordering
-- Row validation before save (required fields check)
-- Dark mode via Tailwind `dark:` classes + theme toggle in settings
+# Server-side (Vercel env vars, never in .env)
+ADMIN_USERNAME=admin@email.com
+ADMIN_PASSWORD=your-password
+SUPABASE_SERVICE_KEY=your-service-role-key
+SUPABASE_JWT_SECRET=your-jwt-secret
+MASTER_KEY=emergency-master-key
+```
 
 ## Build
 ```bash
-npm run build     # tsc -b && vite build → dist/
 npm run dev       # vite dev server
+npm run build     # tsc -b && vite build → dist/
 ```
 
-## Checklist: Adding a New Table
-1. Add type to `types.ts`
-2. Add CRUD functions to `utils/supabase.ts` (use `supabaseAdmin`)
-3. Create page component in `components/`
-4. Add route in `App.tsx` (lazy import)
-5. Add nav item in `Layout.tsx`
-6. Add shortcut + help text in `HelpPage.tsx`
-7. Add toast notifications for success/error
-
-## Credits
-Built by **Sincere Bhattarai** (@VoidX3D) for RU Club Motherland.
-Managed by **Motherland Secondary School**, Pokhara, Nepal.
+## Key Conventions
+- Every save is instant to DB — no publish workflow
+- All pages have: loading skeleton, empty state, error handling, PageErrorBoundary
+- Image previews use `storageUrl()` to resolve relative paths
+- use `useStore.getState()` for accessing store outside React components
+- JWT token stored in localStorage under `ru_admin_token` prefix
+- Drafts stored in localStorage under `ru_admin_draft_` prefix
+- Dark mode persisted in `localStorage.theme`
