@@ -78,3 +78,23 @@ export async function processFiles(files: FileList | File[], maxCount = Infinity
 export function estimateDataUrlSize(dataUrl: string): number {
   return getDataUrlSize(dataUrl)
 }
+
+export async function uploadWithRetry(
+  uploadFn: () => Promise<{ url?: string; error?: any }>,
+  maxRetries = 3
+): Promise<{ url?: string; error?: any }> {
+  let lastError: any
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await uploadFn()
+      if (result.url) return result
+      if (!result.error || attempt === maxRetries) return result
+      lastError = result.error
+    } catch (e) {
+      lastError = e
+      if (attempt === maxRetries) return { error: lastError || 'Upload failed after retries' }
+    }
+    await new Promise(r => setTimeout(r, Math.min(1000 * Math.pow(2, attempt - 1), 5000)))
+  }
+  return { error: lastError || 'Upload failed' }
+}
