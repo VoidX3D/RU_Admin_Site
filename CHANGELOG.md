@@ -5,6 +5,25 @@ All notable changes to the RU Club Motherland Admin Panel are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.2] - 2026-06-13
+
+### Added
+- Featured image selector — star icon to pick any uploaded image as the mission cover
+- Auto-rename uploaded images to `img-01.jpg`, `img-02.jpg`, etc.
+- Auto-set first image as featured when no featured is set
+- `featuredIndex` / `onFeaturedChange` props on `ImageUpload` component
+
+### Changed
+- Image upload dropzone redesigned — larger, animated hover scale, improved drag feedback
+- Image cards redesigned — grid layout with aspect-video, hover border effects, featured highlight (emerald border + glow)
+- Upload progress replaced inline spinner with animated card with Framer Motion
+- Hint text now shows star icon + "Click the star to set the featured cover image"
+
+### Fixed
+- Removing the featured image now correctly picks the first remaining image
+- Image index shifts properly when reordering with a featured image set
+- Null/empty featured image handled cleanly in delta saves
+
 ## [1.0.1] - 2026-06-13
 
 ### Fixed

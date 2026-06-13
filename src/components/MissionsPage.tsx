@@ -43,6 +43,7 @@ export function MissionsPage() {
   const [fParticipants, setFParticipants] = useState<{ group_name: string; participant_count: string }[]>([])
   const [fBudget, setFBudget] = useState<{ item: string; amount: string }[]>([])
   const [fImages, setFImages] = useState<PendingImage[]>([])
+  const [fFeaturedIndex, setFFeaturedIndex] = useState(-1)
   const [saving, setSaving] = useState(false)
   const initialForm = useRef<Record<string, unknown>>({})
 
@@ -93,7 +94,8 @@ export function MissionsPage() {
   }
 
   function snapshot() {
-    initialForm.current = { title: fTitle, tag: fTag, date: fDate, description: fDesc, detail: fDetail, show: fShow, featured: fImages.find(i => i.remote)?.dataUrl || null }
+    const featuredUrl = fFeaturedIndex >= 0 && fImages[fFeaturedIndex] ? fImages[fFeaturedIndex].dataUrl : (fImages.find(i => i.remote)?.dataUrl || null)
+    initialForm.current = { title: fTitle, tag: fTag, date: fDate, description: fDesc, detail: fDetail, show: fShow, featured: featuredUrl }
   }
 
   function startNew() {
@@ -103,7 +105,7 @@ export function MissionsPage() {
     setFDesc(''); setFDetail(''); setFShow(true)
     setFStats([]); setFPartners([]); setFGoals([])
     setFTimeline([]); setFParticipants([]); setFBudget([])
-    setFImages([]); setErrors({}); setDraftSavedAt(null)
+    setFImages([]); setFFeaturedIndex(-1); setErrors({}); setDraftSavedAt(null)
     setTimeout(() => snapshot(), 0)
     setMode('form')
 
@@ -137,6 +139,7 @@ export function MissionsPage() {
     setFDate(m.date || ''); setFDesc(m.description || '')
     setFShow(m.show !== false)
     setErrors({}); setDraftSavedAt(null)
+    setFFeaturedIndex(-1)
 
     const missionId = m?.id
     if (!missionId) { setMode('form'); return }
@@ -156,6 +159,11 @@ export function MissionsPage() {
           return { dataUrl: url, name: url.split('/').pop() || 'image', remote: true }
         })
         setFImages(imgs)
+        // Detect featured image from the mission entry's featured field
+        if (m.featured) {
+          const idx = imgs.findIndex(img => img.dataUrl === m.featured)
+          if (idx >= 0) setFFeaturedIndex(idx)
+        }
       }
     } catch (e) {
       console.error('[Missions] Load details failed:', missionId, e)
@@ -191,8 +199,12 @@ export function MissionsPage() {
     if (fDesc !== init.description) delta.description = fDesc
     if (fDetail !== init.detail) delta.detail = fDetail
     if (fShow !== init.show) delta.show = fShow
-    const currentFeatured = fImages.find(i => i.remote)?.dataUrl || null
-    if (currentFeatured !== init.featured) delta.featured = currentFeatured
+    const featuredImg = fFeaturedIndex >= 0 && fImages[fFeaturedIndex] ? fImages[fFeaturedIndex] : null
+    const currentFeatured = featuredImg ? featuredImg.dataUrl : null
+    if (currentFeatured !== init.featured) {
+      if (currentFeatured) delta.featured = currentFeatured
+      else delta.featured = null
+    }
     return delta
   }
 
@@ -414,8 +426,8 @@ export function MissionsPage() {
               </div>
               <div className="p-4">
                 <ImageUpload images={fImages} onChange={setFImages}
-                  pathPrefix={`mission/${fId}`} bucket="public" />
-                <div className="mt-2 text-[10px] dark:text-zinc-700">Drag to reorder. First image is used as the featured cover image.</div>
+                  pathPrefix={`mission/${fId}`} bucket="public"
+                  featuredIndex={fFeaturedIndex} onFeaturedChange={setFFeaturedIndex} />
               </div>
             </div>
           </div>
