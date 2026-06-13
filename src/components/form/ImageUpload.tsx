@@ -1,16 +1,12 @@
 import { useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { processFiles, uploadWithRetry } from '../../utils/image'
+import { processFiles, uploadWithRetry, renameImage as renameFile } from '../../utils/image'
 import { uploadBase64Image, deleteImage } from '../../utils/supabase'
 import type { PendingImage } from '../../types'
 import { UploadIcon, XIcon, StarIcon, MoveUpIcon, MoveDownIcon } from '../Icons'
 
 let _imgKey = 0
 function imgKey() { return ++_imgKey }
-
-function renameFile(index: number): string {
-  return 'img-' + String(index + 1).padStart(2, '0') + '.jpg'
-}
 
 function renumber(imgs: (PendingImage & { _key?: number })[]): (PendingImage & { _key?: number })[] {
   return imgs.map((img, i) => ({ ...img, name: renameFile(i) }))

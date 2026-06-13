@@ -198,6 +198,12 @@ export async function deleteContactSubmission(id: number) {
   return result
 }
 
+// Image maintenance
+export async function renameAllImages() {
+  const result = await api('images:rename-all')
+  return result
+}
+
 // DB health check
 export async function checkDBConnection() {
   const result = await api('db:check')

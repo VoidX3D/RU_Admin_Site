@@ -388,6 +388,86 @@ async function handleAction(action: string, params: any) {
       return { error: null }
     }
 
+    case 'images:rename-all': {
+      const renamed = { missions: 0, announcements: 0 }
+
+      const { data: missions } = await supabaseAdmin.from('missions').select('id, slug')
+      if (missions) {
+        for (const mission of missions) {
+          const { data: images } = await supabaseAdmin.from('mission_images')
+            .select('id, url')
+            .eq('mission_id', mission.id)
+            .order('sort_order')
+
+          if (!images || images.length === 0) continue
+
+          const slug = mission.slug
+          let changed = false
+
+          for (let i = 0; i < images.length; i++) {
+            const img = images[i]
+            const oldName = img.url.split('/').pop()
+            const newName = `img-${String(i + 1).padStart(2, '0')}.jpg`
+
+            if (oldName === newName) continue
+
+            const oldPath = `static/assets/mission/${slug}/${oldName}`
+            const newPath = `static/assets/mission/${slug}/${newName}`
+
+            const { error: downloadErr, data: fileData } = await supabaseAdmin.storage.from('ruclub').download(oldPath)
+            if (downloadErr) {
+              console.error(`[rename-mission] Cannot download ${oldPath}: ${downloadErr.message}`)
+              continue
+            }
+
+            const { error: uploadErr } = await supabaseAdmin.storage.from('ruclub').upload(newPath, fileData, { contentType: fileData.type, upsert: true })
+            if (uploadErr) {
+              console.error(`[rename-mission] Cannot upload ${newPath}: ${uploadErr.message}`)
+              continue
+            }
+
+            await supabaseAdmin.storage.from('ruclub').remove([oldPath])
+
+            await supabaseAdmin.from('mission_images').update({ url: newName }).eq('id', img.id)
+            changed = true
+          }
+
+          if (changed) renamed.missions++
+        }
+      }
+
+      const { data: announcements } = await supabaseAdmin.from('announcements').select('id, image').not('image', 'is', null)
+      if (announcements) {
+        for (const ann of announcements) {
+          const oldName = ann.image.split('/').pop()
+          if (!oldName || oldName.startsWith('http')) continue
+          if (oldName === 'featured.jpg') continue
+
+          const oldPath = `static/assets/announcements/${oldName}`
+          const newPath = `static/assets/announcements/featured.jpg`
+
+          const { error: downloadErr, data: fileData } = await supabaseAdmin.storage.from('ruclub').download(oldPath)
+          if (downloadErr) {
+            console.error(`[rename-announcement] Cannot download ${oldPath}: ${downloadErr.message}`)
+            continue
+          }
+
+          const { error: uploadErr } = await supabaseAdmin.storage.from('ruclub').upload(newPath, fileData, { contentType: fileData.type, upsert: true })
+          if (uploadErr) {
+            console.error(`[rename-announcement] Cannot upload ${newPath}: ${uploadErr.message}`)
+            continue
+          }
+
+          await supabaseAdmin.storage.from('ruclub').remove([oldPath])
+
+          await supabaseAdmin.from('announcements').update({ image: 'featured.jpg' }).eq('id', ann.id)
+          renamed.announcements++
+        }
+      }
+
+      return { data: renamed }
+    }
+
     case 'db:check': {
       const { error } = await supabaseAdmin.from('stats').select('id', { count: 'exact', head: true }).limit(1)
       return { connected: !error }

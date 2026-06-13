@@ -5,6 +5,20 @@ All notable changes to the RU Club Motherland Admin Panel are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - 2026-06-13
+
+### Added
+- "Rename All Images" button in Settings → Data Migration — renames all mission images to `img-XX.jpg` and announcement images to `featured.jpg` in Supabase Storage based on current sort order
+- `images:rename-all` API handler — downloads each image, uploads with correct name, deletes old, updates DB record
+- `renameAllImages()` client function in `supabase.ts`
+
+### Changed
+- `ImageUpload.tsx` now imports `renameImage` from `utils/image.ts` instead of inline `renameFile` — single source of truth for image naming
+- `MissionsPage.tsx` save handler uses `renameImage(i)` from `utils/image.ts` instead of inline padStart formatting
+
+### Removed
+- Unused `dataUrlToBlob` function from `utils/image.ts`
+
 ## [1.0.2] - 2026-06-13
 
 ### Added

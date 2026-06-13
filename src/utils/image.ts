@@ -8,22 +8,6 @@ export function renameImage(index: number) {
   return 'img-' + String(index + 1).padStart(2, '0') + '.jpg';
 }
 
-export function dataUrlToBlob(dataUrl: string): Blob {
-  const parts = dataUrl.split(',');
-  const mime = parts[0]?.match(/:(.*?);/)?.[1] || 'image/jpeg';
-  const raw = parts[1];
-  if (!raw) return new Blob([], { type: mime });
-  try {
-    const bytes = atob(raw);
-    const arr = new Uint8Array(bytes.length);
-    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-    return new Blob([arr], { type: mime });
-  } catch (e) {
-    console.error('[dataUrlToBlob] Failed to decode base64:', e)
-    return new Blob([], { type: mime });
-  }
-}
-
 function getDataUrlSize(dataUrl: string): number {
   const raw = dataUrl.split(',')[1]
   if (!raw) return 0

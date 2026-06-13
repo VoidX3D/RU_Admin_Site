@@ -4,6 +4,7 @@ import { useStore } from '../store'
 import { fetchMissions, fetchMissionDetail, saveMission, deleteMission, uploadBase64Image, extractStoragePath } from '../utils/supabase'
 import { validateSlug, validateDate } from '../utils/validation'
 import { saveDraft, loadDraft, removeDraft, getDraftAge } from '../utils/drafts'
+import { renameImage } from '../utils/image'
 import type { MissionEntry, PendingImage, MissionTimeline } from '../types'
 import { ConfirmModal } from './ConfirmModal'
 import { ContextMenu } from './ContextMenu'
@@ -218,7 +219,7 @@ export function MissionsPage() {
           return img.dataUrl
         }
         if (img.dataUrl.startsWith('data:')) {
-          const filename = `mission/${fId}/img-${String(i + 1).padStart(2, '0')}.jpg`
+          const filename = `mission/${fId}/${renameImage(i)}`
           const result = await uploadBase64Image('public', filename, img.dataUrl)
           return result.url || null
         }
