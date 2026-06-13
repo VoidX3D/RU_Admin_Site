@@ -278,6 +278,7 @@ async function handleAction(action: string, params: any) {
     case 'announcements:save': {
       const { id, fields } = params
       const { tags, ...dataFields } = fields
+      if (dataFields.image) dataFields.image = normalizeImagePath(dataFields.image) || dataFields.image
       const { error: e } = await supabaseAdmin.from('announcements').upsert({ id, ...dataFields })
       if (e) return { error: { message: e.message } }
       if (tags !== undefined) {
@@ -318,9 +319,9 @@ async function handleAction(action: string, params: any) {
       const { teachers, core, general } = params.payload
       await supabaseAdmin.from('members').delete().neq('id', 0)
       const allMembers = [
-        ...(teachers || []).map((m: any, i: number) => ({ name: m.name, class: m.class || null, role: m.role, image: m.image || null, member_type: m.member_type || 'patron', group_name: 'teachers', sort_order: i })),
-        ...(core || []).map((m: any, i: number) => ({ name: m.name, class: m.class || null, role: m.role, image: m.image || null, member_type: m.member_type || 'coord', group_name: 'core', sort_order: i })),
-        ...(general || []).map((m: any, i: number) => ({ name: m.name, class: m.class || null, role: m.role, image: m.image || null, member_type: m.member_type || 'member', group_name: 'general', sort_order: i })),
+        ...(teachers || []).map((m: any, i: number) => ({ name: m.name, class: m.class || null, role: m.role, image: normalizeImagePath(m.image), member_type: m.member_type || 'patron', group_name: 'teachers', sort_order: i })),
+        ...(core || []).map((m: any, i: number) => ({ name: m.name, class: m.class || null, role: m.role, image: normalizeImagePath(m.image), member_type: m.member_type || 'coord', group_name: 'core', sort_order: i })),
+        ...(general || []).map((m: any, i: number) => ({ name: m.name, class: m.class || null, role: m.role, image: normalizeImagePath(m.image), member_type: m.member_type || 'member', group_name: 'general', sort_order: i })),
       ].filter((m: any) => m.name.trim())
       if (allMembers.length > 0) {
         await supabaseAdmin.from('members').insert(allMembers)
@@ -350,7 +351,7 @@ async function handleAction(action: string, params: any) {
     case 'partners:save': {
       const { items } = params
       await supabaseAdmin.from('partners').delete().neq('id', 0)
-      await supabaseAdmin.from('partners').insert(items)
+      await supabaseAdmin.from('partners').insert(items.map((p: any) => ({ ...p, src: normalizeImagePath(p.src) || p.src })))
       return { error: null }
     }
 
@@ -380,10 +381,15 @@ async function handleAction(action: string, params: any) {
     case 'image:delete': {
       const { path: imgPath } = params
       if (!imgPath) return { error: { message: 'No path provided' } }
-      const storagePath = imgPath.startsWith('static/assets/') ? imgPath : `static/assets/${imgPath}`
-      const { error } = await supabaseAdmin.storage.from('ruclub').remove([storagePath])
+      const basePath = imgPath.startsWith('static/assets/') ? imgPath : `static/assets/${imgPath}`
+      const webpPath = basePath.replace(/\.(jpe?g|png|gif)$/i, '.webp')
+      const toDelete = basePath === webpPath ? [basePath] : [basePath, webpPath]
+      const { error } = await supabaseAdmin.storage.from('ruclub').remove(toDelete)
       if (error && !error.message?.includes('not found')) {
         return { error: { message: error.message || 'Delete failed' } }
+      }
+      if (toDelete.length > 1) {
+        console.log(`[image:delete] Removed ${toDelete.join(', ')}`)
       }
       return { error: null }
     }
@@ -481,5 +487,17 @@ async function handleAction(action: string, params: any) {
 function storageUrl(path: string): string {
   if (!path || path.startsWith('http')) return path
   const p = path.startsWith('/') ? path.slice(1) : path
-  return `${supabaseUrl}/storage/v1/object/public/ruclub/static/assets/${p}`
+  const webpPath = p.replace(/\.(jpe?g|png|gif)$/i, '.webp')
+  return `${supabaseUrl}/storage/v1/object/public/ruclub/static/assets/${webpPath}`
+}
+
+function normalizeImagePath(path: string | null | undefined): string | null {
+  if (!path) return null
+  if (path.startsWith('http')) {
+    const marker = '/static/assets/'
+    const idx = path.indexOf(marker)
+    if (idx !== -1) return path.slice(idx + marker.length)
+    return path.split('/').pop() || path
+  }
+  return path
 }

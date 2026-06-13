@@ -5,6 +5,14 @@ All notable changes to the RU Club Motherland Admin Panel are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- `image:delete` now deletes both `.jpg`/`.png` and `.webp` versions from storage (prevents orphaned files)
+- `storageUrl()` in both API and client now serves `.webp` — extension auto-swapped for display; downloads unaffected
+- `normalizeImagePath()` helper added — strips full object URLs to relative `static/assets/...` paths before DB storage
+- `members:save`, `partners:save`, `announcements:save` now normalize image paths via `normalizeImagePath()` for consistency with read handlers
+
 ## [1.1.0] - 2026-06-13
 
 ### Added
