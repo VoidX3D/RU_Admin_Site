@@ -1,15 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
 import { Storage } from './storage'
 import { useStore } from '../store'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-
-const hasSupabase = supabaseUrl && supabaseAnonKey
-
-export const supabaseAnon = hasSupabase
-  ? createClient(supabaseUrl, supabaseAnonKey, { auth: { storageKey: 'sb-ruclub-admin-anon' } })
-  : (null as unknown as ReturnType<typeof createClient>)
 
 let _unauthorizedHandled = false
 

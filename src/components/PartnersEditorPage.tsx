@@ -220,6 +220,7 @@ export function PartnersEditorPage() {
                       <img
                         src={p.src}
                         alt={p.alt}
+                        width="56" height="56"
                         className="h-full w-full object-contain p-1"
                         onError={() => setImgErrors(prev => ({ ...prev, [i]: true }))}
                         onLoad={() => setImgErrors(prev => ({ ...prev, [i]: false }))}

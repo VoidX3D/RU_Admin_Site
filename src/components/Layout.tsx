@@ -125,7 +125,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <div className="border-t dark:border-zinc-800/50 px-3 py-3">
         <div className="flex items-center gap-2.5">
           <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full ring-2 ring-emerald-500/30">
-            <img src="https://github.com/VoidX3D.png" alt="VoidX3D" className="h-full w-full object-cover" />
+            <img src="https://github.com/VoidX3D.png" alt="VoidX3D" width="32" height="32" className="h-full w-full object-cover" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate text-xs font-medium dark:text-zinc-300">RU Administration</div>

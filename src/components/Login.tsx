@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useStore, checkLoginRateLimit, resetLoginRateLimit } from '../store'
 import { Storage } from '../utils/storage'
 import { login } from '../utils/supabase'
+import { validateEmail } from '../utils/validation'
 
 const FLOATING_WORDS = ['RU', 'Club', 'Motherland', 'Admin', 'Sincee', 'Content']
 
@@ -157,8 +158,15 @@ export function Login() {
     }
   }, [])
 
+  const [emailError, setEmailError] = useState('')
+
   async function handleLogin() {
     if (!userField || !pass) { setError('Enter email/username and password'); return }
+    if (userField.includes('@')) {
+      const emailErr = validateEmail(userField)
+      if (emailErr) { setEmailError(emailErr); setError(''); return }
+      setEmailError('')
+    }
     const delay = checkLoginRateLimit()
     if (delay > 0) {
       const minutes = Math.ceil(delay / 60000)

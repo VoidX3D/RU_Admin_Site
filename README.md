@@ -1,6 +1,6 @@
 # RU Club Motherland — Admin Panel
 
-A React 19 + TypeScript + Vite SPA for managing all dynamic content on [ruclub.motherland.edu.np](https://ruclub.motherland.edu.np). Every save writes directly to Supabase with no draft/publish workflow.
+A React 18.3 + TypeScript + Vite 7 SPA for managing all dynamic content on [ruclub.rweb.site](https://ruclub.rweb.site). Every save writes directly to Supabase with no draft/publish workflow.
 
 **Deployed at:** [ruclubadmin.vercel.app](https://ruclubadmin.vercel.app)
 
@@ -10,13 +10,13 @@ A React 19 + TypeScript + Vite SPA for managing all dynamic content on [ruclub.m
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | React 19 + TypeScript |
+| Framework | React 18.3 + TypeScript |
 | Build | Vite 7 + Tailwind CSS v4 |
-| Routing | HashRouter (React Router DOM v7) |
+| Routing | Zustand view switching (no React Router) |
 | Backend | Supabase (Postgres + Storage) |
 | Animations | Framer Motion |
 | State | Zustand |
-| Auth | Username/password login + optional `VITE_MASTER_KEY` override |
+| Auth | Username/password login + optional `MASTER_KEY` override |
 
 ## Features
 

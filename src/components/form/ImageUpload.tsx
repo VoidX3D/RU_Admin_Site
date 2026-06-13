@@ -120,7 +120,7 @@ export function ImageUpload(props: ImageUploadProps) {
         <div className="mt-3 grid grid-cols-2 gap-2">
           {images.map((img, i) => (
             <div key={img._key ?? i} className="relative aspect-video max-h-48 overflow-hidden rounded-lg border dark:border-zinc-800 bg-white dark:bg-zinc-900">
-              <img src={img.dataUrl} alt="" className="h-full w-full object-contain p-2"
+              <img src={img.dataUrl} alt="" width="320" height="180" className="h-full w-full object-contain p-2"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
               <button className="absolute right-1 top-1 z-10 rounded border dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 p-0.5 dark:text-zinc-400 hover:text-red-600 dark:text-red-400" onClick={() => remove(i)}><XIcon size={14} /></button>
               {!single && (
