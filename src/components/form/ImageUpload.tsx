@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { processFiles, uploadWithRetry } from '../../utils/image'
-import { uploadBase64Image } from '../../utils/supabase'
+import { uploadBase64Image, deleteImage } from '../../utils/supabase'
 import type { PendingImage } from '../../types'
 import { UploadIcon, XIcon, StarIcon, MoveUpIcon, MoveDownIcon } from '../Icons'
 
@@ -10,6 +10,10 @@ function imgKey() { return ++_imgKey }
 
 function renameFile(index: number): string {
   return 'img-' + String(index + 1).padStart(2, '0') + '.jpg'
+}
+
+function renumber(imgs: (PendingImage & { _key?: number })[]): (PendingImage & { _key?: number })[] {
+  return imgs.map((img, i) => ({ ...img, name: renameFile(i) }))
 }
 
 interface ImageUploadProps {
@@ -27,32 +31,32 @@ export function ImageUpload(props: ImageUploadProps) {
   const { images, onChange, maxCount, single, bucket = 'public', pathPrefix, featuredIndex, onFeaturedChange } = props
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
-  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null)
+  const [uploadingBatch, setUploadingBatch] = useState(0)
+  const [uploadingTotal, setUploadingTotal] = useState(0)
   const [uploadProgress, setUploadProgress] = useState(0)
-  const [uploading, setUploading] = useState(false)
 
-  async function handleFiles(files: FileList | File[]) {
+  const handleFiles = useCallback(async (files: FileList | File[]) => {
     const processed = await processFiles(files, single ? 1 : maxCount)
-    const startIdx = images.length
-
-    const withKeys = processed.map((img, i) => ({
+    const withKeys = processed.map((img) => ({
       ...img,
-      name: renameFile(startIdx + i),
       _key: imgKey(),
     }))
+    const startLen = images.length
 
     if (pathPrefix && withKeys.length > 0) {
-      setUploading(true)
+      setUploadingBatch(0)
+      setUploadingTotal(withKeys.length)
       for (let i = 0; i < withKeys.length; i++) {
         const img = withKeys[i]
         if (img.dataUrl.startsWith('data:')) {
-          setUploadingIndex(i)
+          setUploadingBatch(i + 1)
           setUploadProgress(0)
           const progressInterval = setInterval(() => {
             setUploadProgress(p => Math.min(p + 10, 90))
           }, 300)
 
-          const filename = `${pathPrefix}/${img.name}`
+          const name = renameFile(startLen + i)
+          const filename = `${pathPrefix}/${name}`
           const result = await uploadWithRetry(async () => {
             return uploadBase64Image(bucket, filename, img.dataUrl)
           })
@@ -61,28 +65,33 @@ export function ImageUpload(props: ImageUploadProps) {
           setUploadProgress(100)
 
           if (result.url) {
-            withKeys[i] = { ...img, dataUrl: result.url, name: img.name, remote: true }
+            withKeys[i] = { ...img, dataUrl: result.url, name, remote: true, storagePath: filename }
           }
-          setUploadingIndex(null)
         }
       }
-      setUploading(false)
+      setUploadingBatch(0)
+      setUploadingTotal(0)
     }
 
     if (single) {
       onChange(withKeys.slice(0, 1))
     } else {
-      const updated = [...images, ...withKeys]
+      const updated = renumber([...images, ...withKeys])
       onChange(updated)
-      // Auto-set featured if none set yet
-      if ((!featuredIndex || featuredIndex < 0) && onFeaturedChange && updated.length > 0 && startIdx === 0) {
+      if ((!featuredIndex || featuredIndex < 0) && onFeaturedChange && updated.length > 0 && startLen === 0) {
         onFeaturedChange(0)
       }
     }
-  }
+  }, [images, onChange, maxCount, single, bucket, pathPrefix, featuredIndex, onFeaturedChange])
 
-  function remove(i: number) {
-    const updated = images.filter((_, idx) => idx !== i)
+  async function remove(i: number) {
+    const removed = images[i]
+    if (removed.storagePath) {
+      try {
+        await deleteImage(bucket, removed.storagePath)
+      } catch { /* ignore — file may not exist on server yet */ }
+    }
+    const updated = renumber(images.filter((_, idx) => idx !== i))
     onChange(updated)
     if (!updated.length) {
       if (onFeaturedChange) onFeaturedChange(-1)
@@ -90,10 +99,8 @@ export function ImageUpload(props: ImageUploadProps) {
     }
     if (featuredIndex !== undefined && onFeaturedChange) {
       if (featuredIndex === i) {
-        // Removed the featured image — pick the first remaining
         onFeaturedChange(0)
       } else if (featuredIndex > i) {
-        // Featured image is after the removed one — shift index down
         onFeaturedChange(featuredIndex - 1)
       }
     }
@@ -103,7 +110,7 @@ export function ImageUpload(props: ImageUploadProps) {
     if (i === 0) return
     const arr = [...images]
     ;[arr[i - 1], arr[i]] = [arr[i], arr[i - 1]]
-    onChange(arr)
+    onChange(renumber(arr))
     if (featuredIndex === i && onFeaturedChange) onFeaturedChange(i - 1)
     else if (featuredIndex === i - 1 && onFeaturedChange) onFeaturedChange(i)
   }
@@ -112,18 +119,18 @@ export function ImageUpload(props: ImageUploadProps) {
     if (i === images.length - 1) return
     const arr = [...images]
     ;[arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]
-    onChange(arr)
+    onChange(renumber(arr))
     if (featuredIndex === i && onFeaturedChange) onFeaturedChange(i + 1)
     else if (featuredIndex === i + 1 && onFeaturedChange) onFeaturedChange(i)
   }
 
   const limitReached = maxCount ? images.length >= maxCount : false
+  const isUploading = uploadingTotal > 0
 
   return (
     <div>
-      {/* Upload progress */}
       <AnimatePresence>
-        {uploading && (
+        {isUploading && (
           <motion.div
             className="mb-3 rounded-lg p-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)' }}
             initial={{ opacity: 0, y: -8 }}
@@ -135,7 +142,7 @@ export function ImageUpload(props: ImageUploadProps) {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              Uploading image {Math.min((uploadingIndex ?? 0) + 1, images.length + (uploadingIndex !== null ? 1 : 0))} of {images.length + (uploadingIndex !== null ? 1 : 0)}...
+              Uploading {uploadingBatch} of {uploadingTotal}
             </div>
             <div className="h-1.5 w-full overflow-hidden rounded-full dark:bg-zinc-800">
               <motion.div
@@ -149,7 +156,6 @@ export function ImageUpload(props: ImageUploadProps) {
         )}
       </AnimatePresence>
 
-      {/* Upload dropzone */}
       {!limitReached && (
         <motion.div
           className={`flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed p-8 transition-all ${dragOver
@@ -170,7 +176,7 @@ export function ImageUpload(props: ImageUploadProps) {
             {single ? 'Click or drag an image here' : 'Drop images here or click to browse'}
           </span>
           <span className="text-xs dark:text-zinc-600">
-            PNG, JPG, WebP &mdash; max 5MB each{maxCount ? ` (max ${maxCount})` : ''}
+            PNG, JPG, WebP — max 5MB each{maxCount ? ` (max ${maxCount})` : ''}
           </span>
           <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple={!single}
             style={{ display: 'none' }}
@@ -178,7 +184,6 @@ export function ImageUpload(props: ImageUploadProps) {
         </motion.div>
       )}
 
-      {/* Image cards */}
       {images.length > 0 && (
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
           {images.map((img, i) => {
@@ -195,13 +200,11 @@ export function ImageUpload(props: ImageUploadProps) {
                 transition={{ duration: 0.2, delay: i * 0.03 }}
                 layout
               >
-                {/* Image */}
                 <div className="aspect-video bg-zinc-100 dark:bg-zinc-900 relative">
                   <img src={img.dataUrl} alt="" width="400" height="225"
                     className="w-full h-full object-cover"
                     onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
 
-                  {/* Featured badge */}
                   {isFeatured && (
                     <div className="absolute top-2 left-2 z-10 flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold text-white"
                       style={{ background: 'rgba(16,185,129,0.9)', backdropFilter: 'blur(8px)' }}>
@@ -209,18 +212,15 @@ export function ImageUpload(props: ImageUploadProps) {
                     </div>
                   )}
 
-                  {/* File name overlay */}
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-2 pb-2 pt-6">
                     <span className="text-[11px] text-white/90 font-medium truncate block">
-                      {img.remote ? img.name : renameFile(i)}
+                      {renameFile(i)}
                     </span>
                   </div>
                 </div>
 
-                {/* Actions toolbar */}
                 <div className="flex items-center justify-between px-2 py-1.5 border-t dark:border-zinc-800 bg-white dark:bg-zinc-900/50">
                   <div className="flex items-center gap-1">
-                    {/* Set as featured */}
                     {onFeaturedChange && (
                       <button
                         onClick={() => onFeaturedChange(i)}
@@ -234,7 +234,6 @@ export function ImageUpload(props: ImageUploadProps) {
                       </button>
                     )}
 
-                    {/* Move up */}
                     {!single && (
                       <>
                         <button onClick={() => moveUp(i)} disabled={i === 0}
@@ -251,7 +250,6 @@ export function ImageUpload(props: ImageUploadProps) {
                     )}
                   </div>
 
-                  {/* Delete */}
                   <button
                     onClick={() => remove(i)}
                     className="rounded p-1 dark:text-zinc-600 hover:text-red-500 dark:hover:text-red-400 transition-colors"
@@ -266,7 +264,6 @@ export function ImageUpload(props: ImageUploadProps) {
         </div>
       )}
 
-      {/* Hint */}
       {!single && images.length > 1 && (
         <div className="mt-2 text-[10px] dark:text-zinc-700 flex items-center gap-1.5">
           <StarIcon size={10} className="dark:text-emerald-500" />

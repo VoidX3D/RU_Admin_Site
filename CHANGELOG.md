@@ -23,6 +23,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Removing the featured image now correctly picks the first remaining image
 - Image index shifts properly when reordering with a featured image set
 - Null/empty featured image handled cleanly in delta saves
+- Image names now always position-based — no naming collisions after remove/reorder
+- Upload progress bar shows correct counts ("Uploading 1 of 3" instead of "1 of 1")
+- Removed images now deleted from Supabase Storage bucket (no orphaned files)
+- `storagePath` tracked per-image for reliable bucket cleanup on remove
+- Server-side `image:delete` API handler added for bucket deletion
+- `extractStoragePath()` helper extracts storage path from public URL for deletion tracking
+- Renumber helper reindexes all image names positionally on every add/remove/reorder
+- API delete handler ignores "not found" errors (idempotent)
+- Draft restore now also extracts storage paths from URLs
 
 ## [1.0.1] - 2026-06-13
 

@@ -377,6 +377,17 @@ async function handleAction(action: string, params: any) {
       return { url: publicUrl, error: null }
     }
 
+    case 'image:delete': {
+      const { path: imgPath } = params
+      if (!imgPath) return { error: { message: 'No path provided' } }
+      const storagePath = imgPath.startsWith('static/assets/') ? imgPath : `static/assets/${imgPath}`
+      const { error } = await supabaseAdmin.storage.from('ruclub').remove([storagePath])
+      if (error && !error.message?.includes('not found')) {
+        return { error: { message: error.message || 'Delete failed' } }
+      }
+      return { error: null }
+    }
+
     case 'db:check': {
       const { error } = await supabaseAdmin.from('stats').select('id', { count: 'exact', head: true }).limit(1)
       return { connected: !error }

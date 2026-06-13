@@ -32,6 +32,6 @@ export interface MembersData {
   teachers: Member[]; core: Member[]; general: Member[];
   stats: { teachers: number; core: number; general: number; total: number; };
 }
-export interface PendingImage { dataUrl: string; name: string; size?: number; remote?: boolean; }
+export interface PendingImage { dataUrl: string; name: string; size?: number; remote?: boolean; storagePath?: string; }
 export interface Settings { username: string; password: string; verifyCode: string; }
 export interface StatRow { label: string; value: string; }

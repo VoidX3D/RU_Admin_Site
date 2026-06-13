@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
-import { fetchMissions, fetchMissionDetail, saveMission, deleteMission, uploadBase64Image } from '../utils/supabase'
+import { fetchMissions, fetchMissionDetail, saveMission, deleteMission, uploadBase64Image, extractStoragePath } from '../utils/supabase'
 import { validateSlug, validateDate } from '../utils/validation'
 import { saveDraft, loadDraft, removeDraft, getDraftAge } from '../utils/drafts'
 import type { MissionEntry, PendingImage, MissionTimeline } from '../types'
@@ -125,7 +125,7 @@ export function MissionsPage() {
       if (d.timeline) setFTimeline(d.timeline)
       if (d.participants) setFParticipants(d.participants)
       if (d.budget) setFBudget(d.budget)
-      if (d.images) setFImages(d.images.map((url: string) => ({ dataUrl: url, name: 'draft', remote: url.startsWith('http') })))
+      if (d.images) setFImages(d.images.map((url: string) => ({ dataUrl: url, name: 'draft', remote: url.startsWith('http'), storagePath: extractStoragePath(url) })))
       setDraftSavedAt(draft.savedAt)
       addToast('Draft restored from ' + getDraftAge(draft.savedAt), 'info')
     }
@@ -156,7 +156,7 @@ export function MissionsPage() {
         setFBudget(info.budget || [])
         const imgs: PendingImage[] = (info.images || []).map((img: unknown) => {
           const url = typeof img === 'string' ? img : (img as { url: string; alt?: string }).url
-          return { dataUrl: url, name: url.split('/').pop() || 'image', remote: true }
+          return { dataUrl: url, name: url.split('/').pop() || 'image', remote: true, storagePath: extractStoragePath(url) }
         })
         setFImages(imgs)
         // Detect featured image from the mission entry's featured field

@@ -88,6 +88,18 @@ export async function uploadBase64Image(_bucket: string, path: string, dataUrl: 
   return result
 }
 
+export async function deleteImage(_bucket: string, path: string) {
+  const result = await api('image:delete', { bucket: _bucket, path })
+  return result
+}
+
+export function extractStoragePath(url: string, bucket = 'ruclub'): string | undefined {
+  const prefix = `/storage/v1/object/public/${bucket}/`
+  const idx = url.indexOf(prefix)
+  if (idx === -1) return undefined
+  return url.slice(idx + prefix.length)
+}
+
 export async function uploadImage(_bucket: string, path: string, file: File) {
   return new Promise<{ url?: string; error?: any }>((resolve) => {
     const reader = new FileReader()
