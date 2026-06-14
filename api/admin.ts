@@ -545,6 +545,7 @@ function normalizeImagePath(path: string | null | undefined): string | null {
   if (!path) return null
   const clean = path.split('?')[0]
   if (clean.startsWith('http')) {
+    if (supabaseUrl && !clean.includes(supabaseUrl)) return clean
     const marker = '/static/assets/'
     const idx = clean.indexOf(marker)
     if (idx !== -1) return clean.slice(idx + marker.length)
