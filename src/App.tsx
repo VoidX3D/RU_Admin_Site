@@ -16,6 +16,7 @@ const MembersPage = lazy(() => import('./components/MembersPage').then(m => ({ d
 const ContactSubmissions = lazy(() => import('./components/ContactSubmissions').then(m => ({ default: m.ContactSubmissions })))
 const StatsEditorPage = lazy(() => import('./components/StatsEditorPage').then(m => ({ default: m.StatsEditorPage })))
 const PartnersEditorPage = lazy(() => import('./components/PartnersEditorPage').then(m => ({ default: m.PartnersEditorPage })))
+const RulesPage = lazy(() => import('./components/RulesPage').then(m => ({ default: m.RulesPage })))
 const LogsPage = lazy(() => import('./components/LogsPage').then(m => ({ default: m.LogsPage })))
 const SettingsPage = lazy(() => import('./components/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const HelpPage = lazy(() => import('./components/HelpPage').then(m => ({ default: m.HelpPage })))
@@ -50,6 +51,7 @@ const PAGES: Record<string, React.ReactNode> = {
   contact: <ContactSubmissions />,
   stats: <StatsEditorPage />,
   partners: <PartnersEditorPage />,
+  rules: <RulesPage />,
   logs: <LogsPage />,
   settings: <SettingsPage />,
   help: <HelpPage />,

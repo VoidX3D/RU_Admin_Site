@@ -489,6 +489,18 @@ async function handleAction(action: string, params: any) {
       return { data: renamed }
     }
 
+    case 'rules:list': {
+      const { data } = await supabaseAdmin.from('club_rules').select('*').eq('id', 'club-rules').single()
+      return { data: data || null }
+    }
+    case 'rules:save': {
+      const { id, fields } = params
+      const { error: e } = await supabaseAdmin.from('club_rules').upsert({ id: id || 'club-rules', ...fields })
+      if (e) return { error: { message: e.message } }
+      await logAction('rules:save', 'rules', id || 'club-rules', 'Updated club rules')
+      return { error: null }
+    }
+
     case 'db:check': {
       const { error } = await supabaseAdmin.from('stats').select('id', { count: 'exact', head: true }).limit(1)
       return { connected: !error }

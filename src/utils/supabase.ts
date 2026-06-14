@@ -189,6 +189,17 @@ export async function savePartners(items: { src: string; alt: string; name: stri
   return result
 }
 
+// Club Rules
+export async function fetchRules() {
+  const result = await api('rules:list')
+  return result.data || null
+}
+
+export async function saveRules(id: string, payload: Record<string, unknown>) {
+  const result = await api('rules:save', { id, fields: payload })
+  return result
+}
+
 // Contact Submissions
 export async function fetchContactSubmissions() {
   const result = await api('contact:list')
