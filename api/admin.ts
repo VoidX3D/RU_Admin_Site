@@ -283,9 +283,9 @@ async function handleAction(action: string, params: any) {
       if (dataFields.image) {
         if (dataFields.image.startsWith('http') && !dataFields.image.includes(supabaseUrl)) {
           const stored = await downloadAndUploadImage(dataFields.image, 'announcements', id)
-          if (stored) dataFields.image = stored
+          dataFields.image = stored || ''
         }
-        dataFields.image = normalizeImagePath(dataFields.image) || dataFields.image
+        if (dataFields.image) dataFields.image = normalizeImagePath(dataFields.image) || ''
       }
       const { error: e } = await supabaseAdmin.from('announcements').upsert({ id, ...dataFields })
       if (e) return { error: { message: e.message } }
@@ -327,12 +327,11 @@ async function handleAction(action: string, params: any) {
     }
     case 'members:save': {
       const { teachers, core, general } = params.payload
-      // Download any external image URLs before saving
       for (const group of [teachers, core, general]) {
         for (const m of group || []) {
           if (m.image && m.image.startsWith('http') && !m.image.includes(supabaseUrl)) {
             const stored = await downloadAndUploadImage(m.image, 'members', m.name)
-            if (stored) m.image = stored
+            m.image = stored || ''
           }
         }
       }
@@ -372,15 +371,14 @@ async function handleAction(action: string, params: any) {
     }
     case 'partners:save': {
       const { items } = params
-      // Download external image URLs for partners
       for (const p of items || []) {
         if (p.src && p.src.startsWith('http') && !p.src.includes(supabaseUrl)) {
           const stored = await downloadAndUploadImage(p.src, 'partners', p.name || 'partner')
-          if (stored) p.src = stored
+          p.src = stored || ''
         }
       }
       await supabaseAdmin.from('partners').delete().neq('id', 0)
-      await supabaseAdmin.from('partners').insert(items.map((p: any) => ({ ...p, src: normalizeImagePath(p.src) || p.src })))
+      await supabaseAdmin.from('partners').insert(items.map((p: any) => ({ ...p, src: p.src ? (normalizeImagePath(p.src) || p.src) : '' })))
       await logAction('partners:save', 'partner', null, `Saved ${items?.length || 0} partners`)
       return { error: null }
     }
@@ -568,7 +566,6 @@ function normalizeImagePath(path: string | null | undefined): string | null {
   if (!path) return null
   const clean = path.split('?')[0]
   if (clean.startsWith('http')) {
-    if (supabaseUrl && !clean.includes(supabaseUrl)) return clean
     const marker = '/static/assets/'
     const idx = clean.indexOf(marker)
     if (idx !== -1) return clean.slice(idx + marker.length)
