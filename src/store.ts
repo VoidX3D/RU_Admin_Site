@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { MissionEntry, AnnouncementEntry, MembersData } from './types';
 
-export type View = 'login' | 'dashboard' | 'missions' | 'announcements' | 'members' | 'stats' | 'partners' | 'contact' | 'settings' | 'help';
+export type View = 'login' | 'dashboard' | 'missions' | 'announcements' | 'members' | 'stats' | 'partners' | 'contact' | 'settings' | 'help' | 'logs';
 
 export interface Toast { id: string; message: string; type: 'success' | 'error' | 'warning' | 'info'; }
 

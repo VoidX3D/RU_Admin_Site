@@ -80,7 +80,7 @@ export async function login(username: string, password: string) {
 export function storageUrl(path: string): string {
   if (!path || path.startsWith('http')) return path
   const p = path.startsWith('/') ? path.slice(1) : path
-  return `${supabaseUrl}/storage/v1/render/image/public/ruclub/static/assets/${p}?format=webp&quality=85`
+  return `${supabaseUrl}/storage/v1/object/public/ruclub/static/assets/${p}`
 }
 
 export async function uploadBase64Image(_bucket: string, path: string, dataUrl: string) {
@@ -208,6 +208,17 @@ export async function renameAllImages() {
 export async function checkDBConnection() {
   const result = await api('db:check')
   return result.connected === true
+}
+
+// Activity Logs
+export async function fetchLogs(limit = 100, offset = 0) {
+  const result = await api('logs:list', { limit, offset })
+  return result.data || []
+}
+
+export async function clearLogs() {
+  const result = await api('logs:clear')
+  return result
 }
 
 // Session validation

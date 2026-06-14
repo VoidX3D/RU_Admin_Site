@@ -248,6 +248,7 @@ async function handleAction(action: string, params: any) {
       const results = await Promise.all(ops)
       const firstError = results.find(r => r.error)
       if (firstError) return { error: { message: firstError.error.message } }
+      await logAction('missions:save', 'mission', id, `Saved mission "${missionFields.title || id}"`)
       return { error: null }
     }
     case 'missions:delete': {
@@ -255,6 +256,7 @@ async function handleAction(action: string, params: any) {
       const tables = ['mission_stats', 'mission_partners', 'mission_images', 'mission_goals', 'mission_timeline', 'mission_participants', 'mission_budget']
       await Promise.all(tables.map(table => supabaseAdmin.from(table as any).delete().eq('mission_id', id)))
       await supabaseAdmin.from('missions').delete().eq('id', id)
+      await logAction('missions:delete', 'mission', id, `Deleted mission ${id}`)
       return { error: null }
     }
 
@@ -278,7 +280,13 @@ async function handleAction(action: string, params: any) {
     case 'announcements:save': {
       const { id, fields } = params
       const { tags, ...dataFields } = fields
-      if (dataFields.image) dataFields.image = normalizeImagePath(dataFields.image) || dataFields.image
+      if (dataFields.image) {
+        if (dataFields.image.startsWith('http') && !dataFields.image.includes(supabaseUrl)) {
+          const stored = await downloadAndUploadImage(dataFields.image, 'announcements', id)
+          if (stored) dataFields.image = stored
+        }
+        dataFields.image = normalizeImagePath(dataFields.image) || dataFields.image
+      }
       const { error: e } = await supabaseAdmin.from('announcements').upsert({ id, ...dataFields })
       if (e) return { error: { message: e.message } }
       if (tags !== undefined) {
@@ -288,12 +296,14 @@ async function handleAction(action: string, params: any) {
           if (e2) return { error: { message: e2.message } }
         }
       }
+      await logAction('announcements:save', 'announcement', id, `Saved announcement "${dataFields.title || id}"`)
       return { error: null }
     }
     case 'announcements:delete': {
       const { id } = params
       await supabaseAdmin.from('announcement_tags').delete().eq('announcement_id', id)
       await supabaseAdmin.from('announcements').delete().eq('id', id)
+      await logAction('announcements:delete', 'announcement', id, `Deleted announcement ${id}`)
       return { error: null }
     }
 
@@ -317,15 +327,26 @@ async function handleAction(action: string, params: any) {
     }
     case 'members:save': {
       const { teachers, core, general } = params.payload
+      // Download any external image URLs before saving
+      for (const group of [teachers, core, general]) {
+        for (const m of group || []) {
+          if (m.image && m.image.startsWith('http') && !m.image.includes(supabaseUrl)) {
+            const stored = await downloadAndUploadImage(m.image, 'members', m.name)
+            if (stored) m.image = stored
+          }
+        }
+      }
       await supabaseAdmin.from('members').delete().neq('id', 0)
       const allMembers = [
         ...(teachers || []).map((m: any, i: number) => ({ name: m.name, class: m.class || null, role: m.role, image: normalizeImagePath(m.image), member_type: m.member_type || 'patron', group_name: 'teachers', sort_order: i })),
         ...(core || []).map((m: any, i: number) => ({ name: m.name, class: m.class || null, role: m.role, image: normalizeImagePath(m.image), member_type: m.member_type || 'coord', group_name: 'core', sort_order: i })),
         ...(general || []).map((m: any, i: number) => ({ name: m.name, class: m.class || null, role: m.role, image: normalizeImagePath(m.image), member_type: m.member_type || 'member', group_name: 'general', sort_order: i })),
       ].filter((m: any) => m.name.trim())
+      const memberCount = allMembers.length
       if (allMembers.length > 0) {
         await supabaseAdmin.from('members').insert(allMembers)
       }
+      await logAction('members:save', 'member', null, `Saved ${memberCount} members`)
       return { error: null }
     }
 
@@ -337,6 +358,7 @@ async function handleAction(action: string, params: any) {
       const { items } = params
       await supabaseAdmin.from('stats').delete().neq('id', 0)
       await supabaseAdmin.from('stats').insert(items)
+      await logAction('stats:save', 'stats', null, `Updated ${items?.length || 0} stats`)
       return { error: null }
     }
 
@@ -350,8 +372,16 @@ async function handleAction(action: string, params: any) {
     }
     case 'partners:save': {
       const { items } = params
+      // Download external image URLs for partners
+      for (const p of items || []) {
+        if (p.src && p.src.startsWith('http') && !p.src.includes(supabaseUrl)) {
+          const stored = await downloadAndUploadImage(p.src, 'partners', p.name || 'partner')
+          if (stored) p.src = stored
+        }
+      }
       await supabaseAdmin.from('partners').delete().neq('id', 0)
       await supabaseAdmin.from('partners').insert(items.map((p: any) => ({ ...p, src: normalizeImagePath(p.src) || p.src })))
+      await logAction('partners:save', 'partner', null, `Saved ${items?.length || 0} partners`)
       return { error: null }
     }
 
@@ -362,6 +392,7 @@ async function handleAction(action: string, params: any) {
     case 'contact:delete': {
       const { id } = params
       await supabaseAdmin.from('contact_submissions').delete().eq('id', id)
+      await logAction('contact:delete', 'contact', String(id), `Deleted contact submission ${id}`)
       return { error: null }
     }
 
@@ -371,10 +402,12 @@ async function handleAction(action: string, params: any) {
       if (!matches) return { error: { message: 'Invalid data URL format' } }
       const mimeType = matches[1]
       const buffer = Buffer.from(matches[2], 'base64')
+      const ext = mimeType.split('/').pop() || 'jpg'
       const storagePath = imgPath.startsWith('static/assets/') ? imgPath : `static/assets/${imgPath}`
       const { data, error } = await supabaseAdmin.storage.from('ruclub').upload(storagePath, buffer, { contentType: mimeType, upsert: true })
       if (error) return { error: { message: error.message || 'Upload failed' } }
       const { data: { publicUrl } } = supabaseAdmin.storage.from('ruclub').getPublicUrl(storagePath)
+      await logAction('image:upload', 'image', storagePath, `Uploaded image ${imgPath}`)
       return { url: publicUrl, error: null }
     }
 
@@ -391,6 +424,7 @@ async function handleAction(action: string, params: any) {
       if (toDelete.length > 1) {
         console.log(`[image:delete] Removed ${toDelete.join(', ')}`)
       }
+      await logAction('image:delete', 'image', imgPath, `Deleted image ${imgPath}${toDelete.length > 1 ? ' + webp' : ''}`)
       return { error: null }
     }
 
@@ -479,6 +513,23 @@ async function handleAction(action: string, params: any) {
       return { connected: !error }
     }
 
+    case 'logs:list': {
+      const { limit: logLimit = 100, offset: logOffset = 0 } = params
+      const { data, error } = await supabaseAdmin.from('admin_logs')
+        .select('id, action, details, entity_type, entity_id, created_at')
+        .order('created_at', { ascending: false })
+        .range(logOffset, logOffset + logLimit - 1)
+      if (error) return { error: { message: error.message } }
+      return { data: data || [] }
+    }
+
+    case 'logs:clear': {
+      const { error } = await supabaseAdmin.from('admin_logs').delete().neq('id', 0)
+      if (error) return { error: { message: error.message } }
+      await logAction('logs:clear', 'log', null, 'Cleared all activity logs')
+      return { error: null }
+    }
+
     default:
       return { error: `Unknown action: ${action}` }
   }
@@ -487,7 +538,7 @@ async function handleAction(action: string, params: any) {
 function storageUrl(path: string): string {
   if (!path || path.startsWith('http')) return path
   const p = path.startsWith('/') ? path.slice(1) : path
-  return `${supabaseUrl}/storage/v1/render/image/public/ruclub/static/assets/${p}?format=webp&quality=85`
+  return `${supabaseUrl}/storage/v1/object/public/ruclub/static/assets/${p}`
 }
 
 function normalizeImagePath(path: string | null | undefined): string | null {
@@ -499,4 +550,45 @@ function normalizeImagePath(path: string | null | undefined): string | null {
     return path.split('/').pop() || path
   }
   return path
+}
+
+async function downloadAndUploadImage(url: string, entityType: string, entityId: string): Promise<string | null> {
+  // Already a Supabase storage URL — return as-is
+  if (url.includes(supabaseUrl)) return url
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) return null
+    const contentType = response.headers.get('content-type') || 'image/jpeg'
+    const buffer = Buffer.from(await response.arrayBuffer())
+    const ext = contentType.split('/').pop() || 'jpg'
+    const safeId = entityId.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase().slice(0, 30)
+    const timestamp = Date.now()
+    const filename = `${entityType}_${safeId}_${timestamp}.${ext}`
+    const storagePath = `static/assets/${entityType}/${filename}`
+    const { error } = await supabaseAdmin.storage.from('ruclub').upload(storagePath, buffer, { contentType, upsert: true })
+    if (error) {
+      console.error(`[downloadAndUploadImage] Upload error: ${error.message}`)
+      return null
+    }
+    console.log(`[downloadAndUploadImage] Saved ${url} → ${storagePath}`)
+    return storagePath
+  } catch (e) {
+    console.error(`[downloadAndUploadImage] Failed to download ${url}:`, e)
+    return null
+  }
+}
+
+async function logAction(action: string, entityType: string | null, entityId: string | null, details: string | null) {
+  try {
+    await supabaseAdmin.from('admin_logs').insert({
+      action,
+      details,
+      entity_type: entityType,
+      entity_id: entityId,
+      created_at: new Date().toISOString(),
+    })
+  } catch (e) {
+    console.error(`[logAction] Failed to log:`, e)
+  }
 }

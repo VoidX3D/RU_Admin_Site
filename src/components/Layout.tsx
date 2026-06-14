@@ -8,7 +8,7 @@ import {
   SettingsIcon, HelpCircleIcon, MailIcon,
   MenuIcon, XIcon, LogOutIcon, RefreshIcon,
   HomeIcon, SunIcon, MoonIcon, DatabaseIcon,
-  BarChartIcon, GlobeIcon,
+  BarChartIcon, GlobeIcon, ClockIcon,
 } from './Icons'
 
 const NAV: { id: View; icon: ReactNode; label: string }[] = [
@@ -19,6 +19,7 @@ const NAV: { id: View; icon: ReactNode; label: string }[] = [
   { id: 'stats',         icon: <BarChartIcon size={18} />,      label: 'Site Stats'    },
   { id: 'partners',      icon: <GlobeIcon size={18} />,        label: 'Partners'      },
   { id: 'contact',       icon: <MailIcon size={18} />,         label: 'Contact'       },
+  { id: 'logs',          icon: <ClockIcon size={18} />,        label: 'Activity Logs' },
   { id: 'settings',      icon: <SettingsIcon size={18} />,     label: 'Settings'      },
   { id: 'help',          icon: <HelpCircleIcon size={18} />,   label: 'Help'          },
 ]
@@ -31,6 +32,7 @@ const PAGE_TITLES: Record<string, string> = {
   stats: 'Site Statistics',
   partners: 'Partner Organizations',
   contact: 'Contact Submissions',
+  logs: 'Activity Logs',
   settings: 'Settings',
   help: 'Help & Guide',
 }

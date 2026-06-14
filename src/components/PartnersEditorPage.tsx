@@ -75,7 +75,8 @@ export function PartnersEditorPage() {
       reader.onload = async () => {
         try {
           const dataUrl = reader.result as string
-          const filename = `partners/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '')}`
+          const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').toLowerCase().slice(0, 20)
+          const filename = `partners/partner_${Date.now()}_${cleanName}`
           const result = await uploadBase64Image('public', filename, dataUrl)
           if (result.url) {
             update(i, 'src', result.url)

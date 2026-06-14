@@ -76,7 +76,8 @@ export function MembersPage() {
       reader.onload = async () => {
         try {
           const dataUrl = reader.result as string
-          const filename = `members/${Date.now()}_${file.name}`
+          const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').toLowerCase().slice(0, 20)
+          const filename = `members/member_${Date.now()}_${cleanName}`
           const result = await uploadBase64Image('public', filename, dataUrl)
           if (result.url) {
             upd(idx, 'image', result.url)
