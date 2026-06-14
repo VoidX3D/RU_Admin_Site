@@ -96,11 +96,12 @@ export function MembersPage() {
   }
 
   function stripUrl(url: string): string {
-    if (url.startsWith('http') && !url.includes('supabase')) {
-      return url
+    const clean = url.split('?')[0]
+    if (clean.startsWith('http') && !clean.includes('supabase')) {
+      return clean
     }
-    if (url.startsWith('http')) {
-      const parts = url.split('/')
+    if (clean.startsWith('http')) {
+      const parts = clean.split('/')
       const bucketIdx = parts.findIndex(p => p === 'ruclub')
       if (bucketIdx !== -1) {
         const afterAssets = parts.slice(bucketIdx + 3).join('/')
@@ -108,9 +109,9 @@ export function MembersPage() {
       }
       const memberIdx = parts.findIndex(p => p.startsWith('members'))
       if (memberIdx !== -1) return parts.slice(memberIdx).join('/')
-      return url.split('/').pop() || url
+      return clean.split('/').pop() || clean
     }
-    return url
+    return clean
   }
 
   const [showExport, setShowExport] = useState(false)

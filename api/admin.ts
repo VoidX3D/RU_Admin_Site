@@ -543,18 +543,26 @@ function storageUrl(path: string): string {
 
 function normalizeImagePath(path: string | null | undefined): string | null {
   if (!path) return null
-  if (path.startsWith('http')) {
+  const clean = path.split('?')[0]
+  if (clean.startsWith('http')) {
     const marker = '/static/assets/'
-    const idx = path.indexOf(marker)
-    if (idx !== -1) return path.slice(idx + marker.length)
-    return path.split('/').pop() || path
+    const idx = clean.indexOf(marker)
+    if (idx !== -1) return clean.slice(idx + marker.length)
+    return clean.split('/').pop() || clean
   }
-  return path
+  return clean
 }
 
 async function downloadAndUploadImage(url: string, entityType: string, entityId: string): Promise<string | null> {
-  // Already a Supabase storage URL — return as-is
-  if (url.includes(supabaseUrl)) return url
+  if (url.includes(supabaseUrl)) {
+    const marker = '/static/assets/'
+    const idx = url.indexOf(marker)
+    if (idx !== -1) {
+      const rel = url.slice(idx + marker.length).split('?')[0]
+      return rel
+    }
+    return url.split('/').pop()?.split('?')[0] || null
+  }
 
   try {
     const response = await fetch(url)
@@ -571,8 +579,9 @@ async function downloadAndUploadImage(url: string, entityType: string, entityId:
       console.error(`[downloadAndUploadImage] Upload error: ${error.message}`)
       return null
     }
-    console.log(`[downloadAndUploadImage] Saved ${url} → ${storagePath}`)
-    return storagePath
+    const relative = `${entityType}/${filename}`
+    console.log(`[downloadAndUploadImage] Saved ${url} → ${relative}`)
+    return relative
   } catch (e) {
     console.error(`[downloadAndUploadImage] Failed to download ${url}:`, e)
     return null
