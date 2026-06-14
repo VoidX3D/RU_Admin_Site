@@ -7,16 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Added
-- Full-screen loading overlay for page transitions (was a tiny 160px spinner)
-- Stored WebP files now served directly via object URL instead of render endpoint
+### Removed
+- `downloadAndUploadImage()` function — external URL download no longer supported
+- All external URL handling from `members:save`, `announcements:save`, `partners:save` — only file upload supported now
+- URL text input in MembersPage — images can only be added via file picker (click avatar)
+- `stripUrl()` simplified — only handles Supabase storage URLs, no external URL extraction
 
-### Changed
-- `storageUrl()` quality raised 80 → 90 with daily cache-busting `_v` parameter
-- `image:delete` now deletes both `.jpg`/`.png` and `.webp` versions from storage (prevents orphaned files)
-- `storageUrl()` in both API and client now serves `.webp` — extension auto-swapped for display; downloads unaffected
-- `normalizeImagePath()` helper added — strips full object URLs to relative `static/assets/...` paths before DB storage
-- `members:save`, `partners:save`, `announcements:save` now normalize image paths via `normalizeImagePath()` for consistency with read handlers
+### Added
+- Image status indicator in MembersPage (green "Image uploaded" badge or grey "No image")
+- "Remove" button per member to clear the image field with confirmation toast
 
 ## [1.1.0] - 2026-06-13
 

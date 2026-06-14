@@ -97,21 +97,14 @@ export function MembersPage() {
 
   function stripUrl(url: string): string {
     const clean = url.split('?')[0]
-    if (clean.startsWith('http') && !clean.includes('supabase')) {
-      return clean
-    }
-    if (clean.startsWith('http')) {
-      const parts = clean.split('/')
-      const bucketIdx = parts.findIndex(p => p === 'ruclub')
-      if (bucketIdx !== -1) {
-        const afterAssets = parts.slice(bucketIdx + 3).join('/')
-        return afterAssets
-      }
-      const memberIdx = parts.findIndex(p => p.startsWith('members'))
-      if (memberIdx !== -1) return parts.slice(memberIdx).join('/')
-      return clean.split('/').pop() || clean
-    }
-    return clean
+    if (!clean.startsWith('http')) return clean
+    const parts = clean.split('/')
+    const marker = '/static/assets/'
+    const idx = clean.indexOf(marker)
+    if (idx !== -1) return clean.slice(idx + marker.length)
+    const bucketIdx = parts.findIndex(p => p === 'ruclub')
+    if (bucketIdx !== -1) return parts.slice(bucketIdx + 3).join('/')
+    return clean.split('/').pop() || clean
   }
 
   const [showExport, setShowExport] = useState(false)
@@ -372,8 +365,25 @@ export function MembersPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <input value={m.image || ''} onChange={e => upd(i, 'image', e.target.value)} placeholder="Image URL (or click avatar to upload)"
-                        className="flex-1 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-[10px] text-zinc-500 dark:text-zinc-500 outline-none focus:border-emerald-500/30 font-mono" />
+                      {m.image ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-100 dark:bg-emerald-500/10 px-2.5 py-1.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                          Image uploaded
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 rounded-md bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1.5 text-[10px] font-medium text-zinc-400 dark:text-zinc-600">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                          No image
+                        </span>
+                      )}
+                      {m.image && (
+                        <button
+                          className="inline-flex items-center gap-1 rounded-md border border-red-200 dark:border-red-900/50 px-2.5 py-1.5 text-[10px] font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                          onClick={() => { upd(i, 'image', ''); addToast('Image removed', 'info') }}
+                        >
+                          <TrashIcon size={11} /> Remove
+                        </button>
+                      )}
                     </div>
                   </motion.div>
                 ))}

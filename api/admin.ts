@@ -281,11 +281,7 @@ async function handleAction(action: string, params: any) {
       const { id, fields } = params
       const { tags, ...dataFields } = fields
       if (dataFields.image) {
-        if (dataFields.image.startsWith('http') && !dataFields.image.includes(supabaseUrl)) {
-          const stored = await downloadAndUploadImage(dataFields.image, 'announcements', id)
-          dataFields.image = stored || ''
-        }
-        if (dataFields.image) dataFields.image = normalizeImagePath(dataFields.image) || ''
+        dataFields.image = normalizeImagePath(dataFields.image) || ''
       }
       const { error: e } = await supabaseAdmin.from('announcements').upsert({ id, ...dataFields })
       if (e) return { error: { message: e.message } }
@@ -327,14 +323,6 @@ async function handleAction(action: string, params: any) {
     }
     case 'members:save': {
       const { teachers, core, general } = params.payload
-      for (const group of [teachers, core, general]) {
-        for (const m of group || []) {
-          if (m.image && m.image.startsWith('http') && !m.image.includes(supabaseUrl)) {
-            const stored = await downloadAndUploadImage(m.image, 'members', m.name)
-            m.image = stored || ''
-          }
-        }
-      }
       await supabaseAdmin.from('members').delete().neq('id', 0)
       const allMembers = [
         ...(teachers || []).map((m: any, i: number) => ({ name: m.name, class: m.class || null, role: m.role, image: normalizeImagePath(m.image), member_type: m.member_type || 'patron', group_name: 'teachers', sort_order: i })),
@@ -372,11 +360,6 @@ async function handleAction(action: string, params: any) {
     case 'partners:save': {
       const { items } = params
       for (const p of items || []) {
-        if (p.src && p.src.startsWith('http') && !p.src.includes(supabaseUrl)) {
-          const stored = await downloadAndUploadImage(p.src, 'partners', p.name || 'partner')
-          p.src = stored || ''
-        }
-      }
       await supabaseAdmin.from('partners').delete().neq('id', 0)
       await supabaseAdmin.from('partners').insert(items.map((p: any) => ({ ...p, src: p.src ? (normalizeImagePath(p.src) || p.src) : '' })))
       await logAction('partners:save', 'partner', null, `Saved ${items?.length || 0} partners`)
@@ -574,41 +557,6 @@ function normalizeImagePath(path: string | null | undefined): string | null {
     return clean.split('/').pop() || clean
   }
   return clean
-}
-
-async function downloadAndUploadImage(url: string, entityType: string, entityId: string): Promise<string | null> {
-  if (url.includes(supabaseUrl)) {
-    const marker = '/static/assets/'
-    const idx = url.indexOf(marker)
-    if (idx !== -1) {
-      const rel = url.slice(idx + marker.length).split('?')[0]
-      return rel
-    }
-    return url.split('/').pop()?.split('?')[0] || null
-  }
-
-  try {
-    const response = await fetch(url)
-    if (!response.ok) return null
-    const contentType = response.headers.get('content-type') || 'image/jpeg'
-    const buffer = Buffer.from(await response.arrayBuffer())
-    const ext = contentType.split('/').pop() || 'jpg'
-    const safeId = entityId.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase().slice(0, 30)
-    const timestamp = Date.now()
-    const filename = `${entityType}_${safeId}_${timestamp}.${ext}`
-    const storagePath = `static/assets/${entityType}/${filename}`
-    const { error } = await supabaseAdmin.storage.from('ruclub').upload(storagePath, buffer, { contentType, upsert: true })
-    if (error) {
-      console.error(`[downloadAndUploadImage] Upload error: ${error.message}`)
-      return null
-    }
-    const relative = `${entityType}/${filename}`
-    console.log(`[downloadAndUploadImage] Saved ${url} → ${relative}`)
-    return relative
-  } catch (e) {
-    console.error(`[downloadAndUploadImage] Failed to download ${url}:`, e)
-    return null
-  }
 }
 
 async function logAction(action: string, entityType: string | null, entityId: string | null, details: string | null) {
