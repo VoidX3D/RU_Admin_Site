@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - All external URL handling from `members:save`, `announcements:save`, `partners:save` — only file upload supported now
 - URL text input in MembersPage and PartnersEditorPage — images can only be added via file picker (click avatar/preview)
 - `stripUrl()` simplified — only handles Supabase storage URLs, no external URL extraction
+- Unused `clsx` and `tailwind-merge` dependencies from package.json
+- Unused `logo.png` and `logo_icon.png` from public/ directory
 
 ### Added
 - Image status indicator in MembersPage and PartnersEditorPage (green "Image uploaded" badge or grey "No image")

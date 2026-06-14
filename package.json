@@ -11,14 +11,12 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.108.0",
     "@vercel/analytics": "^2.0.1",
-    "clsx": "^2.1.1",
     "dompurify": "^3.4.9",
     "framer-motion": "^12.40.0",
     "katex": "^0.17.0",
     "marked": "^18.0.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tailwind-merge": "^3.6.0",
     "zustand": "^4.5.2"
   },
   "devDependencies": {
