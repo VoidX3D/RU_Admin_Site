@@ -80,7 +80,7 @@ export async function login(username: string, password: string) {
 export function storageUrl(path: string): string {
   if (!path || path.startsWith('http')) return path
   const p = path.startsWith('/') ? path.slice(1) : path
-  return `${supabaseUrl}/storage/v1/object/public/ruclub/static/assets/${p}`
+  return `${supabaseUrl}/storage/v1/render/image/public/ruclub/static/assets/${p}?format=webp`
 }
 
 export async function uploadBase64Image(_bucket: string, path: string, dataUrl: string) {

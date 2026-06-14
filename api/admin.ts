@@ -538,7 +538,7 @@ async function handleAction(action: string, params: any) {
 function storageUrl(path: string): string {
   if (!path || path.startsWith('http')) return path
   const p = path.startsWith('/') ? path.slice(1) : path
-  return `${supabaseUrl}/storage/v1/object/public/ruclub/static/assets/${p}`
+  return `${supabaseUrl}/storage/v1/render/image/public/ruclub/static/assets/${p}?format=webp`
 }
 
 function normalizeImagePath(path: string | null | undefined): string | null {

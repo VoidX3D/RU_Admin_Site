@@ -314,7 +314,7 @@ export function MembersPage() {
                         onClick={() => handleImageUpload(i)}
                       >
                         {m.image ? (
-                          <img src={m.image} alt="" width="56" height="56" className="h-full w-full object-cover" />
+                          <img src={m.image} alt="" width="56" height="56" className="h-full w-full object-contain" />
                         ) : (
                           <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
                             {m.name.charAt(0).toUpperCase() || '?'}
