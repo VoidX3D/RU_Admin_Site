@@ -77,10 +77,13 @@ export async function login(username: string, password: string) {
   }
 }
 
+const STORAGE_EXT_RE = /\.(jpe?g|png|gif)$/i
+
 export function storageUrl(path: string): string {
   if (!path || path.startsWith('http')) return path
   const p = path.startsWith('/') ? path.slice(1) : path
-  return `${supabaseUrl}/storage/v1/render/image/public/ruclub/static/assets/${p}?format=webp&quality=80`
+  const webpPath = p.replace(STORAGE_EXT_RE, '.webp')
+  return `${supabaseUrl}/storage/v1/object/public/ruclub/static/assets/${webpPath}`
 }
 
 export async function uploadBase64Image(_bucket: string, path: string, dataUrl: string) {

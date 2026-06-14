@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Full-screen loading overlay for page transitions (was a tiny 160px spinner)
+- Stored WebP files now served directly via object URL instead of render endpoint
+
 ### Changed
+- `storageUrl()` quality raised 80 → 90 with daily cache-busting `_v` parameter
 - `image:delete` now deletes both `.jpg`/`.png` and `.webp` versions from storage (prevents orphaned files)
 - `storageUrl()` in both API and client now serves `.webp` — extension auto-swapped for display; downloads unaffected
 - `normalizeImagePath()` helper added — strips full object URLs to relative `static/assets/...` paths before DB storage

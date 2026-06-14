@@ -23,14 +23,14 @@ const ErrorBoundary = lazy(() => import('./components/ErrorBoundary').then(m => 
 
 function PageLoader() {
   return (
-    <div className="flex h-40 items-center justify-center">
-      <div className="flex flex-col items-center gap-2">
-        <svg className="h-6 w-6 animate-spin text-emerald-500" viewBox="0 0 24 24" fill="none">
+    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-4 bg-zinc-50 dark:bg-zinc-950">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full">
+        <svg className="h-8 w-8 animate-spin text-emerald-500" viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="10" strokeWidth="3" stroke="currentColor" className="opacity-20" />
           <path d="M12 2a10 10 0 0 1 10 10" strokeWidth="3" stroke="currentColor" strokeLinecap="round" />
         </svg>
-        <p className="text-[10px] text-zinc-500">Loading...</p>
       </div>
+      <p className="text-sm font-medium text-zinc-500">Loading...</p>
     </div>
   )
 }
