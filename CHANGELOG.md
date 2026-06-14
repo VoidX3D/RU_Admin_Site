@@ -10,12 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Removed
 - `downloadAndUploadImage()` function — external URL download no longer supported
 - All external URL handling from `members:save`, `announcements:save`, `partners:save` — only file upload supported now
-- URL text input in MembersPage — images can only be added via file picker (click avatar)
+- URL text input in MembersPage and PartnersEditorPage — images can only be added via file picker (click avatar/preview)
 - `stripUrl()` simplified — only handles Supabase storage URLs, no external URL extraction
 
 ### Added
-- Image status indicator in MembersPage (green "Image uploaded" badge or grey "No image")
-- "Remove" button per member to clear the image field with confirmation toast
+- Image status indicator in MembersPage and PartnersEditorPage (green "Image uploaded" badge or grey "No image")
+- "Remove" button per member and per partner to clear the image field with confirmation toast
 
 ## [1.1.0] - 2026-06-13
 

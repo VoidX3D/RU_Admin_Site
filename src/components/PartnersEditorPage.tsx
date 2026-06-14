@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { fetchPartners, savePartners, uploadBase64Image } from '../utils/supabase'
-import { PlusIcon, XIcon, RefreshIcon, SaveIcon, ImageIcon, MoveUpIcon, MoveDownIcon } from './Icons'
+import { PlusIcon, XIcon, RefreshIcon, SaveIcon, ImageIcon, MoveUpIcon, MoveDownIcon, TrashIcon } from './Icons'
 import { PageErrorBoundary } from './PageErrorBoundary'
 
 interface PartnerItem {
@@ -101,7 +101,7 @@ export function PartnersEditorPage() {
         return false
       }
       if (!p.src.trim()) {
-        addToast(`Row ${i + 1}: Image is required (upload or paste URL)`, 'error')
+        addToast(`Row ${i + 1}: Image is required (click preview to upload)`, 'error')
         return false
       }
       return true
@@ -247,14 +247,26 @@ export function PartnersEditorPage() {
                         className="w-full rounded-lg border dark:border-zinc-800 dark:bg-zinc-900/50 px-3 py-2 text-xs dark:text-white outline-none placeholder:text-zinc-400 focus:border-emerald-500/50" />
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="mb-1 block text-[10px] font-medium text-zinc-500">Image URL *</label>
                       <div className="flex items-center gap-2">
-                        <input value={p.src} onChange={e => update(i, 'src', e.target.value)} placeholder="URL or click preview to upload"
-                          className="flex-1 rounded-lg border dark:border-zinc-800 dark:bg-zinc-900/50 px-3 py-2 text-xs dark:text-white outline-none placeholder:text-zinc-400 focus:border-emerald-500/50 font-mono" />
-                        <button onClick={() => handleImageUpload(i)}
-                          className="flex min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg border dark:border-zinc-800 dark:bg-zinc-900/50 text-zinc-500 hover:text-emerald-500 hover:border-emerald-500/50">
-                          <ImageIcon size={14} />
-                        </button>
+                        {p.src ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-100 dark:bg-emerald-500/10 px-2.5 py-1.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                            Image uploaded
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-md bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1.5 text-[10px] font-medium text-zinc-400 dark:text-zinc-600">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            No image
+                          </span>
+                        )}
+                        {p.src && (
+                          <button
+                            className="inline-flex items-center gap-1 rounded-md border border-red-200 dark:border-red-900/50 px-2.5 py-1.5 text-[10px] font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                            onClick={() => { update(i, 'src', ''); addToast('Image removed', 'info') }}
+                          >
+                            <TrashIcon size={11} /> Remove
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
