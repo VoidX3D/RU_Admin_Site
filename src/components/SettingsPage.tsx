@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { getEnvConfig, isProductionEnv } from '../utils/env'
-import { checkDBConnection, fetchMissions, fetchMissionDetail, saveMission, fetchAnnouncements, fetchAnnouncementDetail, saveAnnouncement, renameAllImages } from '../utils/supabase'
+import { checkDBConnection } from '../utils/supabase'
 import { formatText } from '../utils/helpers'
 import { exportBackup, importBackup } from '../utils/backup'
 import { PageErrorBoundary } from './PageErrorBoundary'
@@ -230,36 +230,6 @@ export function SettingsPage() {
               }}
             >
               <FileTextIcon size={12} /> Reformat All Text
-            </button>
-          </div>
-
-          <hr className="dark:border-zinc-800" />
-
-          <div>
-            <p className="text-[10px] dark:text-zinc-600 mb-3">Rename all mission images to <code className="text-[10px] dark:text-zinc-400">img-XX.jpg</code> and announcement images to <code className="text-[10px] dark:text-zinc-400">featured.jpg</code> in Supabase Storage, matching their current sort order.</p>
-            <button
-              className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50"
-              onClick={async () => {
-                const btn = document.activeElement as HTMLButtonElement
-                btn.disabled = true
-                btn.textContent = 'Renaming...'
-                try {
-                  const result = await renameAllImages()
-                  if (result.error) {
-                    addToast(result.error.message || 'Rename failed', 'error')
-                  } else {
-                    const d = result.data || { missions: 0, announcements: 0 }
-                    addToast(`Renamed images for ${d.missions} missions and ${d.announcements} announcements`, 'success')
-                  }
-                } catch (e) {
-                  console.error('[Settings] Rename images failed:', e)
-                  addToast('Rename failed', 'error')
-                }
-                btn.disabled = false
-                btn.textContent = 'Rename All Images'
-              }}
-            >
-              <FileTextIcon size={12} /> Rename All Images
             </button>
           </div>
         </div>
