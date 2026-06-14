@@ -80,7 +80,9 @@ export async function login(username: string, password: string) {
 export function storageUrl(path: string): string {
   if (!path || path.startsWith('http')) return path
   const p = path.startsWith('/') ? path.slice(1) : path
-  return `${supabaseUrl}/storage/v1/render/image/public/ruclub/static/assets/${p}?format=webp`
+  const parts = p.split('/')
+  const encoded = parts.map((seg, i) => i === parts.length - 1 ? encodeURIComponent(seg) : seg).join('/')
+  return `${supabaseUrl}/storage/v1/render/image/public/ruclub/static/assets/${encoded}?format=webp`
 }
 
 export async function uploadBase64Image(_bucket: string, path: string, dataUrl: string) {
