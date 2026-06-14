@@ -15,7 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 - Image status indicator in MembersPage and PartnersEditorPage (green "Image uploaded" badge or grey "No image")
-- "Remove" button per member and per partner to clear the image field with confirmation toast
+- "Remove" button per member and per partner to clear the image field
+- `PageErrorBoundary` wrapper to Dashboard and LogsPage for consistent error handling
+
+### Changed
+- All form inputs (`Field`, `Textarea`, `Select`) now have `min-h-[44px] sm:min-h-0` for mobile touch targets (WCAG 2.5.8)
+- Table action buttons (Edit/Delete) in Announcements and Missions pages: `min-h-[36px]` → `min-h-[44px]` for mobile accessibility
+- Primary buttons (New Announcement, New Mission) now have `hover:bg-emerald-400` in light mode (was `dark:hover` only)
+- Settings page Export/Import/Reformat buttons: added `min-h-[44px] sm:min-h-0`
+- Contact submissions delete button and pagination: added `min-h-[44px] sm:min-h-0`
+- Icon-only buttons across all pages now have `title` attributes for accessibility
+- Removed dead `dark:text-zinc-700` override from Field and Textarea inputs
 
 ## [1.1.0] - 2026-06-13
 

@@ -6,6 +6,7 @@ import {
   TargetIcon, MegaphoneIcon, UsersIcon,
   ArrowRightIcon, HomeIcon, LeafIcon,
 } from './Icons'
+import { PageErrorBoundary } from './PageErrorBoundary'
 
 const container = {
   hidden: { opacity: 0 },
@@ -106,7 +107,8 @@ export function Dashboard() {
   }
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
+    <PageErrorBoundary name="Dashboard">
+      <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
       <motion.div variants={item} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((c, i) => (
           <motion.div
@@ -177,6 +179,7 @@ export function Dashboard() {
           </div>
         </div>
       </motion.div>
-    </motion.div>
+      </motion.div>
+    </PageErrorBoundary>
   )
 }

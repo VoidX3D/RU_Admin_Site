@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { fetchLogs, clearLogs } from '../utils/supabase'
 import { RefreshIcon, TrashIcon, ClockIcon } from './Icons'
+import { PageErrorBoundary } from './PageErrorBoundary'
 
 interface LogEntry {
   id: number
@@ -76,7 +77,8 @@ export function LogsPage() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
+    <PageErrorBoundary name="Activity Logs">
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Activity Logs</h2>
@@ -142,6 +144,7 @@ export function LogsPage() {
           ))}
         </div>
       )}
-    </motion.div>
+      </motion.div>
+    </PageErrorBoundary>
   )
 }

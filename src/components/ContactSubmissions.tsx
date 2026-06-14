@@ -159,8 +159,8 @@ export function ContactSubmissions() {
                           {new Date(s.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-3">
-                          <button
-                            className="rounded-lg p-1 dark:text-zinc-700 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600"
+                          <button title="Delete submission"
+                            className="rounded-lg p-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 dark:text-zinc-700 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600"
                             onClick={e => { e.stopPropagation(); handleDelete(s.id) }}
                           >
                             <TrashIcon size={12} />
@@ -178,7 +178,7 @@ export function ContactSubmissions() {
           {totalPages > 1 && (
             <div className="mt-3 flex items-center justify-center gap-2">
               <button
-                className="rounded-lg border dark:border-zinc-800 px-2.5 py-1 text-[10px] font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 disabled:opacity-30"
+                className="rounded-lg border dark:border-zinc-800 px-2.5 py-1 min-h-[44px] sm:min-h-0 text-[10px] font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 disabled:opacity-30"
                 onClick={() => setPage(p => Math.max(0, p - 1))}
                 disabled={page === 0}
               >
@@ -188,7 +188,7 @@ export function ContactSubmissions() {
                 Page {page + 1} of {totalPages}
               </span>
               <button
-                className="rounded-lg border dark:border-zinc-800 px-2.5 py-1 text-[10px] font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 disabled:opacity-30"
+                className="rounded-lg border dark:border-zinc-800 px-2.5 py-1 min-h-[44px] sm:min-h-0 text-[10px] font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 disabled:opacity-30"
                 onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                 disabled={page >= totalPages - 1}
               >

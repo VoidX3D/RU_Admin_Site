@@ -271,7 +271,7 @@ export function PartnersEditorPage() {
                     </div>
                   </div>
 
-                  <button onClick={() => remove(i)}
+                  <button onClick={() => remove(i)} title="Remove partner"
                     className="rounded p-1.5 text-zinc-500 hover:bg-red-500/10 hover:text-red-500">
                     <XIcon size={14} />
                   </button>

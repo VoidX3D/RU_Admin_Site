@@ -359,7 +359,7 @@ export function MembersPage() {
                         </div>
                       </div>
 
-                      <button className="flex min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 dark:text-zinc-600 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 self-center sm:self-start sm:mt-5" onClick={() => remove(i)}>
+                      <button title="Remove member" className="flex min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 dark:text-zinc-600 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 self-center sm:self-start sm:mt-5" onClick={() => remove(i)}>
                         <XIcon size={14} />
                       </button>
                     </div>

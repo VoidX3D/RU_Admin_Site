@@ -159,10 +159,10 @@ export function SettingsPage() {
         </div>
         <div className="p-4">
           <div className="flex flex-wrap items-center gap-3">
-            <button className="flex items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 py-2 text-xs font-medium dark:text-zinc-400 dark:hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={handleExport}>
+            <button className="flex items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 py-2 min-h-[44px] sm:min-h-0 text-xs font-medium dark:text-zinc-400 dark:hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={handleExport}>
               <DownloadIcon size={13} /> Export Backup
             </button>
-            <button className="flex items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 py-2 text-xs font-medium dark:text-zinc-400 dark:hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => fileRef.current?.click()}>
+            <button className="flex items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 py-2 min-h-[44px] sm:min-h-0 text-xs font-medium dark:text-zinc-400 dark:hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={() => fileRef.current?.click()}>
               <UploadIcon size={13} /> Import Backup
             </button>
             <input ref={fileRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileImport} />
@@ -181,7 +181,7 @@ export function SettingsPage() {
           <div>
             <p className="text-[10px] dark:text-zinc-600 mb-3">Reformat all existing mission and announcement text with proper paragraph breaks.</p>
             <button
-              className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 min-h-[44px] sm:min-h-0 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50"
               onClick={async () => {
                 const btn = document.activeElement as HTMLButtonElement
                 btn.disabled = true

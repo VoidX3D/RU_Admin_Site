@@ -194,7 +194,7 @@ export function StatsEditorPage() {
                       className="w-full rounded-lg border dark:border-zinc-800 dark:bg-zinc-900/50 px-3 py-2 text-xs dark:text-white outline-none placeholder:text-zinc-400 focus:border-emerald-500/50" />
                   </div>
 
-                  <button onClick={() => remove(i)}
+                  <button onClick={() => remove(i)} title="Remove stat row"
                     className="rounded p-1.5 text-zinc-500 hover:bg-red-500/10 hover:text-red-500 mt-5">
                     <XIcon size={14} />
                   </button>

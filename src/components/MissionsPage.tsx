@@ -457,7 +457,7 @@ export function MissionsPage() {
             <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg border dark:border-zinc-800 px-3 text-xs font-medium dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-200" onClick={loadMissions}>
               <RefreshIcon size={13} /> Refresh
             </button>
-            <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white dark:hover:bg-emerald-400" onClick={startNew}>
+            <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white hover:bg-emerald-400 dark:hover:bg-emerald-400" onClick={startNew}>
               <PlusIcon size={13} /> New Mission
             </button>
           </div>
@@ -521,10 +521,10 @@ export function MissionsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <button className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[10px] font-medium dark:text-white hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700 min-h-[36px] sm:min-h-0" onClick={() => startEdit(m.id)}>
+                          <button className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[10px] font-medium dark:text-white hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-700 min-h-[44px] sm:min-h-0" onClick={() => startEdit(m.id)}>
                             <EditIcon size={12} /> Edit
                           </button>
-                          <button className="rounded-lg p-2 dark:text-zinc-700 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 min-h-[36px] min-w-[36px] sm:min-h-0 sm:min-w-0 sm:p-1" onClick={() => handleDelete(m.id)}>
+                          <button title="Delete mission" className="rounded-lg p-2 dark:text-zinc-700 hover:bg-red-100 dark:bg-red-500/10 hover:text-red-600 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 sm:p-1" onClick={() => handleDelete(m.id)}>
                             <TrashIcon size={12} />
                           </button>
                         </div>
