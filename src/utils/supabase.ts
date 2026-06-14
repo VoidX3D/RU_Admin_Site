@@ -221,6 +221,12 @@ export async function clearLogs() {
   return result
 }
 
+// Storage
+export async function cleanStorage(prefix: string) {
+  const result = await api('storage:clean', { prefix })
+  return result
+}
+
 // Session validation
 export async function validateSession(): Promise<boolean> {
   const token = Storage.getToken()

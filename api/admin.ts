@@ -513,6 +513,29 @@ async function handleAction(action: string, params: any) {
       return { connected: !error }
     }
 
+    case 'storage:clean': {
+      const { prefix } = params
+      if (!prefix) return { error: { message: 'Prefix required (e.g. members)' } }
+      const fullPrefix = `static/assets/${prefix}/`
+      const all: string[] = []
+      let offset = 0
+      while (true) {
+        const { data, error } = await supabaseAdmin.storage.from('ruclub').list(fullPrefix, { limit: 100, offset })
+        if (error || !data || data.length === 0) break
+        for (const item of data) {
+          if (item.id) all.push(`${fullPrefix}${item.name}`)
+        }
+        offset += 100
+      }
+      if (all.length === 0) return { data: { removed: 0 } }
+      const batchSize = 100
+      for (let i = 0; i < all.length; i += batchSize) {
+        await supabaseAdmin.storage.from('ruclub').remove(all.slice(i, i + batchSize))
+      }
+      await logAction('storage:clean', 'storage', prefix, `Removed ${all.length} files from ${fullPrefix}`)
+      return { data: { removed: all.length } }
+    }
+
     case 'logs:list': {
       const { limit: logLimit = 100, offset: logOffset = 0 } = params
       const { data, error } = await supabaseAdmin.from('admin_logs')

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
-import { fetchMembers, saveMembers, uploadBase64Image } from '../utils/supabase'
-import { UsersIcon, PlusIcon, XIcon, RefreshIcon, ImageIcon, DownloadIcon } from './Icons'
+import { fetchMembers, saveMembers, uploadBase64Image, cleanStorage } from '../utils/supabase'
+import { UsersIcon, PlusIcon, XIcon, RefreshIcon, ImageIcon, DownloadIcon, TrashIcon } from './Icons'
 import { PageErrorBoundary } from './PageErrorBoundary'
 
 type Tab = 'teachers' | 'core' | 'general'
@@ -212,6 +212,14 @@ export function MembersPage() {
           <div className="flex items-center gap-2">
             <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 px-3 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200" onClick={load}>
               <RefreshIcon size={13} /> Refresh
+            </button>
+            <button className="flex min-h-[44px] sm:h-8 items-center gap-1.5 rounded-lg border border-red-200 dark:border-red-900/50 px-3 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30" onClick={async () => {
+              if (!confirm('Delete ALL member images from storage? Cannot be undone.')) return
+              const result = await cleanStorage('members')
+              addToast(`Removed ${result?.data?.removed || 0} member images`, 'info')
+              load()
+            }}>
+              <TrashIcon size={13} /> Clean Images
             </button>
             <div className="relative">
               <button
