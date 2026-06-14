@@ -484,13 +484,10 @@ async function handleAction(action: string, params: any) {
   }
 }
 
-const STORAGE_EXT_RE = /\.(jpe?g|png|gif)$/i
-
 function storageUrl(path: string): string {
   if (!path || path.startsWith('http')) return path
   const p = path.startsWith('/') ? path.slice(1) : path
-  const webpPath = p.replace(STORAGE_EXT_RE, '.webp')
-  return `${supabaseUrl}/storage/v1/object/public/ruclub/static/assets/${webpPath}`
+  return `${supabaseUrl}/storage/v1/render/image/public/ruclub/static/assets/${p}?format=webp&quality=85`
 }
 
 function normalizeImagePath(path: string | null | undefined): string | null {
